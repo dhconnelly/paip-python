@@ -7,9 +7,9 @@ transitions.
 
 The input file should be a JSON description of the problem domain, containing
 a list of start states, goal states, and operations that move between states.
-Operations are specified by a list of states that must hold before it can be
-applied (preconditions), a list of states to be added after application, and
-a list of states to be deleted after application.
+Operations are specified by a list of states that must hold before application
+(preconditions), a list of states to be added after application, and a list of
+states to be deleted after application.
 
 Example:
 
