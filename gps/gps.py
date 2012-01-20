@@ -5,6 +5,9 @@ General Problem Solver: a framework for applying means-ends analysis to solve
 problems expressable as collections of states and operators that induce state
 transitions.
 
+Translated from chapter 4 of "Paradigms of Artificial Intelligence
+Programming" by Peter Norvig.
+
 The input file should be a JSON description of the problem domain, containing
 a list of start states, goal states, and operations that move between states.
 Operations are specified by a list of states that must hold before application
@@ -26,8 +29,33 @@ Example:
   ]
 }
 
-Translated from chapter 4 of "Paradigms of Artificial Intelligence
-Programming" by Peter Norvig.
+Limitations:
+
+1. Plans might not be optimal.  Since this implementation does not explore the
+   state transition space using a search algorithm--the first applicable
+   operator that is appropriate is always applied--the resulting plans may
+   be longer than they need to be.  An extension discussed in PAIP is to
+   consider operators in order by number of unsatisfied preconditions.
+   
+2. There exist solutions that may not be found, for two related reasons:
+
+   It may be the case that achieving a goal will undo another goal--the
+   "prerequisite clobbers sibling goal" problem.  A possible solution is to try
+   to reorder the goals so that dependencies are satisfied.  However, as Norvig
+   discusses, simply reordering the goals won't necessarily fix the problem--a
+   result known as the "Sussman anomaly."
+
+   Additionally, as in limitation #1, since we don't consider any but the first
+   applicable and appropriate operator, it may be possible that the only
+   operator that is considered to achieve a goal may undo a previous goal, even
+   though a different operator is available that does not have this problem.  A
+   possible solution involves introducing a mechanism for "protecting" goals.
+   
+3. The program is not particularly useful outside of contrived or simple
+   problems.  Representing a problem by listing all possible states and state
+   transitions with preconditions is tedious and verbose.  Further, it assumes
+   perfect knowledge about the problem domain.
+
 """
 
 __author__ = 'Daniel Connelly'
