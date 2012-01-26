@@ -38,6 +38,10 @@ def is_variable(pattern):
     return pattern[0] == '?' and pattern[1] != '*'
 
 
+def is_segment(pattern):
+    return type(pattern) is list and pattern[0][0] == '?' and pattern[0][1] == '*'
+
+
 def pattern_match(pattern, input, bindings=None):
     print 'pattern_match: %s %s %s' % (pattern, input, bindings)
     if bindings is False:
@@ -47,6 +51,10 @@ def pattern_match(pattern, input, bindings=None):
     bindings = bindings or {}
     if pattern == input:
         return bindings
+    elif not (pattern and input):
+        return False
+    elif is_segment(pattern):
+        return match_segment(pattern, input, bindings)
     elif is_variable(pattern):
         return match_variable(pattern, input, bindings)
     elif type(pattern) is list and type(input) is list:
@@ -55,6 +63,28 @@ def pattern_match(pattern, input, bindings=None):
                              pattern_match(pattern[0], input[0], bindings))
     else:
         return False
+
+
+def match_segment(pattern, input, bindings, start=0):
+    print 'match_segment: %s %s %s %s' % (pattern, input, bindings, start)
+    # pattern == [?*x, rest...]
+    segment = pattern[0]
+    var = segment[2]
+    if len(pattern) == 1:
+        return match_variable(var, input, bindings)
+
+    rest = pattern[1:]
+    word = rest[0] # word in pattern to match against input
+    try:
+        pos = input[start:].index(word)
+    except ValueError:
+        return False
+    
+    var_match = match_variable(var, input[:pos], bindings)
+    match = pattern_match(rest, input[pos:], var_match)
+    if not match:
+        return match_segment(pattern, input, bindings, start + 1)
+    return match
 
 
 def match_variable(var, input, bindings):
