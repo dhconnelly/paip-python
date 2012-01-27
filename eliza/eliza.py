@@ -1,3 +1,4 @@
+import random
 
 
 RULES = {
@@ -42,8 +43,7 @@ def is_segment(pattern):
     return type(pattern) is list and pattern[0][0] == '?' and pattern[0][1] == '*'
 
 
-def pattern_match(pattern, input, bindings=None):
-    print 'pattern_match: %s %s %s' % (pattern, input, bindings)
+def match_pattern(pattern, input, bindings=None):
     if bindings is False:
         # then we failed upstream
         return False
@@ -51,23 +51,19 @@ def pattern_match(pattern, input, bindings=None):
     bindings = bindings or {}
     if pattern == input:
         return bindings
-    elif not (pattern and input):
-        return False
     elif is_segment(pattern):
         return match_segment(pattern, input, bindings)
     elif is_variable(pattern):
         return match_variable(pattern, input, bindings)
     elif type(pattern) is list and type(input) is list:
-        return pattern_match(pattern[1:],
+        return match_pattern(pattern[1:],
                              input[1:],
-                             pattern_match(pattern[0], input[0], bindings))
+                             match_pattern(pattern[0], input[0], bindings))
     else:
         return False
 
 
 def match_segment(pattern, input, bindings, start=0):
-    print 'match_segment: %s %s %s %s' % (pattern, input, bindings, start)
-    # pattern == [?*x, rest...]
     segment = pattern[0]
     var = segment[2]
     if len(pattern) == 1:
@@ -81,7 +77,7 @@ def match_segment(pattern, input, bindings, start=0):
         return False
     
     var_match = match_variable(var, input[:pos], bindings)
-    match = pattern_match(rest, input[pos:], var_match)
+    match = match_pattern(rest, input[pos:], var_match)
     if not match:
         return match_segment(pattern, input, bindings, start + 1)
     return match
@@ -97,3 +93,49 @@ def match_variable(var, input, bindings):
         return bindings
     return False
 
+
+def replace(word, replacements):
+    for old, new in replacements:
+        if word == old:
+            return new
+    return word
+
+
+def switch_viewpoint(words):
+    replacements = [('I', 'YOU'),
+                    ('YOU', 'I'),
+                    ('ME', 'YOU'),
+                    ('AM', 'ARE'),
+                    ('ARE', 'AM')]
+    return [replace(word, replacements) for word in words]
+
+
+def eliza(rules, input):
+    for pattern, transforms in rules:
+        replacements = match_pattern(pattern, input)
+        if replacements:
+            break
+    if not replacements:
+        return None
+    output = random.choice(transforms)
+    for variable, replacement in replacements.items():
+        replacement = ' '.join(switch_viewpoint(replacement))
+        if replacement:
+            output = output.replace('?' + variable, replacement)
+    return output
+    
+
+def main():
+    rules = []
+    for pattern, transforms in RULES.items():        
+        rules.append((pattern.upper().split(), map(str.upper, transforms)))
+    while True:
+        try:
+            input = raw_input('ELIZA> ').upper()
+        except:
+            return
+        print eliza(rules, input.split())
+
+
+if __name__ == '__main__':
+    main()
