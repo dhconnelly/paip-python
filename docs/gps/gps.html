@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>gps.py</title>
+  <link rel="stylesheet" href="../pycco.css">
+</head>
+<body>
+<div id="background"></div>
+<div id='container'>
+  
+  <div class='section'>
+    <div class='docs'><h1>gps.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      <p>General Problem Solver: a framework for applying means-ends analysis to solve
+problems expressable as collections of states and operators that induce state
+transitions.</p>
+<p>Translated from chapter 4 of "Paradigms of Artificial Intelligence
+Programming" by Peter Norvig.</p>
+<p>The input file should be a JSON description of the problem domain, containing
+a list of start states, goal states, and operations that move between states.
+Operations are specified by a list of states that must hold before application
+(preconditions), a list of states to be added after application, and a list of
+states to be deleted after application.</p>
+<p>Example:</p>
+<p>{
+  "start": ["state1", "state2"],
+  "finish": ["state3"],
+  "ops": [
+    {
+      "action": "foo",
+      "preconds": ["state1", "state2"],
+      "add": ["state3"],
+      "delete": ["state2"]
+    }
+  ]
+}</p>
+<p>Limitations:</p>
+<ol>
+<li>
+<p>Plans might not be optimal.  Since this implementation does not explore the
+   state transition space using a search algorithm--the first applicable
+   operator that is appropriate is always applied--the resulting plans may
+   be longer than they need to be.  An extension discussed in PAIP is to
+   consider operators in order by number of unsatisfied preconditions.</p>
+</li>
+<li>
+<p>There exist solutions that may not be found, for two related reasons:</p>
+</li>
+</ol>
+<p>It may be the case that achieving a goal will undo another goal--the
+   "prerequisite clobbers sibling goal" problem.  A possible solution is to try
+   to reorder the goals so that dependencies are satisfied.  However, as Norvig
+   discusses, simply reordering the goals won't necessarily fix the problem--a
+   result known as the "Sussman anomaly."</p>
+<p>Additionally, as in limitation #1, since we don't consider any but the first
+   applicable and appropriate operator, it may be possible that the only
+   operator that is considered to achieve a goal may undo a previous goal, even
+   though a different operator is available that does not have this problem.  A
+   possible solution involves introducing a mechanism for "protecting" goals.</p>
+<ol>
+<li>The program is not particularly useful outside of contrived or simple
+   problems.  Representing a problem by listing all possible states and state
+   transitions with preconditions is tedious and verbose.  Further, it assumes
+   perfect knowledge about the problem domain.</li>
+</ol>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">__author__</span> <span class="o">=</span> <span class="s">&#39;Daniel Connelly&#39;</span>
+<span class="n">__email__</span> <span class="o">=</span> <span class="s">&#39;dconnelly@gatech.edu&#39;</span>
+
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">logging</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      <p>Print msg at the indicated indent level.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;    &#39;</span> <span class="o">*</span> <span class="n">level</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      <p>Return a list of operations that achieve the specified goal states.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">gps</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">goals</span><span class="p">,</span> <span class="n">ops</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">pre</span> <span class="o">=</span> <span class="s">&#39;Executing &#39;</span>
+    <span class="k">for</span> <span class="n">operation</span> <span class="ow">in</span> <span class="n">ops</span><span class="p">:</span>
+        <span class="n">operation</span><span class="p">[</span><span class="s">&#39;add&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pre</span> <span class="o">+</span> <span class="n">operation</span><span class="p">[</span><span class="s">&#39;action&#39;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">g</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">achieve_all</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">ops</span><span class="p">,</span> <span class="n">goals</span><span class="p">,</span> <span class="p">[])</span> <span class="k">if</span> <span class="n">g</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">pre</span><span class="p">)]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-6'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-6'>#</a>
+      </div>
+      <p>Achieve each goal state and make sure they still hold at the end.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">achieve_all</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">ops</span><span class="p">,</span> <span class="n">goals</span><span class="p">,</span> <span class="n">goal_stack</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-7'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-7'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">for</span> <span class="n">goal</span> <span class="ow">in</span> <span class="n">goals</span><span class="p">:</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">achieve</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">ops</span><span class="p">,</span> <span class="n">goal</span><span class="p">,</span> <span class="n">goal_stack</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">state</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+    <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">goals</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">state</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">state</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-8'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-8'>#</a>
+      </div>
+      <p>Satisfy the goal state by finding an applicable appropriate operation.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">achieve</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">ops</span><span class="p">,</span> <span class="n">goal</span><span class="p">,</span> <span class="n">goal_stack</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-9'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-9'>#</a>
+      </div>
+      <p>Returns None if infinite recursion is detected in the goal stack.
+Otherwise, returns a state where goal is satisfied.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">debug</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">goal_stack</span><span class="p">),</span> <span class="s">&#39;Goal: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">goal</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">goal</span> <span class="ow">in</span> <span class="n">state</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">state</span>
+    <span class="k">elif</span> <span class="n">goal</span> <span class="ow">in</span> <span class="n">goal_stack</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="n">appropriate</span> <span class="o">=</span> <span class="p">(</span><span class="n">op</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">ops</span> <span class="k">if</span> <span class="n">is_appropriate</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="n">goal</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">operation</span> <span class="ow">in</span> <span class="n">appropriate</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">apply_operation</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">ops</span><span class="p">,</span> <span class="n">goal</span><span class="p">,</span> <span class="n">goal_stack</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">result</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-10'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-10'>#</a>
+      </div>
+      <p>Determines if the operation will add goal to the state.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">is_appropriate</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span> <span class="n">goal</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-11'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-11'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">return</span> <span class="n">goal</span> <span class="ow">in</span> <span class="n">operation</span><span class="p">[</span><span class="s">&#39;add&#39;</span><span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-12'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-12'>#</a>
+      </div>
+      <p>Applies op to the current state if op is applicable.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">apply_operation</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">ops</span><span class="p">,</span> <span class="n">goal</span><span class="p">,</span> <span class="n">goal_stack</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-13'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-13'>#</a>
+      </div>
+      <p>An operation is applicable when all its preconditions are satisfied;
+apply_op will attempt to satisfy all of op's preconditions.  If any
+precondition cannot be satisfied, returns None.  Otherwise, returns the
+result of applying op to state.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">debug</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">goal_stack</span><span class="p">),</span> <span class="s">&#39;Consider: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">operation</span><span class="p">[</span><span class="s">&#39;action&#39;</span><span class="p">])</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">achieve_all</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">ops</span><span class="p">,</span> <span class="n">operation</span><span class="p">[</span><span class="s">&#39;preconds&#39;</span><span class="p">],</span> <span class="p">[</span><span class="n">goal</span><span class="p">]</span> <span class="o">+</span> <span class="n">goal_stack</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">None</span>
+    <span class="n">debug</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">goal_stack</span><span class="p">),</span> <span class="s">&#39;Action: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">operation</span><span class="p">[</span><span class="s">&#39;action&#39;</span><span class="p">])</span>
+    <span class="n">add</span><span class="p">,</span> <span class="n">delete</span> <span class="o">=</span> <span class="n">operation</span><span class="p">[</span><span class="s">&#39;add&#39;</span><span class="p">],</span> <span class="n">operation</span><span class="p">[</span><span class="s">&#39;delete&#39;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">result</span> <span class="k">if</span> <span class="n">s</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">delete</span><span class="p">]</span> <span class="o">+</span> <span class="n">add</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-14'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-14'>#</a>
+      </div>
+      <h6>######################################################################## <span id="command-line-invocation" href="command-line-invocation"></h6>
+<p>Command line invocation
+</span></p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">USAGE</span> <span class="o">=</span> <span class="s">&#39;gps.py [--log=level] problem.json&#39;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-15'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-15'>#</a>
+      </div>
+      <p>Check the command line arguments.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">check_usage</span><span class="p">(</span><span class="n">args</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-16'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-16'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">print</span> <span class="n">USAGE</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-17'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-17'>#</a>
+      </div>
+      <p>Run GPS on the indicated problem file.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">args</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-18'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-18'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">check_usage</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;--log=&#39;</span><span class="p">):</span>
+        <span class="n">level</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="nb">len</span><span class="p">(</span><span class="s">&#39;--log=&#39;</span><span class="p">):]</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">logging</span><span class="p">,</span> <span class="n">level</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span> <span class="bp">None</span><span class="p">))</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+
+    <span class="n">check_usage</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">as</span> <span class="n">problem_file</span><span class="p">:</span>
+        <span class="n">problem</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">problem_file</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">problem</span><span class="p">[</span><span class="s">&#39;start&#39;</span><span class="p">]</span>
+        <span class="n">finish</span> <span class="o">=</span> <span class="n">problem</span><span class="p">[</span><span class="s">&#39;finish&#39;</span><span class="p">]</span>
+        <span class="n">ops</span> <span class="o">=</span> <span class="n">problem</span><span class="p">[</span><span class="s">&#39;ops&#39;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">action</span> <span class="ow">in</span> <span class="n">gps</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">ops</span><span class="p">):</span>
+            <span class="k">print</span> <span class="n">action</span>
+    
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>

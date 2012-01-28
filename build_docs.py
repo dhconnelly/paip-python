@@ -2,14 +2,14 @@ import os
 import pycco
 
 
-modules = ['gps', 'eliza']
+modules = ['paip/']
 outdir = 'docs'
 
 
 def module_sources(module):
     sources = []
     for filename in os.listdir(os.path.abspath(module)):
-        if filename.endswith('.py'):
+        if filename != '__init__.py' and filename.endswith('.py'):
             sources.append(os.path.join(module, filename))
     return sources
 
