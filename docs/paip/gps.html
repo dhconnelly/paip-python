@@ -34,8 +34,28 @@ then the goal can't be achieved.  When all of the goal states have been
 achieved, the problem is solved.</p>
 <p>Problems can be defined in the JSON format by listing the starting states, goal
 states, and state transition operators.  An example follows below.</p>
-<p>To run GPS on a problem definition, simply</p>
-<p>python gps.py problem.json</p>
+<p>Suppose that the following JSON data is stored in a file called <code>problem.json</code>:</p>
+<pre><code>{
+    "start": ["son at home", "car needs battery"],
+    "finish": ["son at school"],
+    "ops": [
+        {
+            "action": "drive son to school",
+            "preconds": ["son at home", "car works"],
+            "add": ["son at school"],
+            "delete": ["son at home"]
+        },
+        {
+            "action": "shop installs battery",
+            "preconds": ["car needs battery"],
+            "add": ["car works"],
+            "delete": ["car needs battery"]
+        }
+    ]
+}
+</code></pre>
+<p>To run GPS with this problem definition, simply</p>
+<p><code>python gps.py problem.json</code></p>
 <p>The sequence of actions that will achieve the goal states will be written to
 standard output.</p>
 <p>This implementation is inspired by chapter 4 of "Paradigms of Artificial
@@ -54,27 +74,7 @@ Intelligence Programming" by Peter Norvig.</p>
     </div>
     <div class='code'>
       <div class="highlight"><pre><span class="n">__author__</span> <span class="o">=</span> <span class="s">&#39;Daniel Connelly&#39;</span>
-<span class="n">__email__</span> <span class="o">=</span> <span class="s">&#39;dconnelly@gatech.edu&#39;</span>
-
-
-<span class="n">SIMPLE_PROBLEM</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s">&quot;start&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;son at home&quot;</span><span class="p">,</span> <span class="s">&quot;car needs battery&quot;</span><span class="p">],</span>
-    <span class="s">&quot;finish&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;son at school&quot;</span><span class="p">],</span>
-    <span class="s">&quot;ops&quot;</span><span class="p">:</span> <span class="p">[</span>
-        <span class="p">{</span>
-            <span class="s">&quot;action&quot;</span><span class="p">:</span> <span class="s">&quot;drive son to school&quot;</span><span class="p">,</span>
-            <span class="s">&quot;preconds&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;son at home&quot;</span><span class="p">,</span> <span class="s">&quot;car works&quot;</span><span class="p">],</span>
-            <span class="s">&quot;add&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;son at school&quot;</span><span class="p">],</span>
-            <span class="s">&quot;delete&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;son at home&quot;</span><span class="p">]</span>
-        <span class="p">},</span>
-        <span class="p">{</span>
-            <span class="s">&quot;action&quot;</span><span class="p">:</span> <span class="s">&quot;shop installs battery&quot;</span><span class="p">,</span>
-            <span class="s">&quot;preconds&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;car needs battery&quot;</span><span class="p">],</span>
-            <span class="s">&quot;add&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;car works&quot;</span><span class="p">],</span>
-            <span class="s">&quot;delete&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;car needs battery&quot;</span><span class="p">]</span>
-        <span class="p">}</span>
-    <span class="p">]</span>
-<span class="p">}</span></pre></div>
+<span class="n">__email__</span> <span class="o">=</span> <span class="s">&#39;dconnelly@gatech.edu&#39;</span></pre></div>
     </div>
   </div>
   <div class='clearall'></div><div class='section' id='section-2'>
@@ -82,7 +82,7 @@ Intelligence Programming" by Peter Norvig.</p>
       <div class='octowrap'>
         <a class='octothorpe' href='#section-2'>#</a>
       </div>
-      <h3><span id="utility-functions" href="utility-functions"> Utility functions </span></h3>
+      <h1>Problem solving functions</h1>
     </div>
     <div class='code'>
       <div class="highlight"><pre></pre></div>
@@ -93,29 +93,6 @@ Intelligence Programming" by Peter Norvig.</p>
       <div class='octowrap'>
         <a class='octothorpe' href='#section-3'>#</a>
       </div>
-      
-    </div>
-    <div class='code'>
-      <div class="highlight"><pre><span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
-    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39; </span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">level</span> <span class="o">*</span> <span class="s">&#39;  &#39;</span><span class="p">,</span> <span class="n">msg</span><span class="p">))</span></pre></div>
-    </div>
-  </div>
-  <div class='clearall'></div><div class='section' id='section-4'>
-    <div class='docs'>
-      <div class='octowrap'>
-        <a class='octothorpe' href='#section-4'>#</a>
-      </div>
-      <h3><span id="problem-solving-functions" href="problem-solving-functions"> Problem solving functions </span></h3>
-    </div>
-    <div class='code'>
-      <div class="highlight"><pre></pre></div>
-    </div>
-  </div>
-  <div class='clearall'></div><div class='section' id='section-5'>
-    <div class='docs'>
-      <div class='octowrap'>
-        <a class='octothorpe' href='#section-5'>#</a>
-      </div>
       <p>Find a sequence of operators that will achieve all of the goal states.</p>
 <p>Returns a list of actions that will achieve all of the goal states, or
 None if no such sequence exists.  Each operator is specified by an
@@ -125,10 +102,10 @@ action name, a list of preconditions, an add-list, and a delete-list.</p>
       <div class="highlight"><pre><span class="k">def</span> <span class="nf">gps</span><span class="p">(</span><span class="n">initial_states</span><span class="p">,</span> <span class="n">goal_states</span><span class="p">,</span> <span class="n">operators</span><span class="p">):</span></pre></div>
     </div>
   </div>
-  <div class='clearall'></div><div class='section' id='section-6'>
+  <div class='clearall'></div><div class='section' id='section-4'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-6'>#</a>
+        <a class='octothorpe' href='#section-4'>#</a>
       </div>
       
     </div>
@@ -136,10 +113,10 @@ action name, a list of preconditions, an add-list, and a delete-list.</p>
       <div class="highlight"><pre></pre></div>
     </div>
   </div>
-  <div class='clearall'></div><div class='section' id='section-7'>
+  <div class='clearall'></div><div class='section' id='section-5'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-7'>#</a>
+        <a class='octothorpe' href='#section-5'>#</a>
       </div>
       <p>To keep track of which operators have been applied, we add additional
 'executing ...' states to each operator's add-list.  These will never be
@@ -155,10 +132,10 @@ them in the list of current states.</p>
     <span class="k">return</span> <span class="p">[</span><span class="n">state</span> <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">final_states</span> <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">prefix</span><span class="p">)]</span></pre></div>
     </div>
   </div>
-  <div class='clearall'></div><div class='section' id='section-8'>
+  <div class='clearall'></div><div class='section' id='section-6'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-8'>#</a>
+        <a class='octothorpe' href='#section-6'>#</a>
       </div>
       <p>Achieve each state in goals and make sure they still hold at the end.</p>
 <p>The goal stack keeps track of our recursion: which preconditions are we
@@ -168,10 +145,10 @@ trying to satisfy by achieving the specified goals?</p>
       <div class="highlight"><pre><span class="k">def</span> <span class="nf">achieve_all</span><span class="p">(</span><span class="n">states</span><span class="p">,</span> <span class="n">ops</span><span class="p">,</span> <span class="n">goals</span><span class="p">,</span> <span class="n">goal_stack</span><span class="p">):</span></pre></div>
     </div>
   </div>
-  <div class='clearall'></div><div class='section' id='section-9'>
+  <div class='clearall'></div><div class='section' id='section-7'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-9'>#</a>
+        <a class='octothorpe' href='#section-7'>#</a>
       </div>
       
     </div>
@@ -179,10 +156,10 @@ trying to satisfy by achieving the specified goals?</p>
       <div class="highlight"><pre></pre></div>
     </div>
   </div>
-  <div class='clearall'></div><div class='section' id='section-10'>
+  <div class='clearall'></div><div class='section' id='section-8'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-10'>#</a>
+        <a class='octothorpe' href='#section-8'>#</a>
       </div>
       <p>We try to achieve each goal in the order they are given.  If any one
 goal state cannot be achieved, then the problem cannot be solved.</p>
@@ -194,10 +171,10 @@ goal state cannot be achieved, then the problem cannot be solved.</p>
             <span class="k">return</span> <span class="bp">None</span></pre></div>
     </div>
   </div>
-  <div class='clearall'></div><div class='section' id='section-11'>
+  <div class='clearall'></div><div class='section' id='section-9'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-11'>#</a>
+        <a class='octothorpe' href='#section-9'>#</a>
       </div>
       <p>We must ensure that we haven't removed a goal state in the process of
 solving other states--having done so is called the "prerequisite clobbers
@@ -211,10 +188,10 @@ sibling goal problem".</p>
     <span class="k">return</span> <span class="n">states</span></pre></div>
     </div>
   </div>
-  <div class='clearall'></div><div class='section' id='section-12'>
+  <div class='clearall'></div><div class='section' id='section-10'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-12'>#</a>
+        <a class='octothorpe' href='#section-10'>#</a>
       </div>
       <p>Achieve the goal state using means-ends analysis.</p>
 <p>Identifies an appropriate and applicable operator--one that contains the
@@ -226,10 +203,10 @@ operator is found or infinite recursion is detected in the goal stack.</p>
       <div class="highlight"><pre><span class="k">def</span> <span class="nf">achieve</span><span class="p">(</span><span class="n">states</span><span class="p">,</span> <span class="n">operators</span><span class="p">,</span> <span class="n">goal</span><span class="p">,</span> <span class="n">goal_stack</span><span class="p">):</span></pre></div>
     </div>
   </div>
-  <div class='clearall'></div><div class='section' id='section-13'>
+  <div class='clearall'></div><div class='section' id='section-11'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-13'>#</a>
+        <a class='octothorpe' href='#section-11'>#</a>
       </div>
       
     </div>
@@ -238,10 +215,10 @@ operator is found or infinite recursion is detected in the goal stack.</p>
     <span class="n">debug</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">goal_stack</span><span class="p">),</span> <span class="s">&#39;Achieving: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">goal</span><span class="p">)</span></pre></div>
     </div>
   </div>
-  <div class='clearall'></div><div class='section' id='section-14'>
+  <div class='clearall'></div><div class='section' id='section-12'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-14'>#</a>
+        <a class='octothorpe' href='#section-12'>#</a>
       </div>
       <p>Let's check to see if the state already holds before we do anything.</p>
     </div>
@@ -250,10 +227,10 @@ operator is found or infinite recursion is detected in the goal stack.</p>
         <span class="k">return</span> <span class="n">states</span></pre></div>
     </div>
   </div>
-  <div class='clearall'></div><div class='section' id='section-15'>
+  <div class='clearall'></div><div class='section' id='section-13'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-15'>#</a>
+        <a class='octothorpe' href='#section-13'>#</a>
       </div>
       <p>Prevent going in circles: look through the goal stack to see if the
 specified goal appears there.  If so, then we are indirectly trying to
@@ -270,10 +247,10 @@ preconditions.</p>
     <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">operators</span><span class="p">:</span></pre></div>
     </div>
   </div>
-  <div class='clearall'></div><div class='section' id='section-16'>
+  <div class='clearall'></div><div class='section' id='section-14'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-16'>#</a>
+        <a class='octothorpe' href='#section-14'>#</a>
       </div>
       <p>Is op appropriate?  Look through its add-list to see if goal is there.</p>
     </div>
@@ -282,10 +259,10 @@ preconditions.</p>
             <span class="k">continue</span></pre></div>
     </div>
   </div>
-  <div class='clearall'></div><div class='section' id='section-17'>
+  <div class='clearall'></div><div class='section' id='section-15'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-17'>#</a>
+        <a class='octothorpe' href='#section-15'>#</a>
       </div>
       <p>Is op applicable?  Try to apply it--if one of its preconditions cannot
 be satisifed, then it will return None.</p>
@@ -296,10 +273,10 @@ be satisifed, then it will return None.</p>
             <span class="k">return</span> <span class="n">result</span></pre></div>
     </div>
   </div>
-  <div class='clearall'></div><div class='section' id='section-18'>
+  <div class='clearall'></div><div class='section' id='section-16'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-18'>#</a>
+        <a class='octothorpe' href='#section-16'>#</a>
       </div>
       <p>Applies operator and returns the resulting states.</p>
 <p>Achieves all of operator's preconditions and returns the states that hold
@@ -310,10 +287,10 @@ cannot be satisfied, returns None.</p>
       <div class="highlight"><pre><span class="k">def</span> <span class="nf">apply_operator</span><span class="p">(</span><span class="n">operator</span><span class="p">,</span> <span class="n">states</span><span class="p">,</span> <span class="n">ops</span><span class="p">,</span> <span class="n">goal</span><span class="p">,</span> <span class="n">goal_stack</span><span class="p">):</span></pre></div>
     </div>
   </div>
-  <div class='clearall'></div><div class='section' id='section-19'>
+  <div class='clearall'></div><div class='section' id='section-17'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-19'>#</a>
+        <a class='octothorpe' href='#section-17'>#</a>
       </div>
       
     </div>
@@ -321,10 +298,10 @@ cannot be satisfied, returns None.</p>
       <div class="highlight"><pre>    <span class="n">debug</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">goal_stack</span><span class="p">),</span> <span class="s">&#39;Consider: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">operator</span><span class="p">[</span><span class="s">&#39;action&#39;</span><span class="p">])</span></pre></div>
     </div>
   </div>
-  <div class='clearall'></div><div class='section' id='section-20'>
+  <div class='clearall'></div><div class='section' id='section-18'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-20'>#</a>
+        <a class='octothorpe' href='#section-18'>#</a>
       </div>
       <p>Satisfy all of operator's preconditions.</p>
     </div>
@@ -336,10 +313,10 @@ cannot be satisfied, returns None.</p>
     <span class="n">debug</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">goal_stack</span><span class="p">),</span> <span class="s">&#39;Action: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">operator</span><span class="p">[</span><span class="s">&#39;action&#39;</span><span class="p">])</span></pre></div>
     </div>
   </div>
-  <div class='clearall'></div><div class='section' id='section-21'>
+  <div class='clearall'></div><div class='section' id='section-19'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-21'>#</a>
+        <a class='octothorpe' href='#section-19'>#</a>
       </div>
       <p>Merge the old states with operator's add-list, filtering out delete-list.</p>
     </div>
@@ -348,12 +325,12 @@ cannot be satisfied, returns None.</p>
     <span class="k">return</span> <span class="p">[</span><span class="n">state</span> <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">result</span> <span class="k">if</span> <span class="n">state</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">delete_list</span><span class="p">]</span> <span class="o">+</span> <span class="n">add_list</span></pre></div>
     </div>
   </div>
-  <div class='clearall'></div><div class='section' id='section-22'>
+  <div class='clearall'></div><div class='section' id='section-20'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-22'>#</a>
+        <a class='octothorpe' href='#section-20'>#</a>
       </div>
-      <h3><span id="helper-functions-and-setup" href="helper-functions-and-setup"> Helper functions and setup </span></h3>
+      <h1>Helper functions and setup</h1>
     </div>
     <div class='code'>
       <div class="highlight"><pre><span class="kn">import</span> <span class="nn">sys</span>
@@ -364,10 +341,22 @@ cannot be satisfied, returns None.</p>
 <span class="n">USAGE</span> <span class="o">=</span> <span class="s">&#39;gps.py [--log=level] problem.json&#39;</span></pre></div>
     </div>
   </div>
-  <div class='clearall'></div><div class='section' id='section-23'>
+  <div class='clearall'></div><div class='section' id='section-21'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-23'>#</a>
+        <a class='octothorpe' href='#section-21'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39; </span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">level</span> <span class="o">*</span> <span class="s">&#39;  &#39;</span><span class="p">,</span> <span class="n">msg</span><span class="p">))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-22'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-22'>#</a>
       </div>
       <p>Check the command line arguments.</p>
     </div>
@@ -375,10 +364,10 @@ cannot be satisfied, returns None.</p>
       <div class="highlight"><pre><span class="k">def</span> <span class="nf">check_usage</span><span class="p">(</span><span class="n">args</span><span class="p">):</span></pre></div>
     </div>
   </div>
-  <div class='clearall'></div><div class='section' id='section-24'>
+  <div class='clearall'></div><div class='section' id='section-23'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-24'>#</a>
+        <a class='octothorpe' href='#section-23'>#</a>
       </div>
       
     </div>
@@ -388,10 +377,10 @@ cannot be satisfied, returns None.</p>
         <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></pre></div>
     </div>
   </div>
-  <div class='clearall'></div><div class='section' id='section-25'>
+  <div class='clearall'></div><div class='section' id='section-24'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-25'>#</a>
+        <a class='octothorpe' href='#section-24'>#</a>
       </div>
       <p>Run GPS on the indicated problem file.</p>
     </div>
@@ -399,10 +388,10 @@ cannot be satisfied, returns None.</p>
       <div class="highlight"><pre><span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">args</span><span class="p">):</span></pre></div>
     </div>
   </div>
-  <div class='clearall'></div><div class='section' id='section-26'>
+  <div class='clearall'></div><div class='section' id='section-25'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-26'>#</a>
+        <a class='octothorpe' href='#section-25'>#</a>
       </div>
       
     </div>
@@ -410,10 +399,10 @@ cannot be satisfied, returns None.</p>
       <div class="highlight"><pre></pre></div>
     </div>
   </div>
-  <div class='clearall'></div><div class='section' id='section-27'>
+  <div class='clearall'></div><div class='section' id='section-26'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-27'>#</a>
+        <a class='octothorpe' href='#section-26'>#</a>
       </div>
       <p>Grab the --log=LEVEL logging option (if it exists).</p>
     </div>
@@ -425,10 +414,10 @@ cannot be satisfied, returns None.</p>
         <span class="n">args</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span></pre></div>
     </div>
   </div>
-  <div class='clearall'></div><div class='section' id='section-28'>
+  <div class='clearall'></div><div class='section' id='section-27'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-28'>#</a>
+        <a class='octothorpe' href='#section-27'>#</a>
       </div>
       <p>Parse the JSON problem description and run the solver.</p>
     </div>

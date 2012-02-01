@@ -20,9 +20,30 @@ achieved, the problem is solved.
 Problems can be defined in the JSON format by listing the starting states, goal
 states, and state transition operators.  An example follows below.
 
-To run GPS on a problem definition, simply
+Suppose that the following JSON data is stored in a file called `problem.json`:
 
-python gps.py problem.json
+    {
+        "start": ["son at home", "car needs battery"],
+        "finish": ["son at school"],
+        "ops": [
+            {
+                "action": "drive son to school",
+                "preconds": ["son at home", "car works"],
+                "add": ["son at school"],
+                "delete": ["son at home"]
+            },
+            {
+                "action": "shop installs battery",
+                "preconds": ["car needs battery"],
+                "add": ["car works"],
+                "delete": ["car needs battery"]
+            }
+        ]
+    }
+
+To run GPS with this problem definition, simply
+
+`python gps.py problem.json`
 
 The sequence of actions that will achieve the goal states will be written to
 standard output.
@@ -36,34 +57,8 @@ __author__ = 'Daniel Connelly'
 __email__ = 'dconnelly@gatech.edu'
 
 
-SIMPLE_PROBLEM = {
-    "start": ["son at home", "car needs battery"],
-    "finish": ["son at school"],
-    "ops": [
-        {
-            "action": "drive son to school",
-            "preconds": ["son at home", "car works"],
-            "add": ["son at school"],
-            "delete": ["son at home"]
-        },
-        {
-            "action": "shop installs battery",
-            "preconds": ["car needs battery"],
-            "add": ["car works"],
-            "delete": ["car needs battery"]
-        }
-    ]
-}
-
-
-# === Utility functions ===
-
-
-def debug(level, msg):
-    logging.debug(' %s %s' % (level * '  ', msg))
-    
-
-# === Problem solving functions ===
+# Problem solving functions
+# =========================
 
 
 def gps(initial_states, goal_states, operators):
@@ -172,7 +167,8 @@ def apply_operator(operator, states, ops, goal, goal_stack):
     return [state for state in result if state not in delete_list] + add_list
 
 
-# === Helper functions and setup ===
+# Helper functions and setup
+# ==========================
 
 
 import sys
@@ -182,6 +178,10 @@ import logging
 
 USAGE = 'gps.py [--log=level] problem.json'
 
+
+def debug(level, msg):
+    logging.debug(' %s %s' % (level * '  ', msg))
+    
 
 def check_usage(args):
     """Check the command line arguments."""

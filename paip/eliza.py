@@ -1,61 +1,113 @@
-import random
+#!/usr/bin/env python
 
+"""
+**Eliza** is a pattern-matching automated psychiatrist.  Given a set of rules
+in the form of input/output patterns, Eliza will attempt to recognize user input
+phrases and generate relevant psychobabble responses.
 
-RULES = {
-    '?*x hello ?*y': [
-        'How do you do. Please state your problem.'
+Each rule is specified by an input pattern and a list of output patterns.  A
+pattern is a sentence consisting of space-separated words and variables.  Input
+pattern variables come in two forms: single variables and segment variables;
+single variables (which take the form `?x`) match a single word, while segment
+variables (which take the form `?*x`) can match a phrase.  Output pattern
+variables are only single variables.  The variable names contained in an input
+pattern should be the same as those in the corresponding output pattern, and
+each segment variable `?*x` in an input pattern corresponds to the single
+variable `?x` in the output pattern.
+
+The rule base is specified in JSON format as a mapping from input patterns to
+possible output patterns.  An example:
+
+    {
+        "hello ?x, my name is ?*y. what is yours?": [
+            "listen here, ?y, that's mr. ?x to you!",
+            "hello ?y. my name is dave, not ?x."
         ],
-    '?*x I want ?*y': [
-        'What would it mean if you got ?y?',
-        'Why do you want ?y?',
-        'Suppose you got ?y soon.',
-        ],
-    '?*x if ?*y': [
-        'Do you really think its likely that ?y?',
-        'Do you wish that ?y?',
-        'What do you think about ?y?',
-        'Really--if ?y?',
-        ],
-    '?*x no ?*y': [
-        'Why not?',
-        'You are being a bit negative.',
-        'Are you saying "No" just to be negative?',
-        ],
-    '?*x I was ?*y': [
-        'Were you really?',
-        'Perhaps I already knew you were ?y.',
-        'Why do you tell me you were ?y now?',
-        ],
-    '?*x I feel ?*y': [
-        'Do you often feel ?y?',
-        ],
-    '?*x I felt ?*y': [
-        'What other feelings do you have?'
-        ],
+        "whatup ?*x": [
+            "please use proper grammar; also, my name is not ?x."
+        ]
     }
 
+To run Eliza with this rule base, stored in a file `rules.json`, simply
 
-def is_variable(pattern):
-    return pattern[0] == '?' and pattern[1] != '*'
+`python eliza.py rules.json`
+
+Input proceeds by reading a sentence from the user, searching through the rules
+to find an input pattern that matches, replacing variables in the output
+pattern, and printing the results to the user.
+
+This implementation is inspired by Chapter 5 of "Paradigms of Artificial
+Intelligence Programming" by Peter Norvig.
+"""
 
 
-def is_segment(pattern):
-    return type(pattern) is list and pattern[0][0] == '?' and pattern[0][1] == '*'
+__author__ = 'Daniel Connelly'
+__email__ = 'dconnelly@gatech.edu'
 
+
+# Pattern-matching functions
+# ==========================
+
+
+def respond(rules, input):
+    """Respond to an input sentence according to the given rules."""
+
+    # Look through rules and find an input pattern that matches the input.
+    for pattern, transforms in rules:
+        pattern = pattern.split() # match_pattern expects a list of tokens
+        replacements = match_pattern(pattern, input)
+        if replacements:
+            break
+
+    # If no match is found, we return `None`.  A possible extension will keep
+    # track of user input and respond with "tell me more about ...".
+    if not replacements:
+        return None
+
+    # When a rule is found, choose one of its output patterns at random.
+    output = random.choice(transforms)
+
+    # Replace the variables in the output pattern with the values matched from
+    # the input string.
+    for variable, replacement in replacements.items():
+        replacement = ' '.join(switch_viewpoint(replacement))
+        if replacement:
+            output = output.replace('?' + variable, replacement)
+    
+    return output
+    
 
 def match_pattern(pattern, input, bindings=None):
-    if bindings is False:
-        # then we failed upstream
-        return False
+    """
+    Determine if the input string matches the given pattern.
 
-    bindings = bindings or {}
+    Returns a dictionary containing the bindings of variables in the input
+    pattern to values in the input string, or False when the input doesn't match
+    the pattern.
+    """
+
+    # Check to see if matching failed before we got here.
+    if bindings is False:
+        return False
+    
+    # When the pattern and the input are identical, we have a match, and
+    # no more bindings need to be found.
     if pattern == input:
         return bindings
-    elif is_segment(pattern):
-        return match_segment(pattern, input, bindings)
+
+    bindings = bindings or {}
+
+    # Match input and pattern according to their types.
+    if is_segment(pattern):
+        var = pattern[0][2] # segment pattern is of the form ['?*x', ...]
+        return match_segment(var, pattern[1:], input, bindings)
     elif is_variable(pattern):
-        return match_variable(pattern, input, bindings)
-    elif type(pattern) is list and type(input) is list:
+        var = pattern[1] # single variables are of the form ?x
+        return match_variable(var, [input], bindings)
+    elif contains_tokens(pattern) and contains_tokens(input):
+        # Recurse:
+        # try to match the first tokens of both pattern and input.  The bindings
+        # that result are used to match the remainder of both lists.
         return match_pattern(pattern[1:],
                              input[1:],
                              match_pattern(pattern[0], input[0], bindings))
@@ -63,38 +115,88 @@ def match_pattern(pattern, input, bindings=None):
         return False
 
 
-def match_segment(pattern, input, bindings, start=0):
-    segment = pattern[0]
-    var = segment[2]
-    if len(pattern) == 1:
+def match_segment(var, pattern, input, bindings, start=0):
+    """
+    Match the segment variable against the input.
+
+    Looks for a substring of input that begins at start and is immediately
+    followed by the first word in pattern.  If such a substring exists,
+    matching continues recursively and the resulting bindings are returned;
+    otherwise returns False.
+    """
+
+    # If there are no words in pattern following var, we can just match var
+    # to the remainder of the input.
+    if not pattern:
         return match_variable(var, input, bindings)
 
-    rest = pattern[1:]
-    word = rest[0] # word in pattern to match against input
+    # Get the segment boundary word and look for the first occurrence in
+    # the input starting from index start.
+    word = pattern[0]
     try:
         pos = input[start:].index(word)
     except ValueError:
+        # When the boundary word doesn't appear in the input, no match.
         return False
-    
+
+    # Match the located substring to the segment variable and recursively
+    # pattern match using the resulting bindings.
     var_match = match_variable(var, input[:pos], bindings)
-    match = match_pattern(rest, input[pos:], var_match)
+    match = match_pattern(pattern, input[pos:], var_match)
+
+    # If pattern matching fails with this substring, try a longer one.
     if not match:
-        return match_segment(pattern, input, bindings, start + 1)
+        return match_segment(var, pattern, input, bindings, start + 1)
+    
     return match
 
 
 def match_variable(var, input, bindings):
+    """Bind the input to the variable and update the bindings."""
     binding = bindings.get(var)
     if not binding:
-        bind = {var: input}
-        bindings.update(bind)
+        # The variable isn't yet bound.
+        bindings.update({var: input})
         return bindings
     if input == bindings[var]:
+        # The variable is already bound to that input.
         return bindings
+
+    # The variable is already bound, but not to that input--fail.
     return False
 
 
+# === Tests for pattern types ===
+
+
+def contains_tokens(pattern):
+    """Test if pattern is a list of subpatterns."""
+    return type(pattern) is list and len(pattern) > 0
+
+
+def is_variable(pattern):
+    """Test if pattern is a single variable."""
+    return type(pattern) is str and pattern[0] == '?' and pattern[1] != '*'
+
+
+def is_segment(pattern):
+    """Test if pattern is a segment variable."""
+    return (type(pattern) is list
+            and pattern[0][0] == '?'
+            and pattern[0][1] == '*')
+
+
+# Helper functions and setup
+# ==========================
+
+
+import json
+import sys
+import random
+
+
 def replace(word, replacements):
+    """Replace word with rep if (word, rep) occurs in replacements."""
     for old, new in replacements:
         if word == old:
             return new
@@ -102,6 +204,7 @@ def replace(word, replacements):
 
 
 def switch_viewpoint(words):
+    """Swap some common pronouns for interacting with a robot."""
     replacements = [('I', 'YOU'),
                     ('YOU', 'I'),
                     ('ME', 'YOU'),
@@ -110,32 +213,34 @@ def switch_viewpoint(words):
     return [replace(word, replacements) for word in words]
 
 
-def eliza(rules, input):
-    for pattern, transforms in rules:
-        replacements = match_pattern(pattern, input)
-        if replacements:
-            break
-    if not replacements:
-        return None
-    output = random.choice(transforms)
-    for variable, replacement in replacements.items():
-        replacement = ' '.join(switch_viewpoint(replacement))
-        if replacement:
-            output = output.replace('?' + variable, replacement)
-    return output
-    
+def remove_punct(string):
+    """Remove common punctuation marks."""
+    return (string.replace(',', '')
+            .replace('.', '')
+            .replace(';', '')
+            .replace('!', ''))
 
-def main():
-    rules = []
-    for pattern, transforms in RULES.items():        
-        rules.append((pattern.upper().split(), map(str.upper, transforms)))
-    while True:
-        try:
-            input = raw_input('ELIZA> ').upper()
-        except:
-            return
-        print eliza(rules, input.split())
+
+def main(args):
+    with open(args[0]) as file:
+        # We need the rules in a list containing elements
+        # `(input pattern, [output pattern 1, output pattern 2, ...]`
+        rules = []
+        for pattern, transforms in json.loads(str(file.read())).items():
+            # Remove the punctuation from the pattern to simplify matching.
+            pattern = remove_punct(str(pattern.upper())) # kill unicode
+            transforms = [str(t).upper() for t in transforms]
+            rules.append((pattern, transforms))
+
+        # Read a line, process it, and print the results until no input remains.
+        while True:
+            try:
+                # Remove the punctuation from the input to simplify matching.
+                input = remove_punct(raw_input('ELIZA> ').upper())
+            except:
+                return
+            print respond(rules, input.split())
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])
