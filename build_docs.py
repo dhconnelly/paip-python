@@ -1,9 +1,11 @@
 import os
 import pycco
+import shutil
 
 
 modules = ['paip/']
 outdir = 'docs'
+style = 'docs/style/pycco.css'
 
 
 def module_sources(module):
@@ -19,6 +21,7 @@ def main():
     for module in modules:
         sources.extend(module_sources(module))
     pycco.process(sources, outdir=outdir)
+    shutil.copyfile(style, os.path.join(outdir, 'pycco.css'))
         
 
 if __name__ == '__main__':
