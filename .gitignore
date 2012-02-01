@@ -1,5 +1,6 @@
 *~
 .DS_Store
+docs/.gitignore
 docs/*.html
 docs/*.css
 docs/paip
