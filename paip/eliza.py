@@ -45,6 +45,12 @@ __author__ = 'Daniel Connelly'
 __email__ = 'dconnelly@gatech.edu'
 
 
+import json
+import sys
+import random
+import string
+
+
 # Pattern-matching functions
 # ==========================
 
@@ -52,9 +58,11 @@ __email__ = 'dconnelly@gatech.edu'
 def respond(rules, input):
     """Respond to an input sentence according to the given rules."""
 
+    input = input.split() # match_pattern expects a list of tokens
+
     # Look through rules and find an input pattern that matches the input.
     for pattern, transforms in rules:
-        pattern = pattern.split() # match_pattern expects a list of tokens
+        pattern = pattern.split()
         replacements = match_pattern(pattern, input)
         if replacements:
             break
@@ -81,6 +89,9 @@ def match_pattern(pattern, input, bindings=None):
     """
     Determine if the input string matches the given pattern.
 
+    Expects pattern and input to be lists of tokens, where each token is a word
+    or a variable.
+
     Returns a dictionary containing the bindings of variables in the input
     pattern to values in the input string, or False when the input doesn't match
     the pattern.
@@ -99,10 +110,11 @@ def match_pattern(pattern, input, bindings=None):
 
     # Match input and pattern according to their types.
     if is_segment(pattern):
-        var = pattern[0][2] # segment pattern is of the form ['?*x', ...]
+        token = pattern[0] # segment variable is the first token
+        var = token[2:] # segment variable is of the form ?*x
         return match_segment(var, pattern[1:], input, bindings)
     elif is_variable(pattern):
-        var = pattern[1] # single variables are of the form ?x
+        var = pattern[1:] # single variables are of the form ?foo
         return match_variable(var, [input], bindings)
     elif contains_tokens(pattern) and contains_tokens(input):
         # Recurse:
@@ -118,6 +130,8 @@ def match_pattern(pattern, input, bindings=None):
 def match_segment(var, pattern, input, bindings, start=0):
     """
     Match the segment variable against the input.
+
+    pattern and input should be lists of tokens.
 
     Looks for a substring of input that begins at start and is immediately
     followed by the first word in pattern.  If such a substring exists,
@@ -151,12 +165,12 @@ def match_segment(var, pattern, input, bindings, start=0):
     return match
 
 
-def match_variable(var, input, bindings):
+def match_variable(var, replacement, bindings):
     """Bind the input to the variable and update the bindings."""
     binding = bindings.get(var)
     if not binding:
         # The variable isn't yet bound.
-        bindings.update({var: input})
+        bindings.update({var: replacement})
         return bindings
     if input == bindings[var]:
         # The variable is already bound to that input.
@@ -176,23 +190,25 @@ def contains_tokens(pattern):
 
 def is_variable(pattern):
     """Test if pattern is a single variable."""
-    return type(pattern) is str and pattern[0] == '?' and pattern[1] != '*'
+    return (type(pattern) is str
+            and pattern[0] == '?'
+            and len(pattern) > 1
+            and pattern[1] != '*'
+            and pattern[1] in string.letters)
 
 
 def is_segment(pattern):
-    """Test if pattern is a segment variable."""
+    """Test if pattern begins with a segment variable."""
     return (type(pattern) is list
+            and pattern
+            and len(pattern[0]) > 2
             and pattern[0][0] == '?'
-            and pattern[0][1] == '*')
+            and pattern[0][1] == '*'
+            and pattern[0][2] in string.letters)
 
 
 # Helper functions and setup
 # ==========================
-
-
-import json
-import sys
-import random
 
 
 def replace(word, replacements):
@@ -221,25 +237,43 @@ def remove_punct(string):
             .replace('!', ''))
 
 
-def main(args):
-    with open(args[0]) as file:
-        # We need the rules in a list containing elements
-        # `(input pattern, [output pattern 1, output pattern 2, ...]`
-        rules = []
-        for pattern, transforms in json.loads(str(file.read())).items():
-            # Remove the punctuation from the pattern to simplify matching.
-            pattern = remove_punct(str(pattern.upper())) # kill unicode
-            transforms = [str(t).upper() for t in transforms]
-            rules.append((pattern, transforms))
+USAGE = 'python eliza.py rules.json'
 
-        # Read a line, process it, and print the results until no input remains.
-        while True:
-            try:
-                # Remove the punctuation from the input to simplify matching.
-                input = remove_punct(raw_input('ELIZA> ').upper())
-            except:
-                return
-            print respond(rules, input.split())
+
+def main(args):
+    try:
+        file = open(args[0])
+    except:
+        print 'Must specify rules as a file in JSON format'
+        print USAGE
+        return
+
+    try:
+        rules_dict = json.loads(str(file.read()))
+    except:
+        print 'Rules must be a file containing JSON'
+        print USAGE
+        return
+
+    # We need the rules in a list containing elements
+    # `(input pattern, [output pattern 1, output pattern 2, ...]`
+    rules = []
+    for pattern, transforms in rules_dict.items():
+        # Remove the punctuation from the pattern to simplify matching.
+        pattern = remove_punct(str(pattern.upper())) # kill unicode
+        transforms = [str(t).upper() for t in transforms]
+        rules.append((pattern, transforms))
+
+    # Read a line, process it, and print the results until no input remains.
+    while True:
+        try:
+            # Remove the punctuation from the input to simplify matching.
+            input = remove_punct(raw_input('ELIZA> ').upper())
+        except:
+            break
+        print respond(rules, input)
+
+    file.close()
 
 
 if __name__ == '__main__':
