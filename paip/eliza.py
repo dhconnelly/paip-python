@@ -172,7 +172,7 @@ def match_variable(var, replacement, bindings):
         # The variable isn't yet bound.
         bindings.update({var: replacement})
         return bindings
-    if input == bindings[var]:
+    if replacement == bindings[var]:
         # The variable is already bound to that input.
         return bindings
 
@@ -194,7 +194,8 @@ def is_variable(pattern):
             and pattern[0] == '?'
             and len(pattern) > 1
             and pattern[1] != '*'
-            and pattern[1] in string.letters)
+            and pattern[1] in string.letters
+            and ' ' not in pattern)
 
 
 def is_segment(pattern):
@@ -204,7 +205,8 @@ def is_segment(pattern):
             and len(pattern[0]) > 2
             and pattern[0][0] == '?'
             and pattern[0][1] == '*'
-            and pattern[0][2] in string.letters)
+            and pattern[0][2] in string.letters
+            and ' ' not in pattern[0])
 
 
 # Helper functions and setup
