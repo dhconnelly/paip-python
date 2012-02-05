@@ -75,19 +75,31 @@ class TestMatchSegment(unittest.TestCase):
         
 class TestMatchPattern(unittest.TestCase):
     def test_no_more_vars(self):
-        pass
+        self.assertEqual({}, eliza.match_pattern(['hello', 'world'],
+                                                 ['hello', 'world'], {}))
+
+    def test_match_no_more_vars_fail(self):
+        self.assertFalse(eliza.match_pattern(['hello', 'world'],
+                                             ['hello', 'bob'], {}))
 
     def test_match_segment(self):
-        pass
+        self.assertEqual({'x': ['hello', 'bob']},
+                         eliza.match_pattern(['?*x', 'world'],
+                                             ['hello', 'bob', 'world'], {}))
 
     def test_match_var(self):
-        pass
+        self.assertEqual({'x': ['bob']}, eliza.match_pattern('?x', 'bob', {}))
 
     def test_match_pattern(self):
-        pass
+        self.assertEqual(
+            {'y': ['bob'], 'x': ['john', 'jay']},
+            eliza.match_pattern(
+                'hello ?y my name is ?*x pleased to meet you'.split(),
+                'hello bob my name is john jay pleased to meet you'.split(),
+                {}))
 
     def test_empty_input(self):
-        pass
+        self.assertFalse(eliza.match_pattern(['foo', '?x'], [], {}))
 
     def test_empty_pattern(self):
-        pass
+        self.assertFalse(eliza.match_pattern([], ['foo', 'bar'], {}))
