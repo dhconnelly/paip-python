@@ -79,6 +79,8 @@ def gps(initial_states, goal_states, operators):
         operator['add'].append(prefix + operator['action'])
 
     final_states = achieve_all(initial_states, operators, goal_states, [])
+    if not final_states:
+        return None
     return [state for state in final_states if state.startswith(prefix)]
 
 
