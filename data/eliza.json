@@ -28,5 +28,8 @@
     ],
     "?*x I felt ?*y": [
         "What other feelings do you have?"
+    ],
+    "?*x my name is ?*y yours ?*z": [
+	"My name is Eliza. Nice to meet you, ?y."
     ]
 }

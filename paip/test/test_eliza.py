@@ -74,5 +74,20 @@ class TestMatchSegment(unittest.TestCase):
 
         
 class TestMatchPattern(unittest.TestCase):
-    pass
+    def test_no_more_vars(self):
+        pass
 
+    def test_match_segment(self):
+        pass
+
+    def test_match_var(self):
+        pass
+
+    def test_match_pattern(self):
+        pass
+
+    def test_empty_input(self):
+        pass
+
+    def test_empty_pattern(self):
+        pass
