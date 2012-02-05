@@ -49,9 +49,30 @@ class TestMatchVariable(unittest.TestCase):
 
 
 class TestMatchSegment(unittest.TestCase):
-    pass
+    def test_segment_match_rest(self):
+        self.assertEqual(
+            {'bar': 'baz', 'foo': ['bah', 'bla']},
+            eliza.match_segment('foo', [], ['bah', 'bla'], {'bar': 'baz'}))
+    
+    def test_segment_first_match(self):
+        self.assertEqual(
+            {'foo': ['blue'], 'x': ['red']},
+            eliza.match_segment('foo', ['is', '?x', 'today'],
+                                ['blue', 'is', 'red', 'today'], {}))
 
+    def test_segment_second_match(self):
+        phrase = 'blue is red today and today is tomorrow'
+        self.assertEqual(
+            {'foo': ['blue'], 'x': ['red', 'today', 'and'], 'y': ['tomorrow']},
+            eliza.match_segment('foo', ['is', '?*x', 'today', 'is', '?y'],
+                                phrase.split(), {}))
 
+    def test_segment_no_match(self):
+        phrase = 'red is blue is not now'
+        self.assertFalse(eliza.match_segment('foo', ['is', '?y', 'now', '?z'],
+                                             phrase.split(), {}))
+
+        
 class TestMatchPattern(unittest.TestCase):
     pass
 

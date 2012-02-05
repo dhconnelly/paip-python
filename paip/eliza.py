@@ -148,14 +148,14 @@ def match_segment(var, pattern, input, bindings, start=0):
     # the input starting from index start.
     word = pattern[0]
     try:
-        pos = input[start:].index(word)
+        pos = start + input[start:].index(word)
     except ValueError:
         # When the boundary word doesn't appear in the input, no match.
         return False
 
     # Match the located substring to the segment variable and recursively
     # pattern match using the resulting bindings.
-    var_match = match_variable(var, input[:pos], bindings)
+    var_match = match_variable(var, input[:pos], dict(bindings))
     match = match_pattern(pattern, input[pos:], var_match)
 
     # If pattern matching fails with this substring, try a longer one.
