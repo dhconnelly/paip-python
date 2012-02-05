@@ -11,7 +11,8 @@ def main():
             continue
         qual_file = os.path.join(tests_dir, file)
         module = qual_file.replace('/', '.')[:-3] # leave off .py
-        unittest.main(module)
+        print 'Testing module %s' % module
+        unittest.main(module, exit=False)
 
     
 if __name__ == '__main__':
