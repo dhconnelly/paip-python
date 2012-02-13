@@ -123,3 +123,24 @@ def print_path(seg):
     print 'Total distance: %s' % seg.prev.cost
     print [city.name for city in collect_path(seg)]
         
+# =============================================================================
+# Graph searches
+
+def graph_search(states, goal_reached, get_successors, combine,
+                 states_equal=lambda x, y: x is y, old_states=None):
+    print states
+    old_states = old_states or []
+    
+    if not states:
+        return None
+    if goal_reached(states[0]):
+        return states[0]
+
+    def visited(state):
+        return any(states_equal(state, s) for s in states + old_states)
+    
+    new_states = [s for s in get_successors(states[0]) if not visited(s)]
+    next_states = combine(new_states, states[1:])
+    return graph_search(next_states, goal_reached, get_successors,
+                        combine, states_equal, old_states + [states[0]])
+
