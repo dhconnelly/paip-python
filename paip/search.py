@@ -1,5 +1,4 @@
 def tree_search(states, goal_reached, get_successors, combine_states):
-    print states
     if not states:
         return None
     if goal_reached(states[0]):
@@ -76,9 +75,40 @@ def dist(city1, city2):
 def neighbors(city):
     return [c for c in CITIES.values() if dist(c, city) < 10 and c is not city]
 
-def trip(start, dest):
-    return beam_search(start,
-                       lambda city: CITIES[city] is CITIES[dest],
-                       lambda city: [c.name for c in neighbors(CITIES[city])],
-                       lambda city: dist(CITIES[city], CITIES[dest]),
-                       1)
+class Segment(object):
+    def __init__(self, state, prev=None, running_cost=0, est_remaining=0):
+        self.state = state
+        self.prev = prev
+        self.cost = running_cost
+        self.est_remaining = est_remaining
+
+def trip(start, dest, beam_width=1):
+    return beam_search(Segment(start),
+                       lambda seg: seg.state is dest,
+                       path_saver(neighbors, dist, lambda c: dist(c, dest)),
+                       lambda seg: seg.est_remaining,
+                       beam_width)
+
+def path_saver(get_successors, cost, remaining_cost):
+    def build_path(prev_seg):
+        prev_state = prev_seg.state
+        next_states = get_successors(prev_state)
+        next_segs = []
+        for next_state in next_states:
+            updated_cost = prev_seg.cost + cost(prev_state, next_state)
+            est_remaining = updated_cost + remaining_cost(next_state)
+            next_segs.append(Segment(next_state, prev_seg,
+                                     updated_cost, est_remaining))
+        return next_segs
+    return build_path
+
+def collect_path(seg):
+    path = [seg.state]
+    if seg.prev:
+        path += collect_path(seg.prev)
+    return path
+
+def print_path(seg):
+    print 'Total distance: %s' % seg.prev.cost
+    print [city.name for city in collect_path(seg)]
+        
