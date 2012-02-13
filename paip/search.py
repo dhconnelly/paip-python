@@ -87,17 +87,24 @@ def neighbors(city):
     return [c for c in CITIES.values() if dist(c, city) < 10 and c is not city]
 
 class Segment(object):
-    def __init__(self, state, prev=None, running_cost=0, est_remaining=0):
+    def __init__(self, state, prev=None, running_cost=0, est_total=0):
         self.state = state
         self.prev = prev
         self.cost = running_cost
-        self.est_remaining = est_remaining
+        self.est_total = est_total
+
+    def __repr__(self):
+        args = (self.state,
+                self.prev.state if self.prev else 'None',
+                self.cost,
+                self.est_total)
+        return 'Segment(%s, prev=%s, cost=%d, est_total=%d)' % args
 
 def trip(start, dest, beam_width=1):
     return beam_search(Segment(start),
                        lambda seg: seg.state is dest,
                        path_saver(neighbors, dist, lambda c: dist(c, dest)),
-                       lambda seg: seg.est_remaining,
+                       lambda seg: seg.est_total,
                        beam_width)
 
 def path_saver(get_successors, cost, remaining_cost):
@@ -107,9 +114,9 @@ def path_saver(get_successors, cost, remaining_cost):
         next_segs = []
         for next_state in next_states:
             updated_cost = prev_seg.cost + cost(prev_state, next_state)
-            est_remaining = updated_cost + remaining_cost(next_state)
+            est_total = updated_cost + remaining_cost(next_state)
             next_segs.append(Segment(next_state, prev_seg,
-                                     updated_cost, est_remaining))
+                                     updated_cost, est_total))
         return next_segs
     return build_path
 
@@ -144,3 +151,62 @@ def graph_search(states, goal_reached, get_successors, combine,
     return graph_search(next_states, goal_reached, get_successors,
                         combine, states_equal, old_states + [states[0]])
 
+# =============================================================================
+# A* graph search
+
+def find_path(state, paths, states_equal):
+    for path in paths:
+        if states_equal(state, path.state):
+            return path
+
+def comp_paths(path1, path2):
+    return path1.est_total - path2.est_total
+
+def insert_path(path, paths):
+    if not paths:
+        return [path]
+    for i in xrange(len(paths)):
+        if comp_paths(path, paths[i]) <= 0:
+            return paths[:i] + [path] + paths[i:]
+    return paths + [path]
+
+def a_star(paths, goal_reached, get_successors, cost, cost_remaining,
+           states_equal=lambda x, y: x == y, old_paths=None):
+    old_paths = old_paths or []
+
+    if not paths:
+        return None
+    if goal_reached(paths[0].state):
+        return paths[0]
+
+    path = paths.pop(0)
+    state = path.state
+    old_paths = insert_path(path, old_paths)
+    for next_state in get_successors(state):
+        updated_cost = path.cost + cost(state, next_state)
+        updated_remaining = cost_remaining(next_state)
+        next_path = Segment(next_state, path, updated_cost,
+                            updated_cost + updated_remaining)
+
+        # look in the current paths to see if next_state is already in one
+        old = find_path(next_state, paths, states_equal)
+        if old:
+            # if this new path is better than the other one, replace it
+            if comp_paths(next_path, old) < 0:
+                paths.remove(old)
+                paths = insert_path(next_path, paths)
+                
+
+        # look in old paths to see if next_state is in one. if so, and it's
+        # cheaper than that path, insert next_state and move the path back to
+        # the current paths list.
+        old = find_path(next_state, old_paths, states_equal)
+        if old:
+            if comp_paths(next_path, old) < 0:
+                old_paths.remove(old)
+                paths = insert_path(next_path, paths)
+                continue
+
+        paths = insert_path(next_path, paths)
+
+    return a_star(paths, goal_reached, get_successors, cost, cost_remaining, states_equal, old_paths)
