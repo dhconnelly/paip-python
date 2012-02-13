@@ -1,4 +1,5 @@
 def tree_search(states, goal_reached, get_successors, combine_states):
+    print states
     if not states:
         return None
     if goal_reached(states[0]):
@@ -32,7 +33,17 @@ def beam_search(start, goal_reached, get_successors, cost, beam_width):
     return tree_search([start], goal_reached, get_successors, combine)
         
 
-
+def widening_search(start, goal_reached, get_successors, cost, width=1, max=100):
+    print 'Width: %d' % width
+    if width > max:
+        return
+    res = beam_search(start, goal_reached, get_successors, cost, width)
+    if res:
+        return res
+    else:
+        return widening_search(start, goal_reached, get_successors, cost, width + 1)
+        
+    
 # =============================================================================
 
 import math
