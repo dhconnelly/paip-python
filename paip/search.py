@@ -1,5 +1,5 @@
 """
-Searching is one of the fundamental strategies in AI programming.  AI problems
+Searching is one of the most useful strategies in AI programming.  AI problems
 can often be expressed as state spaces with transitions between states.  For
 instance, the General Problem Solver could be considered as a search problem--
 given some states, we apply state transitions to explore the state space until
@@ -146,6 +146,18 @@ def widening_search(start, goal_reached, get_successors, cost, width=1, max=100)
         return widening_search(start, goal_reached, get_successors, cost, width + 1)
         
     
+# Example 1: ___
+# --------------
+
+# foo bar baz
+
+
+# Example 2: ___
+# --------------
+
+# foo bar baz
+
+    
 # -----------------------------------------------------------------------------
 
 import math
@@ -231,30 +243,94 @@ def collect_path(seg):
 def print_path(seg):
     print 'Total distance: %s' % seg.prev.cost
     print [city.name for city in collect_path(seg)]
-        
-# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+
 # Graph searches
+# ==============
+
+# For some problem domains, the state space is not really a tree--certain states
+# could form "cycles", where a successor of a current state is a state that has
+# been previously examined.
+#
+# The tree search algorithms we've discussed ignore this possibility and treat
+# every encountered state as distinct.  This could lead to extra work, though,
+# as we re-explore certain branches.  Graph search takes equivalent states into
+# account, keeps track of previously discarded states, and only explores states
+# that haven't already been encountered.
+
+### The general case
 
 def graph_search(states, goal_reached, get_successors, combine,
                  states_equal=lambda x, y: x is y, old_states=None):
+    """
+    Given some initial states, explore a state space until reaching the goal,
+    taking care not to re-explore previously visited states.
+
+    `states`, `goal_reached`, `get_successors`, and `combine` are identical to
+    those arguments in `tree_search`.
+    `states_equal` is a predicate that should take two states as input and
+    return True if they are considered equivalent and False otherwise.
+    `old_states` is a list of previously encountered states--these should not
+    be re-vistited during the search.
+
+    When the goal is reached, the goal state is returned.
+    """
     logging.debug('graph search: current states = %s' % states)
-    old_states = old_states or []
+    old_states = old_states or [] # initialize, if this is the initial call
     
+    # Check for success and failure.
     if not states:
         return None
     if goal_reached(states[0]):
         return states[0]
 
     def visited(state):
+        # A state is "visited" if it's in the list of current states or has
+        # been encountered previously.
         return any(states_equal(state, s) for s in states + old_states)
-    
+
+    # Filter out the "visited" states from the next state's successors.
     new_states = [s for s in get_successors(states[0]) if not visited(s)]
+
+    # Combine the new states with the existing ones and recurse.
     next_states = combine(new_states, states[1:])
     return graph_search(next_states, goal_reached, get_successors,
                         combine, states_equal, old_states + [states[0]])
 
-# =============================================================================
-# A* graph search
+### Special cases
+
+# Just as for tree search, we can define special cases of graph search that use
+# specific exploration strategies: breadth-first search and depth-first search
+# are nearly identical as their tree-search varieties.
+
+def graph_search_bfs(start, goal_reached, get_successors,
+                     states_equal=lambda x, y: x is y, old_states=None):
+    def combine(new_states, existing_states):
+        return existing_states + new_states
+    return graph_search([start], goal_reached, get_successors, combine,
+                        states_equal, old_states)
+
+
+def graph_search_dfs(start, goal_reached, get_successors,
+                     states_equal=lambda x, y: x is y, old_states=None):
+    def combine(new_states, existing_states):
+        return new_states + existing_states
+    return graph_search([start], goal_reached, get_successors, combine,
+                        states_equal, old_states)
+
+
+# Example: ___
+# ------------
+
+# foo bar baz
+
+
+# Application: Pathfinding
+# ------------------------
+
+### A* search
 
 def find_path(state, paths, states_equal):
     for path in paths:
@@ -312,3 +388,6 @@ def a_star(paths, goal_reached, get_successors, cost, cost_remaining,
         paths = insert_path(next_path, paths)
 
     return a_star(paths, goal_reached, get_successors, cost, cost_remaining, states_equal, old_paths)
+
+
+# Example: airline route planning
