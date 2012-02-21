@@ -1,50 +1,152 @@
+"""
+Searching is one of the fundamental strategies in AI programming.  AI problems
+can often be expressed as state spaces with transitions between states.  For
+instance, the General Problem Solver could be considered as a search problem--
+given some states, we apply state transitions to explore the state space until
+the goal is reached.
+
+Here, we consider several variants of tree and graph search algorithms, as well
+as some applications to demonstrate the wide applicability of the approach.
+"""
+
+import logging
+
+# -----------------------------------------------------------------------------
+
+# Tree Searches
+# =============
+
+# Many problems find convenient expression as search trees of state spaces: each
+# state has some successor states, and we explore the "tree" of states formed by
+# linking each state to its successors.  We can explore this state tree by
+# holding a set of "candidate", or "current", states, and exploring all its
+# successors until the goal is reached.
+
+### The general case
+
 def tree_search(states, goal_reached, get_successors, combine_states):
-    print states
+    """
+    Given some initial states, explore a state space until reaching the goal.
+
+    `states` should be a list of initial states (which can be anything).
+    `goal_reached` should be a predicate, where `goal_reached(state)` returns
+    `True` when `state` is the goal state.
+    `get_successors` should take a state as input and return a list of that
+    state's successor states.
+    `combine_states` should take two lists of states as input--the current
+    states and a list of new states--and return a combined list of states.
+
+    When the goal is reached, the goal state is returned.
+    """
+    logging.debug('tree_search: current states = %s' % states)
+
+    # If there are no more states to explore, we have failed.
     if not states:
         return None
+    
     if goal_reached(states[0]):
         return states[0]
+
+    # Get the states that follow the first current state and combine them
+    # with the other current states.
     successors = get_successors(states[0])
     next = combine_states(successors, states[1:])
+
+    # Recursively search from the new list of current states.
     return tree_search(next, goal_reached, get_successors, combine_states)
 
 
+### Depth-first search
+
 def dfs(start, goal_reached, get_successors):
+    """
+    A tree search where the state space is explored depth-first.
+
+    That is, all of the successors of a single state are fully explored before
+    exploring a sibling state.
+    """
     def combine(new_states, existing_states):
+        # The new states (successors of the first current state) should be
+        # explored next, before the other states, so they are prepended to the
+        # list of current states.
         return new_states + existing_states
     return tree_search([start], goal_reached, get_successors, combine)
 
 
+### Breadth-first search
+
 def bfs(start, goal_reached, get_successors):
+    """
+    A tree search where the state space is explored breadth-first.
+
+    That is, after examining a single state, all of its successors should be
+    examined before any of their successors are explored.
+    """
     def combine(new_states, existing_states):
+        # Finish examining all of the sibling states before exploring any of
+        # their successors--add all the new states at the end of the current
+        # state list.
         return existing_states + new_states
     return tree_search([start], goal_reached, get_successors, combine)
 
 
+### Best-first search
+
 def best_first_search(start, goal_reached, get_successors, cost):
+    """
+    A tree search where the state space is explored in order of "cost".
+
+    That is, given a list of current states, the "cheapest" state (according
+    to the function `cost`, which takes a state as input and returns a numerical
+    cost value) is the next one explored.
+    """
     def combine(new_states, existing_states):
+        # Keep the list of current states ordered by cost--the "cheapest" state
+        # should always be at the front of the list.
         return sorted(new_states + existing_states, key=cost)
     return tree_search([start], goal_reached, get_successors, combine)
 
 
+### Beam search
+
 def beam_search(start, goal_reached, get_successors, cost, beam_width):
+    """
+    A tree search where the state space is explored by considering only the next
+    `beam_width` cheapest states at any step.
+
+    The downside to this approach is that by eliminating candidate states, the
+    goal state might never be found!
+    """
     def combine(new_states, existing_states):
+        # To combine new and current states, combine and sort them as in
+        # `best_first_search`, but take only the first `beam_width` states.
         return sorted(new_states + existing_states, key=cost)[:beam_width]
     return tree_search([start], goal_reached, get_successors, combine)
         
 
+### Iterative-widening search
+
 def widening_search(start, goal_reached, get_successors, cost, width=1, max=100):
-    print 'Width: %d' % width
-    if width > max:
+    """
+    A tree search that repeatedly applies `beam_search` with incrementally
+    increasing beam widths until the goal state is found.  This strategy is more
+    likely to find the goal state than a plain `beam_search`, but at the cost of
+    exploring the state space more than once.
+
+    `width` and `max` are the starting and maximum beam widths, respectively.
+    """
+    if width > max: # only increment up to max
         return
+    # `beam_search` with the starting width and quit if we've reached the goal.
     res = beam_search(start, goal_reached, get_successors, cost, width)
     if res:
         return res
+    # Otherwise, `beam_search` again with a higher beam width.
     else:
         return widening_search(start, goal_reached, get_successors, cost, width + 1)
         
     
-# =============================================================================
+# -----------------------------------------------------------------------------
 
 import math
 
@@ -135,7 +237,7 @@ def print_path(seg):
 
 def graph_search(states, goal_reached, get_successors, combine,
                  states_equal=lambda x, y: x is y, old_states=None):
-    print states
+    logging.debug('graph search: current states = %s' % states)
     old_states = old_states or []
     
     if not states:
