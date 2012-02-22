@@ -9,12 +9,8 @@ Here, we consider several variants of tree and graph search algorithms, as well
 as some applications to demonstrate the wide applicability of the approach.
 """
 
-import logging
-
 # -----------------------------------------------------------------------------
-
-# Tree Searches
-# =============
+## Tree Searches
 
 # Many problems find convenient expression as search trees of state spaces: each
 # state has some successor states, and we explore the "tree" of states formed by
@@ -146,109 +142,8 @@ def widening_search(start, goal_reached, get_successors, cost, width=1, max=100)
         return widening_search(start, goal_reached, get_successors, cost, width + 1)
         
     
-# Example 1: ___
-# --------------
-
-# foo bar baz
-
-
-# Example 2: ___
-# --------------
-
-# foo bar baz
-
-    
 # -----------------------------------------------------------------------------
-
-import math
-
-class City(object):
-    def __init__(self, name, lat, long):
-        self.name = name
-        self.lat = lat
-        self.long = long
-
-
-CITIES = {city.name: city for city in [
-    City('Atlanta', 84.23, 33.45),
-    City('Boston', 71.05, 42.21),
-    City('Chicago', 87.37, 41.50),
-    City('Denver', 105.00, 39.45),
-    City('Eugene', 123.05, 44.03),
-    City('Flagstaff', 111.41, 35.13),
-    City('Grand Junction', 108.37, 39.05),
-    City('Houston', 105.00, 34.00),
-    City('Indianapolis', 86.10, 39.46),
-    City('Jacksonville', 81.40, 30.22),
-    City('Kansas City', 94.35, 39.06),
-    City('Los Angeles', 118.15, 34.03),
-    City('Memphis', 90.03, 35.09),
-    City('New York', 73.58, 40.47),
-    City('Oklahoma City', 97.28, 35.26),
-    City('Pittsburgh', 79.57, 40.27),
-    City('Quebec', 71.11, 46.49),
-    City('Reno', 119.49, 39.30),
-    City('San Francisco', 122.26, 37.47),
-    City('Tampa', 82.27, 27.57),
-    City('Victoria', 123.21, 48.25),
-    City('Wilmington', 77.57, 34.14)
-]}
-
-def dist(city1, city2):
-    return math.sqrt(abs(city1.lat - city2.lat) ** 2 + abs(city1.long - city2.long) ** 2)
-
-def neighbors(city):
-    return [c for c in CITIES.values() if dist(c, city) < 10 and c is not city]
-
-class Segment(object):
-    def __init__(self, state, prev=None, running_cost=0, est_total=0):
-        self.state = state
-        self.prev = prev
-        self.cost = running_cost
-        self.est_total = est_total
-
-    def __repr__(self):
-        args = (self.state,
-                self.prev.state if self.prev else 'None',
-                self.cost,
-                self.est_total)
-        return 'Segment(%s, prev=%s, cost=%d, est_total=%d)' % args
-
-def trip(start, dest, beam_width=1):
-    return beam_search(Segment(start),
-                       lambda seg: seg.state is dest,
-                       path_saver(neighbors, dist, lambda c: dist(c, dest)),
-                       lambda seg: seg.est_total,
-                       beam_width)
-
-def path_saver(get_successors, cost, remaining_cost):
-    def build_path(prev_seg):
-        prev_state = prev_seg.state
-        next_states = get_successors(prev_state)
-        next_segs = []
-        for next_state in next_states:
-            updated_cost = prev_seg.cost + cost(prev_state, next_state)
-            est_total = updated_cost + remaining_cost(next_state)
-            next_segs.append(Segment(next_state, prev_seg,
-                                     updated_cost, est_total))
-        return next_segs
-    return build_path
-
-def collect_path(seg):
-    path = [seg.state]
-    if seg.prev:
-        path += collect_path(seg.prev)
-    return path
-
-def print_path(seg):
-    print 'Total distance: %s' % seg.prev.cost
-    print [city.name for city in collect_path(seg)]
-
-
-# -----------------------------------------------------------------------------
-
-# Graph searches
-# ==============
+## Graph searches
 
 # For some problem domains, the state space is not really a tree--certain states
 # could form "cycles", where a successor of a current state is a state that has
@@ -299,11 +194,11 @@ def graph_search(states, goal_reached, get_successors, combine,
     return graph_search(next_states, goal_reached, get_successors,
                         combine, states_equal, old_states + [states[0]])
 
-### Special cases
+### Exploration strategies
 
 # Just as for tree search, we can define special cases of graph search that use
-# specific exploration strategies: breadth-first search and depth-first search
-# are nearly identical as their tree-search varieties.
+# specific exploration strategies: *breadth-first search* and *depth-first
+# search* are nearly identical as their tree-search varieties.
 
 def graph_search_bfs(start, goal_reached, get_successors,
                      states_equal=lambda x, y: x is y, old_states=None):
@@ -321,35 +216,68 @@ def graph_search_dfs(start, goal_reached, get_successors,
                         states_equal, old_states)
 
 
-# Example: ___
-# ------------
+# -----------------------------------------------------------------------------
+## Application: Pathfinding
 
-# foo bar baz
+# foo
+# bar
+# baz
 
 
-# Application: Pathfinding
-# ------------------------
+### Path utilities
 
-### A* search
+class Path(object):
+    """`Path` represents one segment of a path traversing a state space."""
+    def __init__(self, state, prev_path=None, cost=0):
+        """
+        Create a new path segment by linking `state` to the branch indicated
+        by `prev_path`, where the cost of the path up to (and including) `state`
+        is `cost`.
+        """
+        self.state = state
+        self.prev_path = prev_path
+        self.cost = cost
+
+    def __repr__(self):
+        return 'Path(%s, %s, %s)' % (self.state, self.prev_path, self.cost)
+    
 
 def find_path(state, paths, states_equal):
+    """
+    Return the first `Path` in `paths` that is equal to `state` according to
+    `states_equal`, or None if none exists.
+    """
     for path in paths:
         if states_equal(state, path.state):
             return path
 
-def comp_paths(path1, path2):
-    return path1.est_total - path2.est_total
 
-def insert_path(path, paths):
+def insert_path(path, paths, compare):
+    """Insert `path` into `paths` so that it remains sorted according to `compare`."""
     if not paths:
         return [path]
     for i in xrange(len(paths)):
-        if comp_paths(path, paths[i]) <= 0:
+        if compare(path, paths[i]) <= 0:
             return paths[:i] + [path] + paths[i:]
     return paths + [path]
 
-def a_star(paths, goal_reached, get_successors, cost, cost_remaining,
-           states_equal=lambda x, y: x == y, old_paths=None):
+
+def collect_path(path):
+    """Return a list of the states along `path`."""
+    states = [path.state]
+    if path.prev_path:
+        states = collect_path(path.prev_path) + states
+    return states
+
+
+### A* Search
+
+# A* is...
+# foo
+# bar
+
+def a_star(paths, goal_reached, get_successors, cost, heuristic_cost,
+           states_equal=lambda x, y: x is y, old_paths=None):
     old_paths = old_paths or []
 
     if not paths:
@@ -357,22 +285,32 @@ def a_star(paths, goal_reached, get_successors, cost, cost_remaining,
     if goal_reached(paths[0].state):
         return paths[0]
 
+    logging.debug('a_star: paths = %s' % [(p.cost + heuristic_cost(p.state), collect_path(p)) for p in paths])
+
+    def path_cost(path):
+        return path.cost + heuristic_cost(path.state)
+    
+    def comp_paths(path1, path2):
+        return path_cost(path1) - path_cost(path2)
+
+
     path = paths.pop(0)
     state = path.state
-    old_paths = insert_path(path, old_paths)
+    old_paths = insert_path(path, old_paths, comp_paths)
     for next_state in get_successors(state):
         updated_cost = path.cost + cost(state, next_state)
-        updated_remaining = cost_remaining(next_state)
-        next_path = Segment(next_state, path, updated_cost,
-                            updated_cost + updated_remaining)
+        next_path = Path(next_state, path, updated_cost)
 
         # look in the current paths to see if next_state is already in one
         old = find_path(next_state, paths, states_equal)
         if old:
+            logging.debug('Found %s in paths' % next_state)
             # if this new path is better than the other one, replace it
             if comp_paths(next_path, old) < 0:
+                logging.debug('Replacing with better path')
                 paths.remove(old)
-                paths = insert_path(next_path, paths)
+                paths = insert_path(next_path, paths, comp_paths)
+            continue
                 
 
         # look in old paths to see if next_state is in one. if so, and it's
@@ -380,14 +318,114 @@ def a_star(paths, goal_reached, get_successors, cost, cost_remaining,
         # the current paths list.
         old = find_path(next_state, old_paths, states_equal)
         if old:
+            logging.debug('Found %s in old' % next_state)
             if comp_paths(next_path, old) < 0:
+                logging.debug('Replacing with better path')
                 old_paths.remove(old)
-                paths = insert_path(next_path, paths)
-                continue
+                paths = insert_path(next_path, paths, comp_paths)
+            continue
 
-        paths = insert_path(next_path, paths)
+        logging.debug('State %s not already seen' % next_state)
+        paths = insert_path(next_path, paths, comp_paths)
 
-    return a_star(paths, goal_reached, get_successors, cost, cost_remaining, states_equal, old_paths)
+    #raw_input()
+    return a_star(paths, goal_reached, get_successors, cost,
+                  heuristic_cost, states_equal, old_paths)
 
 
-# Example: airline route planning
+### Example: navigating the United States
+
+EARTH_DIAMETER = 12765.0 # kilometers
+MAX_FLIGHT_DIST = 1300.0 # kilometers
+
+
+def radians(degrees):
+    whole, frac = degrees // 1, degrees % 1
+    return (whole + (frac * 100.0 / 60.0)) * math.pi / 180.0
+
+
+class City(object):
+    """A `City` is represented by its name, latitude, and longitude."""
+    
+    def __init__(self, name, lat, long):
+        self.name = name
+        self.lat = lat
+        self.long = long
+
+    def __repr__(self):
+        return self.name
+
+    def location(self):
+        """Returns the Cartesian (x,y,z) coordinates of `self`."""
+        psi, phi = radians(self.lat), radians(self.long)
+        return (math.cos(psi) * math.cos(phi),
+                math.cos(psi) * math.sin(phi),
+                math.sin(psi))
+
+    def dist(self, other):
+        """Returns the Euclidean distance between the cities `self` and `other`."""
+        a, b = self.location(), other.location()
+        return math.sqrt((a[0] - b[0]) ** 2 +
+                         (a[1] - b[1]) ** 2 +
+                         (a[2] - b[2]) ** 2)
+
+    def unknown_dist(self, other):
+        return math.sqrt((self.lat - other.lat) ** 2 + (self.long - other.long) ** 2)
+
+    def air_dist(self, other):
+        """Returns the great-circle distance between the cities `self` and `other`."""
+        return EARTH_DIAMETER * math.asin(self.dist(other) / 2)
+
+    def neighbors(self):
+        """Returns all other cities accessible by flight."""
+        return [city for city in Cities.values()
+                if city is not self and self.air_dist(city) < MAX_FLIGHT_DIST]
+
+def plan(name1, name2):
+    city1, city2 = Cities[name1], Cities[name2]
+    path = a_star([Path(city1)],
+                 lambda city: city is city2,
+                 City.neighbors,
+                 City.air_dist,
+                 lambda city: city.air_dist(city2))
+    return path.cost, collect_path(path)
+
+
+
+Cities = {city.name: city for city in [
+    City('Atlanta', 84.23, 33.45),
+    City('Boston', 71.05, 42.21),
+    City('Chicago', 87.37, 41.50),
+    City('Denver', 105.00, 39.45),
+    City('Eugene', 123.05, 44.03),
+    City('Flagstaff', 111.41, 35.13),
+    City('Grand Junction', 108.37, 39.05),
+    City('Houston', 105.00, 34.00),
+    City('Indianapolis', 86.10, 39.46),
+    City('Jacksonville', 81.40, 30.22),
+    City('Kansas City', 94.35, 39.06),
+    City('Los Angeles', 118.15, 34.03),
+    City('Memphis', 90.03, 35.09),
+    City('New York', 73.58, 40.47),
+    City('Oklahoma City', 97.28, 35.26),
+    City('Pittsburgh', 79.57, 40.27),
+    City('Quebec', 71.11, 46.49),
+    City('Reno', 119.49, 39.30),
+    City('San Francisco', 122.26, 37.47),
+    City('Tampa', 82.27, 27.57),
+    City('Victoria', 123.21, 48.25),
+    City('Wilmington', 77.57, 34.14)
+]}
+
+
+# -----------------------------------------------------------------------------
+## Setup and running
+
+import logging
+import math
+
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
+    atlanta = Cities['Boston']
+    eugene = Cities['San Francisco']
