@@ -143,7 +143,7 @@ class GraphSearchTest(SearchTest):
 
 
 # ----------------------------------------------------------------------------
-## Pathfinding tests
+## Pathfinding utilities tests
 
 # NOTE: Same graph data as the graph search tests
 
@@ -156,35 +156,77 @@ p2.prev_path = p1
 p3.prev_path = p2
 p4.prev_path = p3
 
+paths = [p1, p2, p3, p4]
+
+def comp(path1, path2):
+    return path1.cost - path2.cost
+
+def isp(x, y):
+    return x is y
+
 
 class PathTest(unittest.TestCase):
     def test_find_path(self):
-        found = search.find_path(g3, [p1, p2, p3, p4], lambda x, y: x is y)
+        found = search.find_path(g3, paths, isp)
         self.assertEqual(p3, found)
 
     def test_find_path_none(self):
-        found = search.find_path(g5, [p1, p2, p3, p4], lambda x, y: x is y)
+        found = search.find_path(g5, paths, isp)
         self.assertFalse(found)
 
     def test_insert_path_begin(self):
-        def compare(path1, path2):
-            return path1.cost - path2.cost
-        updated = search.insert_path(p1, [p2, p3, p4], compare)
-        self.assertEqual([p1, p2, p3, p4], updated)
+        look_in = [p2, p3, p4]
+        search.insert_path(p1, look_in, comp)
+        self.assertEqual(paths, look_in)
 
     def test_insert_path_middle(self):
-        def compare(path1, path2):
-            return path1.cost - path2.cost
-        updated = search.insert_path(p3, [p1, p2, p4], compare)
-        self.assertEqual([p1, p2, p3, p4], updated)
+        look_in = [p1, p2, p4]
+        search.insert_path(p3, look_in, comp)
+        self.assertEqual(paths, look_in)
 
     def test_insert_path_end(self):
-        def compare(path1, path2):
-            return path1.cost - path2.cost
-        updated = search.insert_path(p4, [p1, p2, p3], compare)
-        self.assertEqual([p1, p2, p3, p4], updated)
+        look_in = [p1, p2, p3]
+        search.insert_path(p4, look_in, comp)
+        self.assertEqual(paths, look_in)
 
     def test_collect_path(self):
         path = p4.collect()
         expected = [g1, g2, g3, g4]
         self.assertEqual(expected, path)
+
+    def test_replace_if_better(self):
+        look_in = list(paths)
+        replace_in = []
+        path = search.Path(g3, cost=4)
+        search.replace_if_better(path, comp, look_in, replace_in, isp)
+        self.assertEqual([p1, p2, p4], look_in)
+        self.assertEqual([path], replace_in)
+
+    def test_replace_if_better_not_better(self):
+        look_in = list(paths)
+        replace_in = []
+        path = search.Path(g3, cost=9)
+        search.replace_if_better(path, comp, look_in, replace_in, isp)
+        self.assertEqual(paths, look_in)
+        self.assertEqual([], replace_in)
+
+    def test_replace_if_better_not_found(self):
+        look_in = list(paths)
+        replace_in = []
+        path = search.Path(g5, cost=1)
+        search.replace_if_better(path, comp, look_in, replace_in, isp)
+        self.assertEqual(paths, look_in)
+        self.assertEqual([], replace_in)
+
+    def test_replace_if_better_same_list(self):
+        look_in = list(paths)
+        path = search.Path(g3, cost=4)
+        search.replace_if_better(path, comp, look_in, look_in, isp)
+        self.assertEqual([p1, p2, path, p4], look_in)
+
+
+# ----------------------------------------------------------------------------
+## A* tests
+
+
+

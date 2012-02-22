@@ -265,12 +265,23 @@ def insert_path(path, paths, compare):
     `compare`, which should be a function that takes two `Path`s as input and
     returns a number that gives their "difference".
     """
-    if not paths:
-        return [path]
     for i in xrange(len(paths)):
         if compare(path, paths[i]) <= 0:
-            return paths[:i] + [path] + paths[i:]
-    return paths + [path]
+            paths.insert(i, path)
+            return
+    paths.append(path)
+
+
+def replace_if_better(path, compare, look_in, replace_in, states_equal):
+    """
+    Search `look_in` for a path that ends at the same state as `path`.  If
+    found, remove that existing path from `look_in` and insert `path` into
+    `replace_in`.
+    """
+    existing = find_path(path.state, look_in, states_equal)
+    if existing and compare(path, existing) < 0:
+        look_in.remove(existing)
+        insert_path(path, replace_in, compare)
 
 
 ### A* Search
@@ -296,7 +307,6 @@ def a_star(paths, goal_reached, get_successors, cost, heuristic_cost,
     def comp_paths(path1, path2):
         return path_cost(path1) - path_cost(path2)
 
-
     path = paths.pop(0)
     state = path.state
     old_paths = insert_path(path, old_paths, comp_paths)
@@ -315,7 +325,6 @@ def a_star(paths, goal_reached, get_successors, cost, heuristic_cost,
                 paths = insert_path(next_path, paths, comp_paths)
             continue
                 
-
         # look in old paths to see if next_state is in one. if so, and it's
         # cheaper than that path, insert next_state and move the path back to
         # the current paths list.
