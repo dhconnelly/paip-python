@@ -161,17 +161,14 @@ paths = [p1, p2, p3, p4]
 def comp(path1, path2):
     return path1.cost - path2.cost
 
-def isp(x, y):
-    return x is y
-
 
 class PathTest(unittest.TestCase):
     def test_find_path(self):
-        found = search.find_path(g3, paths, isp)
+        found = search.find_path(g3, paths)
         self.assertEqual(p3, found)
 
     def test_find_path_none(self):
-        found = search.find_path(g5, paths, isp)
+        found = search.find_path(g5, paths)
         self.assertFalse(found)
 
     def test_insert_path_begin(self):
@@ -198,35 +195,50 @@ class PathTest(unittest.TestCase):
         look_in = list(paths)
         replace_in = []
         path = search.Path(g3, cost=4)
-        search.replace_if_better(path, comp, look_in, replace_in, isp)
+        y = search.replace_if_better(path, comp, look_in, replace_in)
         self.assertEqual([p1, p2, p4], look_in)
         self.assertEqual([path], replace_in)
+        self.assertTrue(y)
 
     def test_replace_if_better_not_better(self):
         look_in = list(paths)
         replace_in = []
         path = search.Path(g3, cost=9)
-        search.replace_if_better(path, comp, look_in, replace_in, isp)
+        y = search.replace_if_better(path, comp, look_in, replace_in)
         self.assertEqual(paths, look_in)
         self.assertEqual([], replace_in)
+        self.assertFalse(y)
 
     def test_replace_if_better_not_found(self):
         look_in = list(paths)
         replace_in = []
         path = search.Path(g5, cost=1)
-        search.replace_if_better(path, comp, look_in, replace_in, isp)
+        y = search.replace_if_better(path, comp, look_in, replace_in)
         self.assertEqual(paths, look_in)
         self.assertEqual([], replace_in)
+        self.assertFalse(y)
 
     def test_replace_if_better_same_list(self):
         look_in = list(paths)
         path = search.Path(g3, cost=4)
-        search.replace_if_better(path, comp, look_in, look_in, isp)
+        y = search.replace_if_better(path, comp, look_in, look_in)
         self.assertEqual([p1, p2, path, p4], look_in)
+        self.assertTrue(y)
+
+    def test_grow(self):
+        pass
 
 
 # ----------------------------------------------------------------------------
 ## A* tests
 
+# NOTE: Same graph data as the graph search tests
 
+def link_cost(node1, node2):
+    return abs(node1.data - node2.data)
+
+
+class AStarTest(unittest.TestCase):
+    def test_dijkstra(self):
+        pass
 

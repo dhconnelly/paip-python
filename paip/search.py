@@ -122,7 +122,7 @@ def beam_search(start, goal_reached, get_successors, cost, beam_width):
 
 ### Iterative-widening search
 
-def widening_search(start, goal_reached, successors, cost,width=1, max=100):
+def widening_search(start, goal_reached, successors, cost, width=1, max=100):
     """
     A tree search that repeatedly applies `beam_search` with incrementally
     increasing beam widths until the goal state is found.  This strategy is more
@@ -158,15 +158,13 @@ def widening_search(start, goal_reached, successors, cost,width=1, max=100):
 ### The general case
 
 def graph_search(states, goal_reached, get_successors, combine,
-                 states_equal=lambda x, y: x is y, old_states=None):
+                 old_states=None):
     """
     Given some initial states, explore a state space until reaching the goal,
     taking care not to re-explore previously visited states.
 
     `states`, `goal_reached`, `get_successors`, and `combine` are identical to
     those arguments in `tree_search`.
-    `states_equal` is a predicate that should take two states as input and
-    return True if they are considered equivalent and False otherwise.
     `old_states` is a list of previously encountered states--these should not
     be re-vistited during the search.
 
@@ -184,7 +182,7 @@ def graph_search(states, goal_reached, get_successors, combine,
     def visited(state):
         # A state is "visited" if it's in the list of current states or has
         # been encountered previously.
-        return any(states_equal(state, s) for s in states + old_states)
+        return any(state == s for s in states + old_states)
 
     # Filter out the "visited" states from the next state's successors.
     new_states = [s for s in get_successors(states[0]) if not visited(s)]
@@ -192,7 +190,7 @@ def graph_search(states, goal_reached, get_successors, combine,
     # Combine the new states with the existing ones and recurse.
     next_states = combine(new_states, states[1:])
     return graph_search(next_states, goal_reached, get_successors,
-                        combine, states_equal, old_states + [states[0]])
+                        combine, old_states + [states[0]])
 
 ### Exploration strategies
 
@@ -201,19 +199,19 @@ def graph_search(states, goal_reached, get_successors, combine,
 # search* are nearly identical as their tree-search varieties.
 
 def graph_search_bfs(start, goal_reached, get_successors,
-                     states_equal=lambda x, y: x is y, old_states=None):
+                     old_states=None):
     def combine(new_states, existing_states):
         return existing_states + new_states
     return graph_search([start], goal_reached, get_successors, combine,
-                        states_equal, old_states)
+                        old_states)
 
 
 def graph_search_dfs(start, goal_reached, get_successors,
-                     states_equal=lambda x, y: x is y, old_states=None):
+                     old_states=None):
     def combine(new_states, existing_states):
         return new_states + existing_states
     return graph_search([start], goal_reached, get_successors, combine,
-                        states_equal, old_states)
+                        old_states)
 
 
 # -----------------------------------------------------------------------------
@@ -249,13 +247,13 @@ class Path(object):
         return states
     
 
-def find_path(state, paths, states_equal):
+def find_path(state, paths):
     """
-    Return the first item in `paths` that has state equal to `state` according
-    to `states_equal`, or None if none exists.
+    Return the first item in `paths` that has state equal to `state` (or None
+    if none exists).
     """
     for path in paths:
-        if states_equal(state, path.state):
+        if state == path.state:
             return path
 
 
@@ -272,16 +270,30 @@ def insert_path(path, paths, compare):
     paths.append(path)
 
 
-def replace_if_better(path, compare, look_in, replace_in, states_equal):
+def replace_if_better(path, compare, look_in, replace_in):
     """
     Search `look_in` for a path that ends at the same state as `path`.  If
     found, remove that existing path from `look_in` and insert `path` into
-    `replace_in`.
+    `replace_in`.  Returns True if replacement occurred and False otherwise.
     """
-    existing = find_path(path.state, look_in, states_equal)
+    existing = find_path(path.state, look_in)
     if existing and compare(path, existing) < 0:
         look_in.remove(existing)
         insert_path(path, replace_in, compare)
+        return True
+    return False
+
+def grow(from_path, next_states, current_paths, old_paths, cost, comp_paths):
+    for next_state in next_states:
+        updated_cost = from_path.cost + cost(from_path.state, next_state)
+        next_path = Path(next_state, from_path, updated_cost)
+
+        if replace_if_better(next_path, comp_paths, paths, paths):
+            continue
+        elif replace_if_better(next_path, comp_paths, old_paths, paths):
+            continue
+        else:
+            insert_path(next_path, paths, comp_paths)
 
 
 ### A* Search
@@ -291,58 +303,24 @@ def replace_if_better(path, compare, look_in, replace_in, states_equal):
 # bar
 
 def a_star(paths, goal_reached, get_successors, cost, heuristic_cost,
-           states_equal=lambda x, y: x is y, old_paths=None):
+           old_paths=None):
     old_paths = old_paths or []
 
     if not paths:
         return None
     if goal_reached(paths[0].state):
         return paths[0]
-
-    logging.debug('a_star: paths = %s' % [(p.cost + heuristic_cost(p.state), collect_path(p)) for p in paths])
-
-    def path_cost(path):
-        return path.cost + heuristic_cost(path.state)
     
     def comp_paths(path1, path2):
-        return path_cost(path1) - path_cost(path2)
+        return ((path1.cost + heuristic_cost(path1.state)) - 
+                (path2.cost + heuristic_cost(path2.state)))
 
     path = paths.pop(0)
-    state = path.state
-    old_paths = insert_path(path, old_paths, comp_paths)
-    for next_state in get_successors(state):
-        updated_cost = path.cost + cost(state, next_state)
-        next_path = Path(next_state, path, updated_cost)
+    insert_path(path, old_paths, comp_paths)
+    grow(path, get_successors(path.state), paths, old_paths, cost, comp_paths)
 
-        # look in the current paths to see if next_state is already in one
-        old = find_path(next_state, paths, states_equal)
-        if old:
-            logging.debug('Found %s in paths' % next_state)
-            # if this new path is better than the other one, replace it
-            if comp_paths(next_path, old) < 0:
-                logging.debug('Replacing with better path')
-                paths.remove(old)
-                paths = insert_path(next_path, paths, comp_paths)
-            continue
-                
-        # look in old paths to see if next_state is in one. if so, and it's
-        # cheaper than that path, insert next_state and move the path back to
-        # the current paths list.
-        old = find_path(next_state, old_paths, states_equal)
-        if old:
-            logging.debug('Found %s in old' % next_state)
-            if comp_paths(next_path, old) < 0:
-                logging.debug('Replacing with better path')
-                old_paths.remove(old)
-                paths = insert_path(next_path, paths, comp_paths)
-            continue
-
-        logging.debug('State %s not already seen' % next_state)
-        paths = insert_path(next_path, paths, comp_paths)
-
-    #raw_input()
     return a_star(paths, goal_reached, get_successors, cost,
-                  heuristic_cost, states_equal, old_paths)
+                  heuristic_cost, old_paths)
 
 
 ### Example: navigating the United States
