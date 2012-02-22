@@ -116,7 +116,7 @@ class TreeSearchTest(SearchTest):
 
 
 # ----------------------------------------------------------------------------
-# Graph search tests
+## Graph search tests
 
 g1 = Graph(1)
 g2 = Graph(2)
@@ -140,3 +140,51 @@ class GraphSearchTest(SearchTest):
     def test_dfs(self):
         expected_path = [g6, g2, g1]
         self.path_tracking_test(search.graph_search_dfs, g6, g5, expected_path)
+
+
+# ----------------------------------------------------------------------------
+## Pathfinding tests
+
+# NOTE: Same graph data as the graph search tests
+
+p1 = search.Path(g1, cost=1)
+p2 = search.Path(g2, cost=3)
+p3 = search.Path(g3, cost=5)
+p4 = search.Path(g4, cost=7)
+
+p2.prev_path = p1
+p3.prev_path = p2
+p4.prev_path = p3
+
+
+class PathTest(unittest.TestCase):
+    def test_find_path(self):
+        found = search.find_path(g3, [p1, p2, p3, p4], lambda x, y: x is y)
+        self.assertEqual(p3, found)
+
+    def test_find_path_none(self):
+        found = search.find_path(g5, [p1, p2, p3, p4], lambda x, y: x is y)
+        self.assertFalse(found)
+
+    def test_insert_path_begin(self):
+        def compare(path1, path2):
+            return path1.cost - path2.cost
+        updated = search.insert_path(p1, [p2, p3, p4], compare)
+        self.assertEqual([p1, p2, p3, p4], updated)
+
+    def test_insert_path_middle(self):
+        def compare(path1, path2):
+            return path1.cost - path2.cost
+        updated = search.insert_path(p3, [p1, p2, p4], compare)
+        self.assertEqual([p1, p2, p3, p4], updated)
+
+    def test_insert_path_end(self):
+        def compare(path1, path2):
+            return path1.cost - path2.cost
+        updated = search.insert_path(p4, [p1, p2, p3], compare)
+        self.assertEqual([p1, p2, p3, p4], updated)
+
+    def test_collect_path(self):
+        path = p4.collect()
+        expected = [g1, g2, g3, g4]
+        self.assertEqual(expected, path)

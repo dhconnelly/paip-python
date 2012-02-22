@@ -122,7 +122,7 @@ def beam_search(start, goal_reached, get_successors, cost, beam_width):
 
 ### Iterative-widening search
 
-def widening_search(start, goal_reached, get_successors, cost, width=1, max=100):
+def widening_search(start, goal_reached, successors, cost,width=1, max=100):
     """
     A tree search that repeatedly applies `beam_search` with incrementally
     increasing beam widths until the goal state is found.  This strategy is more
@@ -134,12 +134,12 @@ def widening_search(start, goal_reached, get_successors, cost, width=1, max=100)
     if width > max: # only increment up to max
         return
     # `beam_search` with the starting width and quit if we've reached the goal.
-    res = beam_search(start, goal_reached, get_successors, cost, width)
+    res = beam_search(start, goal_reached, successors, cost, width)
     if res:
         return res
     # Otherwise, `beam_search` again with a higher beam width.
     else:
-        return widening_search(start, goal_reached, get_successors, cost, width + 1)
+        return widening_search(start, goal_reached, successors, cost, width + 1)
         
     
 # -----------------------------------------------------------------------------
@@ -240,12 +240,19 @@ class Path(object):
 
     def __repr__(self):
         return 'Path(%s, %s, %s)' % (self.state, self.prev_path, self.cost)
+
+    def collect(self):
+        """Return a list of the states along `self`."""
+        states = [self.state]
+        if self.prev_path:
+            states = self.prev_path.collect() + states
+        return states
     
 
 def find_path(state, paths, states_equal):
     """
-    Return the first `Path` in `paths` that is equal to `state` according to
-    `states_equal`, or None if none exists.
+    Return the first item in `paths` that has state equal to `state` according
+    to `states_equal`, or None if none exists.
     """
     for path in paths:
         if states_equal(state, path.state):
@@ -253,21 +260,17 @@ def find_path(state, paths, states_equal):
 
 
 def insert_path(path, paths, compare):
-    """Insert `path` into `paths` so that it remains sorted according to `compare`."""
+    """
+    Insert `path` into `paths` so that it remains sorted according to
+    `compare`, which should be a function that takes two `Path`s as input and
+    returns a number that gives their "difference".
+    """
     if not paths:
         return [path]
     for i in xrange(len(paths)):
         if compare(path, paths[i]) <= 0:
             return paths[:i] + [path] + paths[i:]
     return paths + [path]
-
-
-def collect_path(path):
-    """Return a list of the states along `path`."""
-    states = [path.state]
-    if path.prev_path:
-        states = collect_path(path.prev_path) + states
-    return states
 
 
 ### A* Search
