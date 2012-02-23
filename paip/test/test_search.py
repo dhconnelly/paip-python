@@ -235,9 +235,11 @@ class PathTest(unittest.TestCase):
         start = search.Path(g3)
         to = [g1, g2, g4]
 
-        path152 = search.Path(g2, search.Path(g5, search.Path(g1, None, 0), 4), 7)
+        path15 = search.Path(g5, search.Path(g1, None, 0), 4)
+        path152 = search.Path(g2, path15, 7)
         path43 = search.Path(g3, search.Path(g4, None, 0), 1)
-        path621 = search.Path(g1, search.Path(g2, search.Path(g6, None, 0), 4), 5)
+        path62 = search.Path(g2, search.Path(g6, None, 0), 4)
+        path621 = search.Path(g1, path62, 5)
         path15 = search.Path(g5, search.Path(g1, None, 0), 4)
         path32 = search.Path(g2, search.Path(g3, None, 0), 1)
         path31 = search.Path(g1, search.Path(g3, None, 0), 2)
@@ -259,11 +261,21 @@ class PathTest(unittest.TestCase):
 
 # NOTE: Same graph data as the graph search tests
 
-def link_cost(node1, node2):
-    return abs(node1.data - node2.data)
-
-
 class AStarTest(unittest.TestCase):
-    def test_dijkstra(self):
-        pass
+    def a_star_test(self, a, b, heuristic, expected_path, expected_cost):
+        finished = lambda node: node is b
+        next = lambda node: node.neighbors
+        path = search.a_star([search.Path(a)], finished, next, cost, heuristic)
+        self.assertEqual(expected_path, path.collect())
+        self.assertEqual(expected_cost, path.cost)
+        self.assertEqual(b, path.state)
 
+    def test_dijkstra(self):
+        h = lambda node: 0
+        expected = [g6, g4, g3, g1, g5]
+        self.a_star_test(g6, g5, h, expected, 9)
+
+    def test_a_star(self):
+        h = lambda node: abs(node.data - g5.data)
+        expected = [g6, g2, g1, g5]
+        self.a_star_test(g6, g5, h, expected, 9)

@@ -157,8 +157,7 @@ def widening_search(start, goal_reached, successors, cost, width=1, max=100):
 
 ### The general case
 
-def graph_search(states, goal_reached, get_successors, combine,
-                 old_states=None):
+def graph_search(states, goal_reached, get_successors, combine, old_states=None):
     """
     Given some initial states, explore a state space until reaching the goal,
     taking care not to re-explore previously visited states.
@@ -198,16 +197,14 @@ def graph_search(states, goal_reached, get_successors, combine,
 # specific exploration strategies: *breadth-first search* and *depth-first
 # search* are nearly identical as their tree-search varieties.
 
-def graph_search_bfs(start, goal_reached, get_successors,
-                     old_states=None):
+def graph_search_bfs(start, goal_reached, get_successors, old_states=None):
     def combine(new_states, existing_states):
         return existing_states + new_states
     return graph_search([start], goal_reached, get_successors, combine,
                         old_states)
 
 
-def graph_search_dfs(start, goal_reached, get_successors,
-                     old_states=None):
+def graph_search_dfs(start, goal_reached, get_successors, old_states=None):
     def combine(new_states, existing_states):
         return new_states + existing_states
     return graph_search([start], goal_reached, get_successors, combine,
@@ -310,8 +307,7 @@ def extend_path(path, to_states, current_paths, old_paths, cost, compare):
 # foo
 # bar
 
-def a_star(paths, goal_reached, get_successors, cost, heuristic_cost,
-           old_paths=None):
+def a_star(paths, goal_reached, get_successors, cost, heuristic, old_paths=None):
     old_paths = old_paths or []
 
     if not paths:
@@ -319,110 +315,21 @@ def a_star(paths, goal_reached, get_successors, cost, heuristic_cost,
     if goal_reached(paths[0].state):
         return paths[0]
     
-    def comp_paths(path1, path2):
-        return ((path1.cost + heuristic_cost(path1.state)) - 
-                (path2.cost + heuristic_cost(path2.state)))
+    def compare(path1, path2):
+        return ((path1.cost + heuristic(path1.state)) - 
+                (path2.cost + heuristic(path2.state)))
 
     path = paths.pop(0)
-    insert_path(path, old_paths, comp_paths)
-    extend_path(path, get_successors(path.state), paths, old_paths, cost, comp_paths)
+    insert_path(path, old_paths, compare)
+    extend_path(path, get_successors(path.state), paths, old_paths, cost, compare)
 
-    return a_star(paths, goal_reached, get_successors, cost, heuristic_cost, old_paths)
-
-
-### Example: navigating the United States
-
-EARTH_DIAMETER = 12765.0 # kilometers
-MAX_FLIGHT_DIST = 1300.0 # kilometers
-
-
-def radians(degrees):
-    whole, frac = degrees // 1, degrees % 1
-    return (whole + (frac * 100.0 / 60.0)) * math.pi / 180.0
-
-
-class City(object):
-    """A `City` is represented by its name, latitude, and longitude."""
-    
-    def __init__(self, name, lat, long):
-        self.name = name
-        self.lat = lat
-        self.long = long
-
-    def __repr__(self):
-        return self.name
-
-    def location(self):
-        """Returns the Cartesian (x,y,z) coordinates of `self`."""
-        psi, phi = radians(self.lat), radians(self.long)
-        return (math.cos(psi) * math.cos(phi),
-                math.cos(psi) * math.sin(phi),
-                math.sin(psi))
-
-    def dist(self, other):
-        """Returns the Euclidean distance between the cities `self` and `other`."""
-        a, b = self.location(), other.location()
-        return math.sqrt((a[0] - b[0]) ** 2 +
-                         (a[1] - b[1]) ** 2 +
-                         (a[2] - b[2]) ** 2)
-
-    def unknown_dist(self, other):
-        return math.sqrt((self.lat - other.lat) ** 2 + (self.long - other.long) ** 2)
-
-    def air_dist(self, other):
-        """Returns the great-circle distance between the cities `self` and `other`."""
-        return EARTH_DIAMETER * math.asin(self.dist(other) / 2)
-
-    def neighbors(self):
-        """Returns all other cities accessible by flight."""
-        return [city for city in Cities.values()
-                if city is not self and self.air_dist(city) < MAX_FLIGHT_DIST]
-
-def plan(name1, name2):
-    city1, city2 = Cities[name1], Cities[name2]
-    path = a_star([Path(city1)],
-                 lambda city: city is city2,
-                 City.neighbors,
-                 City.air_dist,
-                 lambda city: city.air_dist(city2))
-    return path.cost, collect_path(path)
-
-
-
-Cities = {city.name: city for city in [
-    City('Atlanta', 84.23, 33.45),
-    City('Boston', 71.05, 42.21),
-    City('Chicago', 87.37, 41.50),
-    City('Denver', 105.00, 39.45),
-    City('Eugene', 123.05, 44.03),
-    City('Flagstaff', 111.41, 35.13),
-    City('Grand Junction', 108.37, 39.05),
-    City('Houston', 105.00, 34.00),
-    City('Indianapolis', 86.10, 39.46),
-    City('Jacksonville', 81.40, 30.22),
-    City('Kansas City', 94.35, 39.06),
-    City('Los Angeles', 118.15, 34.03),
-    City('Memphis', 90.03, 35.09),
-    City('New York', 73.58, 40.47),
-    City('Oklahoma City', 97.28, 35.26),
-    City('Pittsburgh', 79.57, 40.27),
-    City('Quebec', 71.11, 46.49),
-    City('Reno', 119.49, 39.30),
-    City('San Francisco', 122.26, 37.47),
-    City('Tampa', 82.27, 27.57),
-    City('Victoria', 123.21, 48.25),
-    City('Wilmington', 77.57, 34.14)
-]}
+    return a_star(paths, goal_reached, get_successors, cost, heuristic, old_paths)
 
 
 # -----------------------------------------------------------------------------
 ## Setup and running
 
 import logging
-import math
-
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
-    atlanta = Cities['Boston']
-    eugene = Cities['San Francisco']
+    pass
