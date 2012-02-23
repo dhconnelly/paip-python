@@ -53,7 +53,8 @@ def done(loc):
 
 def main():
 	print_map()
-	path = search.a_star([search.Path((0, 0))], done, map_successors, map_cost, remaining_cost).collect()
+	path = search.a_star([search.Path((0, 0))], done, map_successors,
+						 map_cost, remaining_cost).collect()
 	for (row, col) in path:
 		MAP[row][col] = 'X'
 	print_map()
