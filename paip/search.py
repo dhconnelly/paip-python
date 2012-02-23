@@ -351,12 +351,3 @@ def a_star(paths, goal_reached, get_successors, cost, heuristic, old_paths=None)
 
     # Repeat with the newly-extended paths.
     return a_star(paths, goal_reached, get_successors, cost, heuristic, old_paths)
-
-
-# -----------------------------------------------------------------------------
-## Setup and running
-
-import logging
-
-if __name__ == '__main__':
-    pass
