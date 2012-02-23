@@ -12,7 +12,7 @@ class Graph(object):
         self.neighbors.append(node)
 
     def __repr__(self):
-        return 'Graph(%s, %s)' % (self.data, [n.data for n in self.neighbors])
+        return str(self.data)
 
     def __eq__(self, other):
         return self.data == other.data
@@ -161,6 +161,12 @@ paths = [p1, p2, p3, p4]
 def comp(path1, path2):
     return path1.cost - path2.cost
 
+def cost(node1, node2):
+    return abs(node1.data - node2.data)
+
+def collect_paths(paths):
+    return [(p.cost, p.collect()) for p in paths]
+
 
 class PathTest(unittest.TestCase):
     def test_find_path(self):
@@ -225,8 +231,27 @@ class PathTest(unittest.TestCase):
         self.assertEqual([p1, p2, path, p4], look_in)
         self.assertTrue(y)
 
-    def test_grow(self):
-        pass
+    def test_extend_path(self):
+        start = search.Path(g3)
+        to = [g1, g2, g4]
+
+        path152 = search.Path(g2, search.Path(g5, search.Path(g1, None, 0), 4), 7)
+        path43 = search.Path(g3, search.Path(g4, None, 0), 1)
+        path621 = search.Path(g1, search.Path(g2, search.Path(g6, None, 0), 4), 5)
+        path15 = search.Path(g5, search.Path(g1, None, 0), 4)
+        path32 = search.Path(g2, search.Path(g3, None, 0), 1)
+        path31 = search.Path(g1, search.Path(g3, None, 0), 2)
+        path34 = search.Path(g4, search.Path(g3, None, 0), 1)
+
+        current = [path43, path152]
+        current_after = [path34, path32, path43, path31]
+
+        old = [path15, path621]
+        old_after = [path15]
+
+        search.extend_path(start, to, current, old, cost, comp)
+        self.assertEqual(collect_paths(old_after), collect_paths(old))
+        self.assertEqual(collect_paths(current_after), collect_paths(current))
 
 
 # ----------------------------------------------------------------------------

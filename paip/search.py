@@ -217,12 +217,14 @@ def graph_search_dfs(start, goal_reached, get_successors,
 # -----------------------------------------------------------------------------
 ## Application: Pathfinding
 
-# foo
-# bar
-# baz
-
+# A common use of searching is in finding the best path between two locations.
+# This might be useful for planning airline routes or video game character
+# movements.  We will develop a specialized pathfinding algorithm that uses
+# graph search on path segments to find the shortest path between two points.
 
 ### Path utilities
+
+# We first develop some utilities for handling paths and path segments.
 
 class Path(object):
     """`Path` represents one segment of a path traversing a state space."""
@@ -240,28 +242,23 @@ class Path(object):
         return 'Path(%s, %s, %s)' % (self.state, self.prev_path, self.cost)
 
     def collect(self):
-        """Return a list of the states along `self`."""
         states = [self.state]
         if self.prev_path:
             states = self.prev_path.collect() + states
         return states
     
 
-def find_path(state, paths):
-    """
-    Return the first item in `paths` that has state equal to `state` (or None
-    if none exists).
-    """
+def find_path(to_state, paths):
     for path in paths:
-        if state == path.state:
+        if to_state == path.state:
             return path
 
 
 def insert_path(path, paths, compare):
     """
-    Insert `path` into `paths` so that it remains sorted according to
-    `compare`, which should be a function that takes two `Path`s as input and
-    returns a number that gives their "difference".
+    When inserting a path into an existing list of paths, we want to keep the
+    list sorted with respect to some comparison function `compare`, which
+    takes two `Path`s as arguments and returns a number.
     """
     for i in xrange(len(paths)):
         if compare(path, paths[i]) <= 0:
@@ -272,8 +269,8 @@ def insert_path(path, paths, compare):
 
 def replace_if_better(path, compare, look_in, replace_in):
     """
-    Search `look_in` for a path that ends at the same state as `path`.  If
-    found, remove that existing path from `look_in` and insert `path` into
+    Search the list `look_in` for a path that ends at the same state as `path`.
+    If found, remove that existing path and insert `path` into the list
     `replace_in`.  Returns True if replacement occurred and False otherwise.
     """
     existing = find_path(path.state, look_in)
@@ -283,17 +280,28 @@ def replace_if_better(path, compare, look_in, replace_in):
         return True
     return False
 
-def grow(from_path, next_states, current_paths, old_paths, cost, comp_paths):
-    for next_state in next_states:
-        updated_cost = from_path.cost + cost(from_path.state, next_state)
-        next_path = Path(next_state, from_path, updated_cost)
+def extend_path(path, to_states, current_paths, old_paths, cost, compare):
+    """
+    To grow the list of `current_paths` to include the states in `to_states`,
+    we will extend `path` to each state (assuming the new paths are shorter than
+    the ones that already exist).
+    """
+    for state in to_states:
+        # Extend `path` to each new state, updating the cost by adding the
+        # cost of this extension to the existing path cost.
+        extend_cost = path.cost + cost(path.state, state)
+        extended = Path(state, path, extend_cost)
 
-        if replace_if_better(next_path, comp_paths, paths, paths):
+        # Replace any path in `current_paths` or `old_paths` that ends at
+        # `state` if our new extended path is cheaper.
+        if replace_if_better(extended, compare, current_paths, current_paths):
             continue
-        elif replace_if_better(next_path, comp_paths, old_paths, paths):
+        elif replace_if_better(extended, compare, old_paths, current_paths):
             continue
         else:
-            insert_path(next_path, paths, comp_paths)
+            # If no existing path goes to `path`, just add our new one to the
+            # end of `current_paths`.
+            insert_path(extended, current_paths, compare)
 
 
 ### A* Search
@@ -317,10 +325,9 @@ def a_star(paths, goal_reached, get_successors, cost, heuristic_cost,
 
     path = paths.pop(0)
     insert_path(path, old_paths, comp_paths)
-    grow(path, get_successors(path.state), paths, old_paths, cost, comp_paths)
+    extend_path(path, get_successors(path.state), paths, old_paths, cost, comp_paths)
 
-    return a_star(paths, goal_reached, get_successors, cost,
-                  heuristic_cost, old_paths)
+    return a_star(paths, goal_reached, get_successors, cost, heuristic_cost, old_paths)
 
 
 ### Example: navigating the United States
