@@ -291,10 +291,10 @@ def extend_path(path, to_states, current_paths, old_paths, cost, compare):
 
         # Replace any path in `current_paths` or `old_paths` that ends at
         # `state` if our new extended path is cheaper.
-        if replace_if_better(extended, compare, current_paths, current_paths):
-            continue
-        elif replace_if_better(extended, compare, old_paths, current_paths):
-            continue
+        if find_path(state, current_paths):
+            replace_if_better(extended, compare, current_paths, current_paths)
+        elif find_path(state, old_paths):
+            replace_if_better(extended, compare, old_paths, current_paths)
         else:
             # If no existing path goes to `path`, just add our new one to the
             # end of `current_paths`.
@@ -303,26 +303,48 @@ def extend_path(path, to_states, current_paths, old_paths, cost, compare):
 
 ### A* Search
 
-# A* is...
-# foo
-# bar
+# A\* is a graph search that finds the shortest-path distance from a start state
+# to an end state.  It works by incrementally extending paths from the start
+# state in order of cost and replacing previous paths when shorter ones are
+# found that reach the same state.
+
+# A heuristic function can be supplied to
+# add additional cost to the cost of each path; for standard A* search, this
+# function measures the estimated distance remaining from the end of a path to
+# the desired goal state.  Supplying the zero function turns this into the
+# well-known Dijkstra's algorithm.
 
 def a_star(paths, goal_reached, get_successors, cost, heuristic, old_paths=None):
     old_paths = old_paths or []
 
+    # First check to see if we're done.
     if not paths:
         return None
     if goal_reached(paths[0].state):
         return paths[0]
     
+    # We will keep the lists of currently-exploring and previously-explored
+    # paths ordered by cost, where the cost of a path is computed as the sum
+    # of the costs of the path segments and the heuristic applied to the final
+    # state in the path.
     def compare(path1, path2):
         return ((path1.cost + heuristic(path1.state)) - 
                 (path2.cost + heuristic(path2.state)))
 
+    # At each step, we extend the shortest path we've encountered so far.
     path = paths.pop(0)
+
+    # We keep track of all previously seen paths in `old_paths`, so that we can
+    # weed out newly-extended paths that are no better than previously discovered
+    # paths to the same state.
     insert_path(path, old_paths, compare)
+
+    # Extend our shortest path to all its possible successor states using
+    # `extend_path`, which will make sure that `paths` and `old_paths` stay
+    # sorted appropriately and weed out redundant paths.
     extend_path(path, get_successors(path.state), paths, old_paths, cost, compare)
 
+    # Repeat with the newly-extended paths.
     return a_star(paths, goal_reached, get_successors, cost, heuristic, old_paths)
 
 

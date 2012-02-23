@@ -277,5 +277,5 @@ class AStarTest(unittest.TestCase):
 
     def test_a_star(self):
         h = lambda node: abs(node.data - g5.data)
-        expected = [g6, g2, g1, g5]
+        expected = [g6, g4, g3, g1, g5]
         self.a_star_test(g6, g5, h, expected, 9)
