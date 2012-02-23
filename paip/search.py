@@ -308,13 +308,18 @@ def extend_path(path, to_states, current_paths, old_paths, cost, compare):
 # state in order of cost and replacing previous paths when shorter ones are
 # found that reach the same state.
 
-# A heuristic function can be supplied to
-# add additional cost to the cost of each path; for standard A* search, this
-# function measures the estimated distance remaining from the end of a path to
-# the desired goal state.  Supplying the zero function turns this into the
-# well-known Dijkstra's algorithm.
+# A heuristic function can be supplied to add additional cost to the cost of
+# each path; for standard A* search, this function measures the estimated 
+# distance remaining from the end of a path to the desired goal state.  
+# Supplying the zero function turns this into the well-known Dijkstra's
+# algorithm.
 
 def a_star(paths, goal_reached, get_successors, cost, heuristic, old_paths=None):
+    """
+    Find the shortest path that satisfies `goal_reached`.  The function
+    `heuristic` can be used to specify an ordering strategy among equal-length
+    paths.
+    """
     old_paths = old_paths or []
 
     # First check to see if we're done.
