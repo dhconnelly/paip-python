@@ -15,44 +15,35 @@ pattern should be the same as those in the corresponding output pattern, and
 each segment variable `?*x` in an input pattern corresponds to the single
 variable `?x` in the output pattern.
 
-The rule base is specified in JSON format as a mapping from input patterns to
-possible output patterns.  An example:
+The conversation proceeds by reading a sentence from the user, searching through
+the rules to find an input pattern that matches, replacing variables in the
+output pattern, and printing the results to the user.
 
-    {
-        "hello ?x, my name is ?*y. what is yours?": [
-            "listen here, ?y, that's mr. ?x to you!",
-            "hello ?y. my name is dave, not ?x."
-        ],
-        "whatup ?*x": [
-            "please use proper grammar; also, my name is not ?x."
-        ]
-    }
+For examples of using this scheme, see the following programs:
 
-To run Eliza with this rule base, stored in a file `rules.json`, simply
-
-`python eliza.py rules.json`
-
-Input proceeds by reading a sentence from the user, searching through the rules
-to find an input pattern that matches, replacing variables in the output
-pattern, and printing the results to the user.
+- [Eliza](examples/eliza/eliza.html)
+- Automated phone system
 
 This implementation is inspired by Chapter 5 of "Paradigms of Artificial
 Intelligence Programming" by Peter Norvig.
 """
 
-
-__author__ = 'Daniel Connelly'
-__email__ = 'dconnelly@gatech.edu'
-
-
-import json
-import sys
 import random
 import string
 
+## Talking to the computer
 
-# Pattern-matching functions
-# ==========================
+def interact(rules):
+    """Have a conversation with a user."""
+    # Read a line, process it, and print the results until no input remains.
+    while True:
+        try:
+            # Remove the punctuation from the input and convert to upper-case
+            # to simplify matching.
+            input = remove_punct(raw_input('ELIZA> ').upper())
+        except:
+            break
+        print respond(rules, input)
 
 
 def respond(rules, input):
@@ -84,6 +75,8 @@ def respond(rules, input):
     
     return output
     
+
+## Pattern matching
 
 def match_pattern(pattern, input, bindings=None):
     """
@@ -180,8 +173,7 @@ def match_variable(var, replacement, bindings):
     return False
 
 
-# === Tests for pattern types ===
-
+## Pattern matching utilities
 
 def contains_tokens(pattern):
     """Test if pattern is a list of subpatterns."""
@@ -209,9 +201,7 @@ def is_segment(pattern):
             and ' ' not in pattern[0])
 
 
-# Helper functions and setup
-# ==========================
-
+## Translating user input
 
 def replace(word, replacements):
     """Replace word with rep if (word, rep) occurs in replacements."""
@@ -237,46 +227,3 @@ def remove_punct(string):
             .replace('.', '')
             .replace(';', '')
             .replace('!', ''))
-
-
-USAGE = 'python eliza.py rules.json'
-
-
-def main(args):
-    try:
-        file = open(args[0])
-    except:
-        print 'Must specify rules as a file in JSON format'
-        print USAGE
-        return
-
-    try:
-        rules_dict = json.loads(str(file.read()))
-    except:
-        print 'Rules must be a file containing JSON'
-        print USAGE
-        return
-
-    # We need the rules in a list containing elements
-    # `(input pattern, [output pattern 1, output pattern 2, ...]`
-    rules = []
-    for pattern, transforms in rules_dict.items():
-        # Remove the punctuation from the pattern to simplify matching.
-        pattern = remove_punct(str(pattern.upper())) # kill unicode
-        transforms = [str(t).upper() for t in transforms]
-        rules.append((pattern, transforms))
-
-    # Read a line, process it, and print the results until no input remains.
-    while True:
-        try:
-            # Remove the punctuation from the input to simplify matching.
-            input = remove_punct(raw_input('ELIZA> ').upper())
-        except:
-            break
-        print respond(rules, input)
-
-    file.close()
-
-
-if __name__ == '__main__':
-    main(sys.argv[1:])

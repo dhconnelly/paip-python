@@ -17,49 +17,17 @@ If not all of the preconditions can be achieved (the operator is not
 then the goal can't be achieved.  When all of the goal states have been
 achieved, the problem is solved.
 
-Problems can be defined in the JSON format by listing the starting states, goal
-states, and state transition operators.  An example follows below.
+The following programs demonstrate using GPS to solve some famous AI problems:
 
-Suppose that the following JSON data is stored in a file called `problem.json`:
-
-    {
-        "start": ["son at home", "car needs battery"],
-        "finish": ["son at school"],
-        "ops": [
-            {
-                "action": "drive son to school",
-                "preconds": ["son at home", "car works"],
-                "add": ["son at school"],
-                "delete": ["son at home"]
-            },
-            {
-                "action": "shop installs battery",
-                "preconds": ["car needs battery"],
-                "add": ["car works"],
-                "delete": ["car needs battery"]
-            }
-        ]
-    }
-
-To run GPS with this problem definition, simply
-
-`python gps.py problem.json`
-
-The sequence of actions that will achieve the goal states will be written to
-standard output.
+- [Monkey and Bananas](examples/gps/monkeys.html)
+- [Blocks World](examples/gps/blocks.html)
+- [Driving to school](examples/gps/school.html)
 
 This implementation is inspired by chapter 4 of "Paradigms of Artificial
 Intelligence Programming" by Peter Norvig.
 """
 
-
-__author__ = 'Daniel Connelly'
-__email__ = 'dconnelly@gatech.edu'
-
-
-# Problem solving functions
-# =========================
-
+## General Problem Solver
 
 def gps(initial_states, goal_states, operators):
     """
@@ -83,6 +51,8 @@ def gps(initial_states, goal_states, operators):
         return None
     return [state for state in final_states if state.startswith(prefix)]
 
+
+## Achieving subgoals
 
 def achieve_all(states, ops, goals, goal_stack):
     """
@@ -146,6 +116,8 @@ def achieve(states, operators, goal, goal_stack):
             return result
 
     
+## Using operators
+
 def apply_operator(operator, states, ops, goal, goal_stack):
     """
     Applies operator and returns the resulting states.
@@ -169,51 +141,9 @@ def apply_operator(operator, states, ops, goal, goal_stack):
     return [state for state in result if state not in delete_list] + add_list
 
 
-# Helper functions and setup
-# ==========================
+## Helper functions
 
-
-import sys
-import json
 import logging
-
-
-USAGE = 'gps.py [--log=level] problem.json'
-
 
 def debug(level, msg):
     logging.debug(' %s %s' % (level * '  ', msg))
-    
-
-def check_usage(args):
-    """Check the command line arguments."""
-
-    if len(args) < 1:
-        print USAGE
-        sys.exit(1)
-    
-
-def main(args):
-    """Run GPS on the indicated problem file."""
-
-    # Grab the --log=LEVEL logging option (if it exists).
-    check_usage(args)
-    if args[0].startswith('--log='):
-        level = args[0][len('--log='):]
-        logging.basicConfig(level=getattr(logging, level.upper(), None))
-        args = args[1:]
-
-
-    # Parse the JSON problem description and run the solver.
-    check_usage(args)
-    with open(args[0]) as problem_file:
-        problem = json.loads(problem_file.read())
-        start = problem['start']
-        finish = problem['finish']
-        ops = problem['ops']
-        for action in gps(start, finish, ops):
-            print action
-    
-
-if __name__ == '__main__':
-    main(sys.argv[1:])

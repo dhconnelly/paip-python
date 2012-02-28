@@ -1,16 +1,16 @@
 """
 Searching is one of the most useful strategies in AI programming.  AI problems
 can often be expressed as state spaces with transitions between states.  For
-instance, the General Problem Solver could be considered as a search problem--
-given some states, we apply state transitions to explore the state space until
-the goal is reached.
+instance, the General Problem Solver could be considered as a search
+problem--given some states, we apply state transitions to explore the state
+space until the goal is reached.
 
-Here, we consider several variants of tree and graph search algorithms, as well
-as some applications to demonstrate the wide applicability of the approach.
+For some example applications, see the following programs:
+
+- [Pathfinding](examples/search/pathfinding.html)
+- GPS by searching
+
 """
-
-import logging
-
 
 # -----------------------------------------------------------------------------
 ## Tree Searches
@@ -37,7 +37,6 @@ def tree_search(states, goal_reached, get_successors, combine_states):
 
     When the goal is reached, the goal state is returned.
     """
-    logging.debug('tree_search: current states = %s' % states)
 
     # If there are no more states to explore, we have failed.
     if not states:
@@ -172,7 +171,6 @@ def graph_search(states, goal_reached, get_successors, combine, old_states=None)
 
     When the goal is reached, the goal state is returned.
     """
-    logging.debug('graph search: current states = %s' % states)
     old_states = old_states or [] # initialize, if this is the initial call
     
     # Check for success and failure.

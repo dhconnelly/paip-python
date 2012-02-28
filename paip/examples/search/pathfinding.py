@@ -4,8 +4,7 @@ represented as a grid, where 1 is an obstacle and 0 is an open space. Movement
 can be up, down, left, right, and diagonal in one step.
 """
 
-from paip import search
-
+## Pathfinding
 
 def find_path(map, begin, end):
     """Find the best path between the begin and end position in the map."""
@@ -31,6 +30,8 @@ def map_successors(location):
     return successors
 
 
+## Utilities
+
 def print_map(map):
     """Pretty-prints the given map to standard output."""
     print '-' * (2 * len(map) + 3)
@@ -43,6 +44,9 @@ def print_map(map):
 
 
 ## Running from the command line
+
+from paip import search
+
 
 MAP = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],

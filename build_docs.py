@@ -3,7 +3,12 @@ import pycco
 import shutil
 
 
-modules = ['paip/']
+modules = [
+    'paip/',
+    'paip/examples/gps',
+    'paip/examples/eliza',
+    'paip/examples/search'
+    ]
 outdir = 'docs'
 style = 'docs/templates/pycco.css'
 index = 'docs/templates/index.html'
