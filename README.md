@@ -20,11 +20,13 @@ exercises, which typically propose extensions to the programs to avoid various
 limitations.  I hope that these Python programs are clean translations and don't
 try to force Lisp idioms onto Python.
 
+You can follow the progress of the project on [Trello][].
+
 
 ## Running
 
-- You need [Python 2.7](http://python.org/download/releases/2.7.2/).
-- [Download](zip) the paip-python code.
+- You need [Python 2.7][]
+- [Download][] the paip-python code.
 - Type `python run_examples.py` and follow the prompts to run the examples.
 
 
@@ -37,7 +39,12 @@ gives an overview of the solution, and documents the implementation.
 
 ## About
 
-These programs were written by [Daniel Connelly](http://www.dhconnelly.com) as
-an independent project supervised by [Professor Ashok Goel](http://home.cc.gatech.edu/dil/3) at Georgia Tech.
+These programs were written by [Daniel Connelly][homepage] as an independent
+project supervised by [Professor Ashok Goel][goel].
 
-[zip]: (https://github.com/dhconnelly/paip-python/zipball/master)
+
+[homepage]: http://www.dhconnelly.com
+[goel]: http://home.cc.gatech.edu/dil/3
+[Download]: https://github.com/dhconnelly/paip-python/zipball/master
+[Trello]: https://trello.com/board/paip-python/4f4ba053201012e46306e5f0
+[Python 2.7]: http://python.org/download/releases/2.7.2/
