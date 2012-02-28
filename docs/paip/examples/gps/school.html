@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>school.py</title>
+  <link rel="stylesheet" href="../../../pycco.css">
+</head>
+<body>
+<div id="background"></div>
+<div id='container'>
+  
+  <div class='section'>
+    <div class='docs'><h1>school.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">from</span> <span class="nn">paip.gps</span> <span class="kn">import</span> <span class="n">gps</span>
+
+<span class="n">problem</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&quot;start&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;son at home&quot;</span><span class="p">,</span> <span class="s">&quot;have money&quot;</span><span class="p">,</span> <span class="s">&quot;have phone book&quot;</span><span class="p">,</span> <span class="s">&quot;car needs battery&quot;</span><span class="p">],</span>
+    <span class="s">&quot;finish&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;son at school&quot;</span><span class="p">],</span>
+    <span class="s">&quot;ops&quot;</span><span class="p">:</span> <span class="p">[</span>
+	<span class="p">{</span>
+	    <span class="s">&quot;action&quot;</span><span class="p">:</span> <span class="s">&quot;drive son to school&quot;</span><span class="p">,</span>
+	    <span class="s">&quot;preconds&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;son at home&quot;</span><span class="p">,</span> <span class="s">&quot;car works&quot;</span><span class="p">],</span>
+	    <span class="s">&quot;add&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;son at school&quot;</span><span class="p">],</span>
+	    <span class="s">&quot;delete&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;son at home&quot;</span><span class="p">]</span>
+	<span class="p">},</span>
+	<span class="p">{</span>
+	    <span class="s">&quot;action&quot;</span><span class="p">:</span> <span class="s">&quot;shop installs battery&quot;</span><span class="p">,</span>
+	    <span class="s">&quot;preconds&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;car needs battery&quot;</span><span class="p">,</span> <span class="s">&quot;shop knows problem&quot;</span><span class="p">,</span> <span class="s">&quot;shop has money&quot;</span><span class="p">],</span>
+	    <span class="s">&quot;add&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;car works&quot;</span><span class="p">],</span>
+	    <span class="s">&quot;delete&quot;</span><span class="p">:</span> <span class="p">[]</span>
+	<span class="p">},</span>
+	<span class="p">{</span>
+	    <span class="s">&quot;action&quot;</span><span class="p">:</span> <span class="s">&quot;tell shop problem&quot;</span><span class="p">,</span>
+	    <span class="s">&quot;preconds&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;in communication with shop&quot;</span><span class="p">],</span>
+	    <span class="s">&quot;add&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;shop knows problem&quot;</span><span class="p">],</span>
+	    <span class="s">&quot;delete&quot;</span><span class="p">:</span> <span class="p">[]</span>
+	<span class="p">},</span>
+	<span class="p">{</span>
+	    <span class="s">&quot;action&quot;</span><span class="p">:</span> <span class="s">&quot;telephone shop&quot;</span><span class="p">,</span>
+	    <span class="s">&quot;preconds&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;know phone number&quot;</span><span class="p">],</span>
+	    <span class="s">&quot;add&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;in communication with shop&quot;</span><span class="p">],</span>
+	    <span class="s">&quot;delete&quot;</span><span class="p">:</span> <span class="p">[]</span>
+	<span class="p">},</span>
+	<span class="p">{</span>
+	    <span class="s">&quot;action&quot;</span><span class="p">:</span> <span class="s">&quot;look up number&quot;</span><span class="p">,</span>
+	    <span class="s">&quot;preconds&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;have phone book&quot;</span><span class="p">],</span>
+	    <span class="s">&quot;add&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;know phone number&quot;</span><span class="p">],</span>
+	    <span class="s">&quot;delete&quot;</span><span class="p">:</span> <span class="p">[]</span>
+	<span class="p">},</span>
+	<span class="p">{</span>
+	    <span class="s">&quot;action&quot;</span><span class="p">:</span> <span class="s">&quot;give shop money&quot;</span><span class="p">,</span>
+	    <span class="s">&quot;preconds&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;have money&quot;</span><span class="p">],</span>
+	    <span class="s">&quot;add&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;shop has money&quot;</span><span class="p">],</span>
+	    <span class="s">&quot;delete&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;have money&quot;</span><span class="p">]</span>
+	<span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">}</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">problem</span><span class="p">[</span><span class="s">&#39;start&#39;</span><span class="p">]</span>
+    <span class="n">finish</span> <span class="o">=</span> <span class="n">problem</span><span class="p">[</span><span class="s">&#39;finish&#39;</span><span class="p">]</span>
+    <span class="n">ops</span> <span class="o">=</span> <span class="n">problem</span><span class="p">[</span><span class="s">&#39;ops&#39;</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">action</span> <span class="ow">in</span> <span class="n">gps</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">ops</span><span class="p">):</span>
+        <span class="k">print</span> <span class="n">action</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>

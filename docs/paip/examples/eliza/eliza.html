@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>eliza.py</title>
+  <link rel="stylesheet" href="../../../pycco.css">
+</head>
+<body>
+<div id="background"></div>
+<div id='container'>
+  
+  <div class='section'>
+    <div class='docs'><h1>eliza.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">paip</span> <span class="kn">import</span> <span class="n">eliza</span>
+
+<span class="n">rules</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&quot;?*x hello ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;How do you do. Please state your problem.&quot;</span>
+    <span class="p">],</span>
+    <span class="s">&quot;?*x I want ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;What would it mean if you got ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Why do you want ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Suppose you got ?y soon.&quot;</span>
+    <span class="p">],</span>
+    <span class="s">&quot;?*x if ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Do you really think its likely that ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Do you wish that ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;What do you think about ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Really--if ?y?&quot;</span>
+    <span class="p">],</span>
+    <span class="s">&quot;?*x no ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Why not?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;You are being a bit negative.&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Are you saying &#39;No&#39; just to be negative?&quot;</span>
+    <span class="p">],</span>
+    <span class="s">&quot;?*x I was ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Were you really?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Perhaps I already knew you were ?y.&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Why do you tell me you were ?y now?&quot;</span>
+    <span class="p">],</span>
+    <span class="s">&quot;?*x I feel ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Do you often feel ?y?&quot;</span>
+    <span class="p">],</span>
+    <span class="s">&quot;?*x I felt ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;What other feelings do you have?&quot;</span>
+    <span class="p">],</span>
+    <span class="s">&quot;?*x my name is ?*y yours ?*z&quot;</span><span class="p">:</span> <span class="p">[</span>
+	<span class="s">&quot;My name is Eliza. Nice to meet you, ?y.&quot;</span>
+    <span class="p">]</span>
+<span class="p">}</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">main</span><span class="p">():</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      <p>We need the rules in a list containing elements of the following form:
+<code>(input pattern, [output pattern 1, output pattern 2, ...]</code></p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">rules_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">pattern</span><span class="p">,</span> <span class="n">transforms</span> <span class="ow">in</span> <span class="n">rules</span><span class="o">.</span><span class="n">items</span><span class="p">():</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      <p>Remove the punctuation from the pattern to simplify matching.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">pattern</span> <span class="o">=</span> <span class="n">eliza</span><span class="o">.</span><span class="n">remove_punct</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">pattern</span><span class="o">.</span><span class="n">upper</span><span class="p">()))</span> <span class="c"># kill unicode</span>
+        <span class="n">transforms</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">transforms</span><span class="p">]</span>
+        <span class="n">rules_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">pattern</span><span class="p">,</span> <span class="n">transforms</span><span class="p">))</span>
+    <span class="n">eliza</span><span class="o">.</span><span class="n">interact</span><span class="p">(</span><span class="n">rules_list</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>

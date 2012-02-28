@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>sentences.py</title>
+  <link rel="stylesheet" href="../pycco.css">
+</head>
+<body>
+<div id="background"></div>
+<div id='container'>
+  
+  <div class='section'>
+    <div class='docs'><h1>sentences.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      <p>Random sentence generation using context-free generative grammars.</p>
+<p>Translated from chapter 2 of "Paradigms of Artificial Intelligence
+Programming" by Peter Norvig.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">__author__</span> <span class="o">=</span> <span class="s">&#39;Daniel Connelly&#39;</span>
+<span class="n">__email__</span> <span class="o">=</span> <span class="s">&#39;dconnelly@gatech.edu&#39;</span>
+
+
+<span class="kn">import</span> <span class="nn">random</span>
+
+
+<span class="n">SIMPLE_ENGLISH</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&#39;verb&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;hit&#39;</span><span class="p">,</span> <span class="s">&#39;took&#39;</span><span class="p">,</span> <span class="s">&#39;saw&#39;</span><span class="p">,</span> <span class="s">&#39;liked&#39;</span><span class="p">],</span>
+    <span class="s">&#39;noun&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;man&#39;</span><span class="p">,</span> <span class="s">&#39;ball&#39;</span><span class="p">,</span> <span class="s">&#39;woman&#39;</span><span class="p">,</span> <span class="s">&#39;table&#39;</span><span class="p">],</span>
+    <span class="s">&#39;article&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;the&#39;</span><span class="p">,</span> <span class="s">&#39;a&#39;</span><span class="p">],</span>
+
+    <span class="s">&#39;sentence&#39;</span><span class="p">:</span> <span class="p">[[</span><span class="s">&#39;noun phrase&#39;</span><span class="p">,</span> <span class="s">&#39;verb phrase&#39;</span><span class="p">]],</span>
+    <span class="s">&#39;noun phrase&#39;</span><span class="p">:</span> <span class="p">[[</span><span class="s">&#39;article&#39;</span><span class="p">,</span> <span class="s">&#39;noun&#39;</span><span class="p">]],</span>
+    <span class="s">&#39;verb phrase&#39;</span><span class="p">:</span> <span class="p">[[</span><span class="s">&#39;verb&#39;</span><span class="p">,</span> <span class="s">&#39;noun phrase&#39;</span><span class="p">]],</span>
+<span class="p">}</span>
+
+
+<span class="n">BIGGER_ENGLISH</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&#39;prep&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;to&#39;</span><span class="p">,</span> <span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="s">&#39;by&#39;</span><span class="p">,</span> <span class="s">&#39;with&#39;</span><span class="p">,</span> <span class="s">&#39;on&#39;</span><span class="p">],</span>
+    <span class="s">&#39;adj&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;big&#39;</span><span class="p">,</span> <span class="s">&#39;little&#39;</span><span class="p">,</span> <span class="s">&#39;blue&#39;</span><span class="p">,</span> <span class="s">&#39;green&#39;</span><span class="p">,</span> <span class="s">&#39;adiabatic&#39;</span><span class="p">],</span>
+    <span class="s">&#39;article&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;a&#39;</span><span class="p">,</span> <span class="s">&#39;the&#39;</span><span class="p">],</span>
+    <span class="s">&#39;name&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;Pat&#39;</span><span class="p">,</span> <span class="s">&#39;Kim&#39;</span><span class="p">,</span> <span class="s">&#39;Lee&#39;</span><span class="p">,</span> <span class="s">&#39;Terry&#39;</span><span class="p">,</span> <span class="s">&#39;Robin&#39;</span><span class="p">],</span>
+    <span class="s">&#39;noun&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;man&#39;</span><span class="p">,</span> <span class="s">&#39;ball&#39;</span><span class="p">,</span> <span class="s">&#39;woman&#39;</span><span class="p">,</span> <span class="s">&#39;table&#39;</span><span class="p">],</span>
+    <span class="s">&#39;verb&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;hit&#39;</span><span class="p">,</span> <span class="s">&#39;took&#39;</span><span class="p">,</span> <span class="s">&#39;saw&#39;</span><span class="p">,</span> <span class="s">&#39;liked&#39;</span><span class="p">],</span>
+    <span class="s">&#39;pronoun&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;he&#39;</span><span class="p">,</span> <span class="s">&#39;she&#39;</span><span class="p">,</span> <span class="s">&#39;it&#39;</span><span class="p">,</span> <span class="s">&#39;these&#39;</span><span class="p">,</span> <span class="s">&#39;those&#39;</span><span class="p">,</span> <span class="s">&#39;that&#39;</span><span class="p">],</span>
+
+    <span class="s">&#39;sentence&#39;</span><span class="p">:</span> <span class="p">[[</span><span class="s">&#39;noun phrase&#39;</span><span class="p">,</span> <span class="s">&#39;verb phrase&#39;</span><span class="p">]],</span>
+    <span class="s">&#39;noun phrase&#39;</span><span class="p">:</span> <span class="p">[[</span><span class="s">&#39;article&#39;</span><span class="p">,</span> <span class="s">&#39;adj*&#39;</span><span class="p">,</span> <span class="s">&#39;noun&#39;</span><span class="p">,</span> <span class="s">&#39;pp*&#39;</span><span class="p">],</span>
+                    <span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">],</span>
+                    <span class="p">[</span><span class="s">&#39;pronoun&#39;</span><span class="p">]],</span>
+    <span class="s">&#39;verb phrase&#39;</span><span class="p">:</span> <span class="p">[[</span><span class="s">&#39;verb&#39;</span><span class="p">,</span> <span class="s">&#39;noun phrase&#39;</span><span class="p">,</span> <span class="s">&#39;pp*&#39;</span><span class="p">]],</span>
+    <span class="s">&#39;pp*&#39;</span><span class="p">:</span> <span class="p">[[],</span> <span class="p">[</span><span class="s">&#39;pp&#39;</span><span class="p">]],</span>
+    <span class="s">&#39;adj*&#39;</span><span class="p">:</span> <span class="p">[[],</span> <span class="p">[</span><span class="s">&#39;adj&#39;</span><span class="p">]],</span>
+    <span class="s">&#39;pp&#39;</span><span class="p">:</span> <span class="p">[[</span><span class="s">&#39;prep&#39;</span><span class="p">,</span> <span class="s">&#39;noun phrase&#39;</span><span class="p">]],</span>
+<span class="p">}</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      <p>Recursively rewrites each subphrase until only terminals remain.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="n">grammar</span><span class="p">,</span> <span class="n">phrase</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      <p>grammar is a dictionary defining a context-free grammar, where each
+(key, value) item defines a rewriting rule.
+Each subphrase of phrase is recursively rewritten unless it does not
+appear as a key in the grammar.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">phrase</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">phrases</span> <span class="o">=</span> <span class="p">(</span><span class="n">generate</span><span class="p">(</span><span class="n">grammar</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">phrase</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">phrases</span> <span class="k">if</span> <span class="n">p</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">phrase</span> <span class="ow">in</span> <span class="n">grammar</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">generate</span><span class="p">(</span><span class="n">grammar</span><span class="p">,</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">grammar</span><span class="p">[</span><span class="n">phrase</span><span class="p">]))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">phrase</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      <p>Generates a sentence from the grammar and returns its parse tree.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">generate_tree</span><span class="p">(</span><span class="n">grammar</span><span class="p">,</span> <span class="n">phrase</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      <p>The sentence is generated in the same manner as in generate, but the
+returned value is a nested list where the first element of each sublist
+is the name of the rule generating the phrase.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">phrase</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">generate_tree</span><span class="p">(</span><span class="n">grammar</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">phrase</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">phrase</span> <span class="ow">in</span> <span class="n">grammar</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">phrase</span><span class="p">]</span> <span class="o">+</span> <span class="n">generate_tree</span><span class="p">(</span><span class="n">grammar</span><span class="p">,</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">grammar</span><span class="p">[</span><span class="n">phrase</span><span class="p">]))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">phrase</span><span class="p">]</span>
+
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="k">print</span> <span class="n">generate</span><span class="p">(</span><span class="n">BIGGER_ENGLISH</span><span class="p">,</span> <span class="s">&#39;sentence&#39;</span><span class="p">)</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>
