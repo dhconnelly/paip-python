@@ -9,6 +9,9 @@ Here, we consider several variants of tree and graph search algorithms, as well
 as some applications to demonstrate the wide applicability of the approach.
 """
 
+import logging
+
+
 # -----------------------------------------------------------------------------
 ## Tree Searches
 
