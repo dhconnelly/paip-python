@@ -30,11 +30,12 @@ from paip.examples.gps import blocks
 from paip.examples.gps import monkeys
 from paip.examples.gps import school
 from paip.examples.eliza import eliza
+from paip.examples.eliza import eliza_expanded
 from paip.examples.search import pathfinding
 
 examples = {
     'gps': [blocks, monkeys, school],
-    'eliza': [eliza],
+    'eliza': [eliza, eliza_expanded],
     'search': [pathfinding]
 }
 
