@@ -33,7 +33,7 @@ import string
 
 ## Talking to the computer
 
-def interact(rules):
+def interact(rules, default_responses):
     """Have a conversation with a user."""
     # Read a line, process it, and print the results until no input remains.
     while True:
@@ -41,39 +41,43 @@ def interact(rules):
             # Remove the punctuation from the input and convert to upper-case
             # to simplify matching.
             input = remove_punct(raw_input('ELIZA> ').upper())
+            if not input:
+                continue
         except:
             break
-        print respond(rules, input)
+        print respond(rules, input, default_responses)
 
 
-def respond(rules, input):
+def respond(rules, input, default_responses):
     """Respond to an input sentence according to the given rules."""
 
     input = input.split() # match_pattern expects a list of tokens
 
-    # Look through rules and find an input pattern that matches the input.
+    # Look through rules and find input patterns that matches the input.
+    matching_rules = []
     for pattern, transforms in rules:
         pattern = pattern.split()
         replacements = match_pattern(pattern, input)
         if replacements:
-            break
+            matching_rules.append((transforms, replacements))
 
-    # If no match is found, we return `None`.  A possible extension will keep
-    # track of user input and respond with "tell me more about ...".
-    if not replacements:
-        return None
-
-    # When a rule is found, choose one of its output patterns at random.
-    output = random.choice(transforms)
+    # When rules are found, choose one and one of its responses at random.
+    # If no rule applies, we use the default rule.
+    if matching_rules:
+        responses, replacements = random.choice(matching_rules)
+        response = random.choice(responses)
+    else:
+        replacements = {}
+        response = random.choice(default_responses)
 
     # Replace the variables in the output pattern with the values matched from
     # the input string.
     for variable, replacement in replacements.items():
         replacement = ' '.join(switch_viewpoint(replacement))
         if replacement:
-            output = output.replace('?' + variable, replacement)
+            response = response.replace('?' + variable, replacement)
     
-    return output
+    return response
     
 
 ## Pattern matching
@@ -216,6 +220,7 @@ def switch_viewpoint(words):
     replacements = [('I', 'YOU'),
                     ('YOU', 'I'),
                     ('ME', 'YOU'),
+                    ('MY', 'YOUR'),
                     ('AM', 'ARE'),
                     ('ARE', 'AM')]
     return [replace(word, replacements) for word in words]
