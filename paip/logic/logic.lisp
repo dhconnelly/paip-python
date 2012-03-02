@@ -209,3 +209,70 @@
 	(format t "~&~a = ~a" var
 		(subst-bindings bindings var))))
   (princ ";"))
+
+;; Idea 3: automatic backtracking (redefining prove and prove-all)
+
+(defun prove-all (goals bindings)
+  "Find a solution to the conjunction of goals."
+  (cond ((eq bindings fail) fail)
+	((null goals) bindings)
+	(t (prove (first goals) bindings (rest goals)))))
+
+(defun prove (goal bindings other-goals)
+  "Return a list of possible solutions to goal."
+  (let ((clauses (get-clauses (predicate goal))))
+    (if (listp clauses)
+	(some
+	 #'(lambda (clause)
+	     (let ((new-clause (rename-variables clause)))
+	       (prove-all
+		(append (clause-body new-clause) other-goals)
+		(unify goal (clause-head new-clause) bindings))))
+	 clauses)
+	;; If clauses isn't a list, it might be a primitive function to call (atom)
+	(funcall clauses (rest goal) bindings other-goals))))
+
+(defun top-level-prove (goals)
+  (prove-all `(,@goals (show-prolog-vars ,@(variables-in goals)))
+	     no-bindings)
+  (format t "~&No.")
+  (values))
+
+(defun show-prolog-vars (vars bindings other-goals)
+  "Print each variable with its binding.
+  Then ask the user if more solutions are desired."
+  (if (null vars)
+      (format t "~&Yes")
+      (dolist (var vars)
+	(format t "~&~a = ~a" var
+		(subst-bindings bindings var))))
+  (if (continue-p)
+      fail
+      (prove-all other-goals bindings)))
+
+(setf (get 'show-prolog-vars 'clauses) 'show-prolog-vars)
+
+(defun continue-p ()
+  "Ask user if we should continue looking for solutions."
+  (case (read-char)
+    (#\; t)
+    (#\. nil)
+    (#\newline (continue-p))
+    (otherwise
+     (format t " Type ; to see more or . to stop")
+     (continue-p))))
+
+(defmacro <- (&rest clause)
+  "Add a clause to the database."
+  `(add-clause ',(replace-?-vars clause)))
+
+(defmacro ?- (&rest goals)
+  "Make a query and print answers."
+  `(top-level-prove ',(replace-?-vars goals)))
+
+(defun replace-?-vars (exp)
+  "Replace any ? within exp with a var of the form ?123."
+  (cond ((eq exp '?) (gensym "?"))
+	((atom exp) exp)
+	(t (cons (replace-?-vars (first exp))
+		 (replace-?-vars (rest exp))))))
