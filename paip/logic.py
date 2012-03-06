@@ -21,7 +21,8 @@ class Atom(Term):
     def unify(self, other, bindings):
         if isinstance(other, Atom):
             return dict(bindings) if self.atom == other.atom else False
-        elif isinstance(other, Variable):
+
+        if isinstance(other, Variable):
             bindings = dict(bindings)
 
             # Find the Atom that other is bound to, if one exists
@@ -30,14 +31,15 @@ class Atom(Term):
             # If other is already bound to an Atom, make sure it matches self.
             if binding and binding != self:
                 return False
-            elif binding and binding == self:
+            if binding and binding == self:
                 return bindings
+            
             # Otherwise bind it.
-            else:
-                bindings[other] = self
-                return bindings
-        else:
-            return False
+            bindings[other] = self
+            return bindings
+            
+        # An Atom can only unify with a Variable or another Atom.
+        return False
 
 
 class Variable(Term):
@@ -70,8 +72,9 @@ class Variable(Term):
         
         if isinstance(other, Atom):
             # Let Atom handle unification with Variables.
-            return other.unify(self)
-        elif isinstance(other, Variable):
+            return other.unify(self, bindings)
+
+        if isinstance(other, Variable):
             bindings = dict(bindings)
             
             # If two variables are identical, we can leave the bindings alone.
@@ -87,20 +90,22 @@ class Variable(Term):
                 bindings[self] = other
                 bindings[other] = self
                 return bindings
+
             # Otherwise, try to bind the unbound to the bound (if possible).
-            elif self_bind and not other_bind:
+            if self_bind and not other_bind:
                 bindings[other] = self
                 return bindings
-            elif not self_bind and other_bind:
+            if not self_bind and other_bind:
                 bindings[self] = other
                 return bindings
+            
             # If both are bound, make sure they bind to the same Atom.
-            elif self_bind == other_bind:
+            if self_bind == other_bind:
                 return bindings
-            else:
-                return False
-        else:
             return False
+
+        # A Variable can only unify with an Atom or another Variable.
+        return False
 
 
 class Relation(Term):
@@ -112,6 +117,26 @@ class Relation(Term):
         
     def __str__(self):
         return '%s(%s)' % (self.pred, ', '.join(self.args))
+
+    def __repr__(self):
+        return 'Relation(%s, %s)' % (repr(self.pred), repr(self.args))
+
+    def unify(self, other, bindings):
+        if not isinstance(other, Relation):
+            return False
+
+        if self.pred != other.pred:
+            return False
+
+        if len(self.args) != len(other.args):
+            return False
+
+        for i, term in enumerate(self.args):
+            bindings = term.unify(other.args[i], bindings)
+            if not bindings:
+                return False
+
+        return bindings
 
 
 class Clause(object):
@@ -165,12 +190,3 @@ class Database(object):
         for cl in self.clauses.values():
             clauses.extend(cl)
         return '\n'.join(map(str, clauses))
-    
-
-def unify(t1, t2, bindings=None):
-    """
-    Attempt to unify the two terms and return the resulting bindings.
-    Returns None if unification is impossible.
-    """
-
-    pass

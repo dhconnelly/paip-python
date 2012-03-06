@@ -88,4 +88,39 @@ class UnificationTests(unittest.TestCase):
         b = logic.Atom('b')
         bindings = {x: a, y: b}
         self.assertFalse(x.unify(y, bindings))
-        
+
+    def test_relation_relation_different_preds(self):
+        x = logic.Variable('x')
+        y = logic.Variable('y')
+        a = logic.Atom('a')
+        r = logic.Relation('likes', (x, y))
+        s = logic.Relation('loves', (x, a))
+        self.assertFalse(r.unify(s, {}))
+
+    def test_relation_relation_different_lengths(self):
+        x = logic.Variable('x')
+        y = logic.Variable('y')
+        a = logic.Atom('a')
+        r = logic.Relation('likes', (x, y))
+        s = logic.Relation('likes', (x, a, y))
+        self.assertFalse(r.unify(s, {}))
+
+    def test_relation_relation_different_args(self):
+        x = logic.Variable('x')
+        y = logic.Variable('y')
+        a = logic.Atom('a')
+        b = logic.Atom('b')
+        r = logic.Relation('likes', (x, a))
+        s = logic.Relation('likes', (y, b))
+        self.assertFalse(r.unify(s, {}))
+
+    def test_relation_relation_ok(self):
+        x = logic.Variable('x')
+        y = logic.Variable('y')
+        a = logic.Atom('a')
+        b = logic.Atom('b')
+        r = logic.Relation('likes', (x, y))
+        s = logic.Relation('likes', (a, x))
+        self.assertEqual({x: a, y: x}, r.unify(s, {}))
+
+    
