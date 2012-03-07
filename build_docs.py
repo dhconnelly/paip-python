@@ -8,10 +8,9 @@ modules = [
     'paip/examples/gps',
     'paip/examples/eliza',
     'paip/examples/search'
+    'paip/examples/logic',
     ]
 outdir = 'docs'
-style = 'docs/templates/pycco.css'
-index = 'docs/templates/index.html'
 
 
 def module_sources(module):
@@ -27,8 +26,6 @@ def main():
     for module in modules:
         sources.extend(module_sources(module))
     pycco.process(sources, outdir=outdir)
-    shutil.copyfile(style, os.path.join(outdir, 'pycco.css'))
-    shutil.copyfile(index, os.path.join(outdir, 'index.html'))
         
 
 if __name__ == '__main__':
