@@ -1,6 +1,8 @@
+import logging
 from paip import logic
 
 def main():
+    #logging.basicConfig(level=logging.DEBUG)
     db = logic.Database()
 
     kim = logic.Atom('Kim')
@@ -33,7 +35,11 @@ def main():
     db.store(slk)
     db.store(rlc)
 
+    print 'Database:'
     print db
-    goals = [logic.Relation('likes', (sandy, logic.Var('who')))]
-    logic.prolog_prove(goals, db)
+    
+    query = logic.Relation('likes', (sandy, logic.Var('who')))
+    print 'Query:', str(query)
+
+    logic.prolog_prove([query], db)
 
