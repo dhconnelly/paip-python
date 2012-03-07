@@ -294,9 +294,6 @@ def prove_all(goals, bindings, db):
     return prove(goals[0], bindings, goals[1:], db)
 
 
-
-
-
 def prove(goal, bindings, others, db):
     print '==========================='
     print 'Goal:', goal
