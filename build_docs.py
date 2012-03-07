@@ -7,7 +7,7 @@ modules = [
     'paip/',
     'paip/examples/gps',
     'paip/examples/eliza',
-    'paip/examples/search'
+    'paip/examples/search',
     'paip/examples/logic',
     ]
 outdir = 'docs'
