@@ -1,9 +1,35 @@
-class Term(object):
-    """Base class for Prolog ttypes."""
-    pass
+## Idea 1: Uniform database
+
+class Database(object):
+    """A store for clauses."""
+
+    # We store all of the clauses--rules and facts--in one database, indexed
+    # by the predicates of their head relations.  This makes it quicker and
+    # easier to search through possibly applicable rules and facts when we
+    # encounter a goal relation.
+    
+    def __init__(self, facts=None, rules=None):
+        facts = facts or []
+        rules = rules or []
+        self.clauses = {}
+        for clause in facts + rules:
+            self.store(clause)
+
+    def store(self, clause):
+        # Add each clause in the database to the list of clauses indexed
+        # on the head's predicate.
+        self.clauses.setdefault(clause.head.pred, []).append(clause)
+
+    def __str__(self):
+        clauses = []
+        for cl in self.clauses.values():
+            clauses.extend(cl)
+        return '\n'.join(map(str, clauses))
 
 
-class Atom(Term):
+## Idea 2: Unification of logic variables
+
+class Atom(object):
     """Represents any literal (symbol, number, string)."""
     
     def __init__(self, atom):
@@ -42,7 +68,7 @@ class Atom(Term):
         return False
 
 
-class Variable(Term):
+class Variable(object):
     """Represents a logic variable."""
     
     def __init__(self, var):
@@ -108,7 +134,7 @@ class Variable(Term):
         return False
 
 
-class Relation(Term):
+class Relation(object):
     """A relationship (specified by a predicate) that holds between terms."""
     
     def __init__(self, pred, args):
@@ -166,7 +192,7 @@ class Clause(object):
 
 
 class Fact(Clause):
-    """A clause with no body."""
+    """A relation whose truth is not dependent on any variable."""
     
     def __init__(self, relation):
         Clause.__init__(self, relation, [])
@@ -183,25 +209,3 @@ class Rule(Clause):
 
     def __str__(self):
         return '%s <= %s' % (str(self.head), ', '.join(map(str, self.body)))
-
-
-class Database(object):
-    """A store for clauses."""
-    
-    def __init__(self, facts=None, rules=None):
-        # uniform database: index all clauses on the predicate of their heads
-        facts = facts or []
-        rules = rules or []
-        self.clauses = {}
-        for cl in facts + rules:
-            # add to the list of clauses currently indexed on cl's head's pred
-            self.clauses.setdefault(cl.head.pred, []).append(cl)
-
-    def store(self, clause):
-        self.clauses.setdefault(clause.head.pred, []).append(clause)
-
-    def __str__(self):
-        clauses = []
-        for cl in self.clauses.values():
-            clauses.extend(cl)
-        return '\n'.join(map(str, clauses))
