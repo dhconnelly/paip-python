@@ -192,9 +192,14 @@ class Relation(object):
         return Relation(self.pred, bound)
 
     def rename_vars(self):
-        return Relation(self.pred, [arg.rename()
-                                    if isinstance(arg, Var) else arg
-                                    for arg in self.args])
+        renames = {}
+        args = []
+        for arg in self.args:
+            if isinstance(arg, Var):
+                args.append(renames.setdefault(arg, arg.rename()))
+            else:
+                args.append(arg)
+        return Relation(self.pred, args)
 
     def get_vars(self):
         return [arg for arg in self.args if isinstance(arg, Var)]
@@ -278,6 +283,10 @@ class Rule(Clause):
 ## Idea 3: Automatic backtracking
 
 def prove_all(goals, bindings, db):
+    print '==========================='
+    print 'Goals:', goals
+    print 'Bindings:', bindings
+    
     if bindings == False:
         return False
     if not goals:
@@ -285,7 +294,15 @@ def prove_all(goals, bindings, db):
     return prove(goals[0], bindings, goals[1:], db)
 
 
+
+
+
 def prove(goal, bindings, others, db):
+    print '==========================='
+    print 'Goal:', goal
+    print 'Bindings:', bindings
+    print 'Rest:', others
+    
     results = db.query(goal.pred)
     if not results:
         return False
@@ -299,16 +316,23 @@ def prove(goal, bindings, others, db):
     # as the predicate of goal.
     for clause in results:
         # Each clause retrieved from the database might help us prove goal.
+        print 'Considering clause', clause
         
         # First, rename the variables in clause so they don't collide with
         # those in goal.
         renamed = clause.rename_vars()
+        if not renamed:
+            continue
 
         # Next, we try to unify goal with the head of the candidate clause.
         # If unification is possible, then the candidate clause might either be
         # a rule that can prove goal or a fact that states goal is already true.
         unified = goal.unify(renamed.head, bindings)
+        if not unified:
+            continue
 
+        print 'It unified:', unified
+        
         # We need to prove the subgoals of the candidate clause before using
         # it to prove goal.
         subgoals = renamed.body + others

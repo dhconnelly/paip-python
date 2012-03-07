@@ -49,12 +49,12 @@ class RelationTests(unittest.TestCase):
     def test_rename_vars(self):
         x = logic.Var('x')
         y = logic.Var('y')
-        r = logic.Relation('likes', (x, y))
+        r = logic.Relation('likes', (x, y, x))
         
         begin = logic.Var.counter
         x0 = logic.Var('x%d' % begin)
         y1 = logic.Var('y%d' % (begin + 1))
-        s = logic.Relation('likes', (x0, y1))
+        s = logic.Relation('likes', (x0, y1, x0))
         
         self.assertEqual(s, r.rename_vars())
 
@@ -313,6 +313,7 @@ class ProveTests(unittest.TestCase):
         db.store(slk)
         db.store(rlc)
 
+        #print db
         goals = [logic.Relation('likes', (sandy, logic.Var('who')))]
         #logic.prolog_prove(goals, db)
         
