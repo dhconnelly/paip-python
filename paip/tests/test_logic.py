@@ -57,6 +57,13 @@ class RelationTests(unittest.TestCase):
         s = logic.Relation('likes', (x0, y1))
         
         self.assertEqual(s, r.rename_vars())
+
+    def test_get_vars(self):
+        a = logic.Atom('a')
+        x = logic.Var('x')
+        y = logic.Var('y')
+        r = logic.Relation('likes', (a, x, y))
+        self.assertEqual([x, y], r.get_vars())
         
 
 class ClauseTests(unittest.TestCase):
@@ -105,6 +112,18 @@ class ClauseTests(unittest.TestCase):
         cl2 = logic.Clause(r1, (s1, t1))
 
         self.assertEqual(cl2, cl1.rename_vars())
+
+    def test_get_vars(self):
+        a = logic.Atom('a')
+        b = logic.Atom('b')
+        x = logic.Var('x')
+        y = logic.Var('y')
+        z = logic.Var('z')
+        r = logic.Relation('likes', (a, x))
+        s = logic.Relation('likes', (y, b))
+        t = logic.Relation('hates', (x, z))
+        c = logic.Clause(r, (s, t))
+        self.assertEqual(set([x, y, z]), set(c.get_vars()))
 
 
 class UnificationTests(unittest.TestCase):
@@ -258,4 +277,42 @@ class UnificationTests(unittest.TestCase):
         c = logic.Clause(r, [s, v])
         d = logic.Clause(t, [s, u])
         self.assertEqual({x: jorge, y: joe}, c.unify(d, {}))
+        
+
+class ProveTests(unittest.TestCase):
+    def test_prove(self):
+        db = logic.Database()
+
+        kim = logic.Atom('Kim')
+        robin = logic.Atom('Robin')
+        sandy = logic.Atom('Sandy')
+        lee = logic.Atom('Lee')
+        cats = logic.Atom('cats')
+        x = logic.Var('x')
+        
+        sandy_likes = logic.Relation('likes', (sandy, x))
+        likes_cats = logic.Relation('likes', (x, cats))
+        sandy_likes_rule = logic.Rule(sandy_likes, [likes_cats])
+
+        kim_likes = logic.Relation('likes', (kim, x))
+        likes_lee = logic.Relation('likes', (x, lee))
+        likes_kim = logic.Relation('likes', (x, kim))
+        kim_likes_rule = logic.Rule(kim_likes, [likes_lee, likes_kim])
+        
+        likes_self = logic.Fact(logic.Relation('likes', (x, x)))
+        klr = logic.Fact(logic.Relation('likes', (kim, robin)))
+        sll = logic.Fact(logic.Relation('likes', (sandy, lee)))
+        slk = logic.Fact(logic.Relation('likes', (sandy, kim)))
+        rlc = logic.Fact(logic.Relation('likes', (robin, cats)))
+
+        db.store(sandy_likes_rule)
+        db.store(kim_likes_rule)
+        db.store(likes_self)
+        db.store(klr)
+        db.store(sll)
+        db.store(slk)
+        db.store(rlc)
+
+        goals = [logic.Relation('likes', (sandy, logic.Var('who')))]
+        #logic.prolog_prove(goals, db)
         

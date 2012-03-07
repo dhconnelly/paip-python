@@ -1,12 +1,14 @@
 ## Idea 1: Uniform database
 
 class Database(object):
-    """A store for clauses."""
+    """A store for clauses and primitives."""
 
     # We store all of the clauses--rules and facts--in one database, indexed
     # by the predicates of their head relations.  This makes it quicker and
     # easier to search through possibly applicable rules and facts when we
     # encounter a goal relation.
+
+    # We can also store "primitives", or procedures, in the database.
     
     def __init__(self, facts=None, rules=None):
         facts = facts or []
@@ -19,6 +21,13 @@ class Database(object):
         # Add each clause in the database to the list of clauses indexed
         # on the head's predicate.
         self.clauses.setdefault(clause.head.pred, []).append(clause)
+
+    def define_primitive(self, name, fn):
+        self.clauses[name] = fn
+
+    def query(self, pred):
+        # Retrieve clauses by their head's predicate.
+        return self.clauses[pred]
 
     def __str__(self):
         clauses = []
@@ -187,6 +196,9 @@ class Relation(object):
                                     if isinstance(arg, Var) else arg
                                     for arg in self.args])
 
+    def get_vars(self):
+        return [arg for arg in self.args if isinstance(arg, Var)]
+
 
 class Clause(object):
     """A general clause with a head relation and some body relations."""
@@ -230,6 +242,12 @@ class Clause(object):
         return Clause(self.head.rename_vars(),
                       [rel.rename_vars() for rel in self.body])
 
+    def get_vars(self):
+        vars = self.head.get_vars()
+        for rel in self.body:
+            vars.extend(rel.get_vars())
+        return list(set(vars))
+    
 
 class Fact(Clause):
     """A relation whose truth is not dependent on any variable."""
@@ -259,3 +277,69 @@ class Rule(Clause):
     
 ## Idea 3: Automatic backtracking
 
+def prove_all(goals, bindings, db):
+    if bindings == False:
+        return False
+    if not goals:
+        return bindings
+    return prove(goals[0], bindings, goals[1:], db)
+
+
+def prove(goal, bindings, others, db):
+    results = db.query(goal.pred)
+    if not results:
+        return False
+
+    if not isinstance(results, list):
+        # If the retrieved data from the database isn't a list of clauses,
+        # it must be a primitive.
+        return results(goal.args, bindings, others, db)
+
+    # results is a list of clauses whose head relation has the same predicate
+    # as the predicate of goal.
+    for clause in results:
+        # Each clause retrieved from the database might help us prove goal.
+        
+        # First, rename the variables in clause so they don't collide with
+        # those in goal.
+        renamed = clause.rename_vars()
+
+        # Next, we try to unify goal with the head of the candidate clause.
+        # If unification is possible, then the candidate clause might either be
+        # a rule that can prove goal or a fact that states goal is already true.
+        unified = goal.unify(renamed.head, bindings)
+
+        # We need to prove the subgoals of the candidate clause before using
+        # it to prove goal.
+        subgoals = renamed.body + others
+        
+        proved = prove_all(subgoals, unified, db)
+        if proved:
+            return proved
+
+    return False
+
+
+def display_bindings(vars, bindings, goals, db):
+    if not vars:
+        print 'Yes'
+    print 'vars', vars
+    for var in vars:
+        print var, var.lookup(bindings)
+    if should_continue():
+        return False
+    return prove_all(goals, bindings, db)
+
+
+def should_continue():
+    yes = raw_input()
+    if yes == ';':
+        return True
+    return False
+
+
+def prolog_prove(goals, db):
+    db.define_primitive('display_bindings', display_bindings)
+    vars = reduce(lambda x, y: x + y, [clause.get_vars() for clause in goals])
+    prove_all(goals + [Relation('display_bindings', vars)], {}, db)
+    print 'No'
