@@ -142,26 +142,26 @@
   "Remove the clauses for a single predicate."
   (setf (get predicate 'clauses) nil))
 
-(defun prove (goal bindings)
-  "Return a list of possible solutions to a goal."
-  ;; To prove goal, first find candidate clauses.
-  ;; For each candidate, check if goal unifies with the head of the clause.
-  ;; If so, try to prove all the goals in the body of the clause.
-  ;; --> for facts, there are no goals in the body, which means success.
-  ;; --> for rules, goals in body are proved one at a time, propagating bindings.
-  (mapcan #'(lambda (clause)
-	      (let ((new-clause (rename-variables clause)))
-		(prove-all (clause-body new-clause)
-			   (unify goal (clause-head new-clause) bindings))))
-	  (get-clauses (predicate goal))))
+;; (defun prove (goal bindings)
+;;   "Return a list of possible solutions to a goal."
+;;   ;; To prove goal, first find candidate clauses.
+;;   ;; For each candidate, check if goal unifies with the head of the clause.
+;;   ;; If so, try to prove all the goals in the body of the clause.
+;;   ;; --> for facts, there are no goals in the body, which means success.
+;;   ;; --> for rules, goals in body are proved one at a time, propagating bindings.
+;;   (mapcan #'(lambda (clause)
+;; 	      (let ((new-clause (rename-variables clause)))
+;; 		(prove-all (clause-body new-clause)
+;; 			   (unify goal (clause-head new-clause) bindings))))
+;; 	  (get-clauses (predicate goal))))
 
-(defun prove-all (goals bindings)
-  "Return a list of solutions to the conjunction of goals."
-  (cond ((eq bindings fail) fail)
-	((null goals) (list bindings))
-	(t (mapcan #'(lambda (goal1-solution)
-		       (prove-all (rest goals) goal1-solution))
-		   (prove (first goals) bindings)))))
+;; (defun prove-all (goals bindings)
+;;   "Return a list of solutions to the conjunction of goals."
+;;   (cond ((eq bindings fail) fail)
+;; 	((null goals) (list bindings))
+;; 	(t (mapcan #'(lambda (goal1-solution)
+;; 		       (prove-all (rest goals) goal1-solution))
+;; 		   (prove (first goals) bindings)))))
 
 (defun rename-variables (x)
   "Replace all variables in x with new ones."
@@ -187,11 +187,11 @@
 
 (defmacro ?- (&rest goals) `(top-level-prove ',goals))
 
-(defun top-level-prove (goals)
-  "Prove the goals, and print variables readably."
-  (show-prolog-solutions
-   (variables-in goals)
-   (prove-all goals no-bindings)))
+;; (defun top-level-prove (goals)
+;;   "Prove the goals, and print variables readably."
+;;   (show-prolog-solutions
+;;    (variables-in goals)
+;;    (prove-all goals no-bindings)))
 
 (defun show-prolog-solutions (vars solutions)
   "Print the variables in each of the solutions."
@@ -201,14 +201,14 @@
 	    solutions))
   (values))
 
-(defun show-prolog-vars (vars bindings)
-  "Print each variable with its binding."
-  (if (null vars)
-      (format t "~&Yes")
-      (dolist (var vars)
-	(format t "~&~a = ~a" var
-		(subst-bindings bindings var))))
-  (princ ";"))
+;; (defun show-prolog-vars (vars bindings)
+;;   "Print each variable with its binding."
+;;   (if (null vars)
+;;       (format t "~&Yes")
+;;       (dolist (var vars)
+;; 	(format t "~&~a = ~a" var
+;; 		(subst-bindings bindings var))))
+;;   (princ ";"))
 
 ;; Idea 3: automatic backtracking (redefining prove and prove-all)
 

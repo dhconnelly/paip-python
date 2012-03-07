@@ -116,7 +116,7 @@ class Relation(Term):
         self.args = args
         
     def __str__(self):
-        return '%s(%s)' % (self.pred, ', '.join(self.args))
+        return '%s(%s)' % (self.pred, ', '.join(map(str, self.args)))
 
     def __repr__(self):
         return 'Relation(%s, %s)' % (repr(self.pred), repr(self.args))
