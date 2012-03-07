@@ -146,15 +146,30 @@ class Clause(object):
         self.head = head
         self.body = body
 
-    def unify(self, other, bindings=None):
-        pass
+    def unify(self, other, bindings):
+        if not isinstance(other, Clause):
+            return False
+
+        bindings = self.head.unify(other.head, bindings)
+        if not bindings:
+            return False
+
+        if len(self.body) != len(other.body):
+            return False
+        
+        for i, relation in enumerate(self.body):
+            bindings = relation.unify(other.body[i], bindings)
+            if not bindings:
+                return False
+
+        return bindings
 
 
 class Fact(Clause):
     """A clause with no body."""
     
     def __init__(self, relation):
-        Clause.__init__(self, relation, None)
+        Clause.__init__(self, relation, [])
 
     def __str__(self):
         return str(self.head)
