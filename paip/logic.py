@@ -1,3 +1,5 @@
+import logging
+
 ## Idea 1: Uniform database
 
 class Database(object):
@@ -244,8 +246,21 @@ class Clause(object):
         return Clause(head, body)
 
     def rename_vars(self):
-        return Clause(self.head.rename_vars(),
-                      [rel.rename_vars() for rel in self.body])
+        renames = {}
+
+        head_args = []
+        for var in self.head.get_vars():
+            head_args.append(renames.setdefault(var, var.rename()))
+        head = Relation(self.head.pred, head_args)
+
+        body = []
+        for rel in self.body:
+            rel_args = []
+            for var in rel.get_vars():
+                rel_args.append(renames.setdefault(var, var.rename()))
+            body.append(Relation(rel.pred, rel_args))
+
+        return Clause(head, body)
 
     def get_vars(self):
         vars = self.head.get_vars()
@@ -283,9 +298,8 @@ class Rule(Clause):
 ## Idea 3: Automatic backtracking
 
 def prove_all(goals, bindings, db):
-    print '==========================='
-    print 'Goals:', goals
-    print 'Bindings:', bindings
+    logging.debug('Goals: %s' % goals)
+    logging.debug('Bindings: %s' % bindings)
     
     if bindings == False:
         return False
@@ -295,10 +309,9 @@ def prove_all(goals, bindings, db):
 
 
 def prove(goal, bindings, others, db):
-    print '==========================='
-    print 'Goal:', goal
-    print 'Bindings:', bindings
-    print 'Rest:', others
+    logging.debug('Goal: %s' % goal)
+    logging.debug('Bindings: %s' % bindings)
+    logging.debug('Rest: %s' % others)
     
     results = db.query(goal.pred)
     if not results:
@@ -313,13 +326,15 @@ def prove(goal, bindings, others, db):
     # as the predicate of goal.
     for clause in results:
         # Each clause retrieved from the database might help us prove goal.
-        print 'Considering clause', clause
+        logging.debug('Considering clause %s' % clause)
         
         # First, rename the variables in clause so they don't collide with
         # those in goal.
         renamed = clause.rename_vars()
         if not renamed:
             continue
+
+        logging.debug('Renamed vars: %s' % renamed)
 
         # Next, we try to unify goal with the head of the candidate clause.
         # If unification is possible, then the candidate clause might either be
@@ -328,7 +343,7 @@ def prove(goal, bindings, others, db):
         if not unified:
             continue
 
-        print 'It unified:', unified
+        logging.debug('It unified: %s' % unified)
         
         # We need to prove the subgoals of the candidate clause before using
         # it to prove goal.
