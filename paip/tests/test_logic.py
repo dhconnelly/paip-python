@@ -88,11 +88,12 @@ class ClauseTests(unittest.TestCase):
         self.assertEqual(cl2, cl1.bind_vars(bindings))
 
     def test_rename_vars(self):
+        a = logic.Atom('a')
         x = logic.Var('x')
         y = logic.Var('y')
         z = logic.Var('z')
         r = logic.Relation('likes', (x, y, z))
-        s = logic.Relation('likes', (y, z, x))
+        s = logic.Relation('likes', (y, a, x))
         t = logic.Relation('hates', (z, x, y))
         cl1 = logic.Clause(r, (s, t))
 
@@ -101,7 +102,7 @@ class ClauseTests(unittest.TestCase):
         y1 = logic.Var('y%d' % (begin + 1))
         z2 = logic.Var('z%d' % (begin + 2))
         r1 = logic.Relation('likes', (x0, y1, z2))
-        s1 = logic.Relation('likes', (y1, z2, x0))
+        s1 = logic.Relation('likes', (y1, a, x0))
         t1 = logic.Relation('hates', (z2, x0, y1))
         cl2 = logic.Clause(r1, (s1, t1))
 
@@ -151,7 +152,7 @@ class UnificationTests(unittest.TestCase):
     def test_var_var_both_unbound(self):
         x = logic.Var('x')
         y = logic.Var('y')
-        self.assertEqual({x: y, y: x}, x.unify(y, {}))
+        self.assertEqual({x: y}, x.unify(y, {}))
 
     def test_var_var_left_unbound(self):
         x = logic.Var('x')

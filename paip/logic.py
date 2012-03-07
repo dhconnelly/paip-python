@@ -56,6 +56,9 @@ class Atom(object):
         return isinstance(other, Atom) and other.atom == self.atom
 
     def unify(self, other, bindings):
+        logging.debug('Attempting to unify %s and %s' % (self, other))
+        logging.debug('Bindings: %s' % str(bindings))
+        
         if isinstance(other, Atom):
             return dict(bindings) if self.atom == other.atom else False
 
@@ -109,6 +112,9 @@ class Var(object):
         if self and other don't unify, returns False.
         """
         
+        logging.debug('Attempting to unify %s and %s' % (self, other))
+        logging.debug('Bindings: %s' % str(bindings))
+        
         if isinstance(other, Atom):
             # Let Atom handle unification with Vars.
             return other.unify(self, bindings)
@@ -127,7 +133,6 @@ class Var(object):
             # If both are unbound, bind them together.
             if not self_bind and not other_bind:
                 bindings[self] = other
-                bindings[other] = self
                 return bindings
 
             # Otherwise, try to bind the unbound to the bound (if possible).
@@ -171,6 +176,9 @@ class Relation(object):
                 and list(self.args) == list(other.args))
 
     def unify(self, other, bindings):
+        logging.debug('Attempting to unify %s and %s' % (self, other))
+        logging.debug('Bindings: %s' % bindings)
+        
         if not isinstance(other, Relation):
             return False
 
@@ -182,7 +190,8 @@ class Relation(object):
 
         for i, term in enumerate(self.args):
             bindings = term.unify(other.args[i], bindings)
-            if not bindings:
+            if bindings == False:
+                logging.debug('Unification failed')
                 return False
 
         return bindings
@@ -226,8 +235,12 @@ class Clause(object):
         if not isinstance(other, Clause):
             return False
 
+        logging.debug('Attempting to unify %s and %s' % (self, other))
+        logging.debug('Bindings: %s' % bindings)
+        
         bindings = self.head.unify(other.head, bindings)
-        if not bindings:
+        if bindings == False:
+            logging.debug('Unification failed')
             return False
 
         if len(self.body) != len(other.body):
@@ -235,7 +248,8 @@ class Clause(object):
         
         for i, relation in enumerate(self.body):
             bindings = relation.unify(other.body[i], bindings)
-            if not bindings:
+            if bindings == False:
+                logging.debug('Unification failed')
                 return False
 
         return bindings
@@ -249,18 +263,24 @@ class Clause(object):
         renames = {}
 
         head_args = []
-        for var in self.head.get_vars():
-            head_args.append(renames.setdefault(var, var.rename()))
+        for arg in self.head.args:
+            if isinstance(arg, Var):
+                head_args.append(renames.setdefault(arg, arg.rename()))
+            else:
+                head_args.append(arg)
         head = Relation(self.head.pred, head_args)
 
         body = []
         for rel in self.body:
             rel_args = []
-            for var in rel.get_vars():
-                rel_args.append(renames.setdefault(var, var.rename()))
+            for arg in rel.args:
+                if isinstance(arg, Var):
+                    rel_args.append(renames.setdefault(arg, arg.rename()))
+                else:
+                    rel_args.append(arg)
             body.append(Relation(rel.pred, rel_args))
 
-        return Clause(head, body)
+        return self.__class__(head, body)
 
     def get_vars(self):
         vars = self.head.get_vars()
@@ -272,7 +292,7 @@ class Clause(object):
 class Fact(Clause):
     """A relation whose truth is not dependent on any variable."""
     
-    def __init__(self, relation):
+    def __init__(self, relation, rest=None):
         Clause.__init__(self, relation, [])
 
     def __repr__(self):
@@ -309,9 +329,9 @@ def prove_all(goals, bindings, db):
 
 
 def prove(goal, bindings, others, db):
-    logging.debug('Goal: %s' % goal)
-    logging.debug('Bindings: %s' % bindings)
-    logging.debug('Rest: %s' % others)
+    logging.debug('Goal: %s' % str(goal))
+    logging.debug('Bindings: %s' % str(bindings))
+    logging.debug('Rest: %s' % str(others))
     
     results = db.query(goal.pred)
     if not results:
@@ -326,7 +346,7 @@ def prove(goal, bindings, others, db):
     # as the predicate of goal.
     for clause in results:
         # Each clause retrieved from the database might help us prove goal.
-        logging.debug('Considering clause %s' % clause)
+        logging.debug('Considering clause %s' % str(clause))
         
         # First, rename the variables in clause so they don't collide with
         # those in goal.
@@ -334,7 +354,7 @@ def prove(goal, bindings, others, db):
         if not renamed:
             continue
 
-        logging.debug('Renamed vars: %s' % renamed)
+        logging.debug('Renamed vars: %s' % str(renamed))
 
         # Next, we try to unify goal with the head of the candidate clause.
         # If unification is possible, then the candidate clause might either be
@@ -343,7 +363,7 @@ def prove(goal, bindings, others, db):
         if not unified:
             continue
 
-        logging.debug('It unified: %s' % unified)
+        logging.debug('It unified: %s' % str(unified))
         
         # We need to prove the subgoals of the candidate clause before using
         # it to prove goal.
@@ -359,23 +379,23 @@ def prove(goal, bindings, others, db):
 def display_bindings(vars, bindings, goals, db):
     if not vars:
         print 'Yes'
-    print 'vars', vars
     for var in vars:
-        print var, var.lookup(bindings)
+        print var, ':', var.lookup(bindings)
     if should_continue():
         return False
     return prove_all(goals, bindings, db)
 
 
 def should_continue():
-    yes = raw_input()
-    if yes == ';':
-        return True
-    return False
+    try:
+        yes = raw_input('Continue? ').strip().lower() in ('yes', 'y')
+    except:
+        yes = False
+    return yes
 
 
 def prolog_prove(goals, db):
     db.define_primitive('display_bindings', display_bindings)
     vars = reduce(lambda x, y: x + y, [clause.get_vars() for clause in goals])
     prove_all(goals + [Relation('display_bindings', vars)], {}, db)
-    print 'No'
+    print 'No.'
