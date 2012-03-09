@@ -26,12 +26,17 @@ class VarTests(unittest.TestCase):
         }
         self.assertEqual(w, x.lookup(bindings))
 
-    def test_rename(self):
+    def test_rename_vars(self):
         v1 = logic.Var('x')
         begin = logic.Var.counter
-        v2 = v1.rename()
-        self.assertEqual(logic.Var('x%s' % begin), v2)
+        v2 = v1.rename_vars({v1: logic.Var.get_unused_var()})
+        
+        self.assertEqual(logic.Var('var%d' % begin), v2)
         self.assertEqual(begin + 1, logic.Var.counter)
+
+    def test_get_vars(self):
+        x = logic.Var('x')
+        self.assertEqual([x], x.get_vars())
     
 
 class RelationTests(unittest.TestCase):
@@ -47,23 +52,28 @@ class RelationTests(unittest.TestCase):
         self.assertEqual(s, r.bind_vars(bindings))
 
     def test_rename_vars(self):
+        a = logic.Atom('a')
         x = logic.Var('x')
         y = logic.Var('y')
-        r = logic.Relation('likes', (x, y, x))
+        p2 = logic.Relation('pair', (a, y))
+        p1 = logic.Relation('pair', (x, p2))
+        vs = p1.get_vars()
         
         begin = logic.Var.counter
-        x0 = logic.Var('x%d' % begin)
-        y1 = logic.Var('y%d' % (begin + 1))
-        s = logic.Relation('likes', (x0, y1, x0))
-        
-        self.assertEqual(s, r.rename_vars())
+        rep = {v: logic.Var.get_unused_var() for v in vs}
+
+        u = logic.Var('var%d' % begin)
+        v = logic.Var('var%d' % (begin+1))
+        r = logic.Relation('pair', [u, logic.Relation('pair', [a, v])])
+        self.assertEqual(r, p1.rename_vars(rep))
 
     def test_get_vars(self):
         a = logic.Atom('a')
         x = logic.Var('x')
         y = logic.Var('y')
-        r = logic.Relation('likes', (a, x, y))
-        self.assertEqual([x, y], r.get_vars())
+        p2 = logic.Relation('pair', (a, y))
+        p1 = logic.Relation('pair', (x, p2))
+        self.assertEqual([x, y], p1.get_vars())
         
 
 class ClauseTests(unittest.TestCase):
@@ -88,25 +98,28 @@ class ClauseTests(unittest.TestCase):
         self.assertEqual(cl2, cl1.bind_vars(bindings))
 
     def test_rename_vars(self):
-        a = logic.Atom('a')
         x = logic.Var('x')
         y = logic.Var('y')
         z = logic.Var('z')
-        r = logic.Relation('likes', (x, y, z))
-        s = logic.Relation('likes', (y, a, x))
-        t = logic.Relation('hates', (z, x, y))
-        cl1 = logic.Clause(r, (s, t))
+        p = logic.Relation('pair', (y, logic.Relation('pair', (x, z))))
+        is_member = logic.Relation('member', (x, p))
+        is_list = logic.Relation('is_list', [p])
+        rule = logic.Clause(is_member, (is_list, p))
 
+        vs = rule.get_vars()
         begin = logic.Var.counter
-        x0 = logic.Var('x%d' % begin)
-        y1 = logic.Var('y%d' % (begin + 1))
-        z2 = logic.Var('z%d' % (begin + 2))
-        r1 = logic.Relation('likes', (x0, y1, z2))
-        s1 = logic.Relation('likes', (y1, a, x0))
-        t1 = logic.Relation('hates', (z2, x0, y1))
-        cl2 = logic.Clause(r1, (s1, t1))
+        renames = {v: logic.Var.get_unused_var() for v in vs}
+        rule2 = rule.rename_vars(renames)
 
-        self.assertEqual(cl2, cl1.rename_vars())
+        newx = logic.Var('var%d' % begin)
+        newz = logic.Var('var%d' % (begin+1))
+        newy = logic.Var('var%d' % (begin+2))
+        new_list = logic.Relation('pair',
+                                  (newy, logic.Relation('pair', (newx, newz))))
+        rule3 = logic.Clause(logic.Relation('member', (newx, new_list)),
+                             (logic.Relation('is_list', [new_list]), new_list))
+        
+        self.assertEqual(rule3, rule2)
 
     def test_get_vars(self):
         a = logic.Atom('a')

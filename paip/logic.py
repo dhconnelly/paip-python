@@ -81,11 +81,23 @@ class Atom(object):
         # An Atom can only unify with a Var or another Atom.
         return False
 
+    def rename_vars(self, replacements):
+        return self
+
+    def get_vars(self):
+        return []
+
 
 class Var(object):
     """Represents a logic variable."""
 
     counter = 0 # for generating unused variables
+
+    @staticmethod
+    def get_unused_var():
+        v = Var('var%d' % Var.counter)
+        Var.counter += 1
+        return v
     
     def __init__(self, var):
         self.var = var
@@ -148,13 +160,24 @@ class Var(object):
                 return bindings
             return False
 
+        if isinstance(other, Relation):
+            bindings = dict(bindings)
+            bound = self.lookup(bindings)
+            if bound and bound != other:
+                return False
+            if bound and bound == other:
+                return bindings
+            bindings[self] = other
+            return bindings
+
         # A Var can only unify with an Atom or another Var.
         return False
 
-    def rename(self):
-        var = '%s%d' % (self.var, Var.counter)
-        Var.counter += 1
-        return Var(var)
+    def rename_vars(self, replacements):
+        return replacements[self] if self in replacements else self
+
+    def get_vars(self):
+        return [self]
 
 
 class Relation(object):
@@ -179,22 +202,26 @@ class Relation(object):
         logging.debug('Attempting to unify %s and %s' % (self, other))
         logging.debug('Bindings: %s' % bindings)
         
-        if not isinstance(other, Relation):
-            return False
-
-        if self.pred != other.pred:
-            return False
-
-        if len(self.args) != len(other.args):
-            return False
-
-        for i, term in enumerate(self.args):
-            bindings = term.unify(other.args[i], bindings)
-            if bindings == False:
-                logging.debug('Unification failed')
+        if isinstance(other, Relation):
+            if self.pred != other.pred:
                 return False
 
-        return bindings
+            if len(self.args) != len(other.args):
+                return False
+
+            bindings = dict(bindings)
+            for i, term in enumerate(self.args):
+                bindings = term.unify(other.args[i], bindings)
+                if bindings == False:
+                    logging.debug('Unification failed')
+                    return False
+
+            return bindings
+        
+        if isinstance(other, Var):
+            return other.unify(self, bindings)
+        
+        return False
 
     def bind_vars(self, bindings):
         bound = []
@@ -202,18 +229,17 @@ class Relation(object):
             bound.append(arg.lookup(bindings) if arg in bindings else arg)
         return Relation(self.pred, bound)
 
-    def rename_vars(self):
-        renames = {}
-        args = []
+    def rename_vars(self, replacements):
+        renamed = []
         for arg in self.args:
-            if isinstance(arg, Var):
-                args.append(renames.setdefault(arg, arg.rename()))
-            else:
-                args.append(arg)
-        return Relation(self.pred, args)
+            renamed.append(arg.rename_vars(replacements))
+        return Relation(self.pred, renamed)
 
     def get_vars(self):
-        return [arg for arg in self.args if isinstance(arg, Var)]
+        vars = []
+        for arg in self.args:
+            vars.extend(arg.get_vars())
+        return vars
 
 
 class Clause(object):
@@ -259,28 +285,12 @@ class Clause(object):
         body = [r.bind_vars(bindings) for r in self.body]
         return Clause(head, body)
 
-    def rename_vars(self):
-        renames = {}
-
-        head_args = []
-        for arg in self.head.args:
-            if isinstance(arg, Var):
-                head_args.append(renames.setdefault(arg, arg.rename()))
-            else:
-                head_args.append(arg)
-        head = Relation(self.head.pred, head_args)
-
-        body = []
-        for rel in self.body:
-            rel_args = []
-            for arg in rel.args:
-                if isinstance(arg, Var):
-                    rel_args.append(renames.setdefault(arg, arg.rename()))
-                else:
-                    rel_args.append(arg)
-            body.append(Relation(rel.pred, rel_args))
-
-        return self.__class__(head, body)
+    def rename_vars(self, replacements):
+        renamed_head = self.head.rename_vars(replacements)
+        renamed_body = []
+        for term in self.body:
+            renamed_body.append(term.rename_vars(replacements))
+        return Clause(renamed_head, renamed_body)
 
     def get_vars(self):
         vars = self.head.get_vars()
@@ -318,8 +328,8 @@ class Rule(Clause):
 ## Idea 3: Automatic backtracking
 
 def prove_all(goals, bindings, db):
-    logging.debug('Goals: %s' % goals)
-    logging.debug('Bindings: %s' % bindings)
+    logging.debug('Goals: %s' % map(str, goals))
+    logging.debug('Bindings: %s' % str(bindings))
     
     if bindings == False:
         return False
@@ -395,7 +405,8 @@ def should_continue():
 
 
 def prolog_prove(goals, db):
-    db.define_primitive('display_bindings', display_bindings)
-    vars = reduce(lambda x, y: x + y, [clause.get_vars() for clause in goals])
-    prove_all(goals + [Relation('display_bindings', vars)], {}, db)
+    if goals:
+        db.define_primitive('display_bindings', display_bindings)
+        vars = reduce(lambda x, y: x + y, [clause.get_vars() for clause in goals])
+        prove_all(goals + [Relation('display_bindings', vars)], {}, db)
     print 'No.'
