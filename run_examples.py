@@ -36,13 +36,18 @@ from paip.examples.gps import school
 from paip.examples.eliza import eliza
 from paip.examples.search import pathfinding
 from paip.examples.logic import likes
-from paip.examples.logic import list
+from paip.examples.logic import find_elements
+from paip.examples.logic import find_list
+from paip.examples.logic import find_length
+from paip.examples.logic import find_list_length_4
+from paip.examples.logic import find_lists_lengths
 
 examples = {
     'gps': [blocks, monkeys, school],
     'eliza': [eliza],
     'search': [pathfinding],
-    'logic': [likes, list]
+    'logic': [likes, find_elements, find_list,
+              find_length, find_list_length_4, find_lists_lengths]
 }
 
 category = get_choice('Which category?', examples.keys())

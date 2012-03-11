@@ -35,7 +35,7 @@ class Database(object):
         clauses = []
         for cl in self.clauses.values():
             clauses.extend(cl)
-        return '\n'.join(map(str, clauses))
+        return '\n'.join(['  ' + str(clause) for clause in clauses])
 
 
 ## Idea 2: Unification of logic variables
@@ -455,7 +455,9 @@ def should_continue():
 
 def prolog_prove(goals, db):
     if goals:
+        vars = []
+        for goal in goals:
+            vars.extend(goal.get_vars())
         db.define_primitive('display_bindings', display_bindings)
-        vars = reduce(lambda x, y: x + y, [clause.get_vars() for clause in goals])
         prove_all(goals + [Relation('display_bindings', vars)], {}, db)
     print 'No.'

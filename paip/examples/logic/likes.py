@@ -37,9 +37,11 @@ def main():
 
     print 'Database:'
     print db
+    print
     
     query = logic.Relation('likes', (sandy, logic.Var('who')))
     print 'Query:', str(query)
+    print
 
     logic.prolog_prove([query], db)
 
