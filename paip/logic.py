@@ -114,7 +114,7 @@ class Var(object):
     def lookup(self, bindings):
         """Find the Atom (or None) that self is bound to in bindings."""
         binding = bindings.get(self)
-        while isinstance(binding, Var):
+        while isinstance(binding, Var) and binding in bindings:
             binding = bindings.get(binding)
         return binding
     

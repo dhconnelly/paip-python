@@ -26,6 +26,16 @@ class VarTests(unittest.TestCase):
         }
         self.assertEqual(w, x.lookup(bindings))
 
+    def test_lookup_search_no_atom(self):
+        x = logic.Var('x')
+        y = logic.Var('y')
+        z = logic.Var('z')
+        bindings = {
+            x: y,
+            y: z,
+        }
+        self.assertEqual(z, x.lookup(bindings))
+
     def test_rename_vars(self):
         v1 = logic.Var('x')
         begin = logic.Var.counter
@@ -93,7 +103,8 @@ class ClauseTests(unittest.TestCase):
         cl1 = logic.Clause(r, (s, t))
         cl2 = logic.Clause(
             logic.Relation('likes', (b, b, a)),
-            (logic.Relation('likes', (b, a, c)), logic.Relation('hates', (c, b, b))))
+            (logic.Relation('likes', (b, a, c)),
+             logic.Relation('hates', (c, b, b))))
 
         self.assertEqual(cl2, cl1.bind_vars(bindings))
 
@@ -111,9 +122,9 @@ class ClauseTests(unittest.TestCase):
         renames = {v: logic.Var.get_unused_var() for v in vs}
         rule2 = rule.rename_vars(renames)
 
-        newx = logic.Var('var%d' % begin)
-        newz = logic.Var('var%d' % (begin+1))
-        newy = logic.Var('var%d' % (begin+2))
+        newx = renames[x]
+        newy = renames[y]
+        newz = renames[z]
         new_list = logic.Relation('pair',
                                   (newy, logic.Relation('pair', (newx, newz))))
         rule3 = logic.Clause(logic.Relation('member', (newx, new_list)),
