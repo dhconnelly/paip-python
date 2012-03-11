@@ -416,10 +416,38 @@ class ProveTests(unittest.TestCase):
         self.assertEqual({x: jorge}, bindings)
 
     def test_prove_subgoals_required_fail(self):
-        pass
+        joe = logic.Atom('joe')
+        judy = logic.Atom('judy')
+        jorge = logic.Atom('jorge')
+        x = logic.Var('x')
+
+        db = logic.Database()
+        db.store(logic.Rule(logic.Relation('likes', (joe, x)),
+                            [logic.Relation('likes', (x, joe)),
+                             logic.Relation('hates', (judy, x))]))
+        db.store(logic.Fact(logic.Relation('likes', (jorge, joe))))
+        db.store(logic.Fact(logic.Relation('hates', (judy, joe))))
+
+        goal = logic.Relation('likes', (joe, jorge))
+        bindings = logic.prove(goal, {}, db)
+        self.assertFalse(bindings)
 
     def test_prove_subgoals_required_pass(self):
-        pass
+        joe = logic.Atom('joe')
+        judy = logic.Atom('judy')
+        jorge = logic.Atom('jorge')
+        x = logic.Var('x')
+
+        db = logic.Database()
+        db.store(logic.Rule(logic.Relation('likes', (joe, x)),
+                            [logic.Relation('likes', (x, joe)),
+                             logic.Relation('hates', (judy, x))]))
+        db.store(logic.Fact(logic.Relation('likes', (jorge, joe))))
+        db.store(logic.Fact(logic.Relation('hates', (judy, jorge))))
+
+        goal = logic.Relation('likes', (joe, x))
+        bindings = logic.prove(goal, {}, db)
+        self.assertEqual(jorge, x.lookup(bindings))
 
     def test_prove_primitive_call(self):
         pass

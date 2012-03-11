@@ -66,17 +66,20 @@ class Atom(object):
         if isinstance(other, Var):
             bindings = dict(bindings)
 
-            # Find the Atom that other is bound to, if one exists
+            # Find the Atom that other is bound to, if one exists.
             binding = other.lookup(bindings)
 
-            # If other is already bound to an Atom, make sure it matches self.
-            if binding and binding != self:
-                return False
-            if binding and binding == self:
-                return bindings
-            
-            # Otherwise bind it.
-            bindings[other] = self
+            # If other resolves to an Atom, make sure it matches self.
+            if isinstance(binding, Atom):
+                if binding != self:
+                    return False
+            # If other resolves to a Var, then bind that var to self.
+            elif isinstance(binding, Var):
+                bindings[binding] = self
+            # Otherwise (ie, other is not bound to anything) bind to to self.
+            else:
+                bindings[other] = self
+                
             return bindings
             
         # An Atom can only unify with a Var or another Atom.
