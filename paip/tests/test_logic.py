@@ -319,7 +319,20 @@ class UnificationTests(unittest.TestCase):
 
 class ProveTests(unittest.TestCase):
     def test_prove_no_relevant_clauses(self):
-        pass
+        joe = logic.Atom('joe')
+        judy = logic.Atom('judy')
+        jorge = logic.Atom('jorge')
+        x = logic.Var('x')
+
+        db = logic.Database()
+        db.store(logic.Rule(logic.Relation('likes', (joe, x)),
+                            [logic.Relation('likes', (x, joe)),
+                             logic.Relation('hates', (judy, x))]))
+        db.store(logic.Fact(logic.Relation('likes', (jorge, judy))))
+
+        goal = logic.Relation('hates', (joe, x))
+        bindings = logic.prove(goal, {}, db)
+        self.assertFalse(bindings)
 
     def test_prove_no_subgoals_required(self):
         pass

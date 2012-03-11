@@ -29,7 +29,7 @@ class Database(object):
 
     def query(self, pred):
         # Retrieve clauses by their head's predicate.
-        return self.clauses[pred]
+        return self.clauses.get(pred)
 
     def __str__(self):
         clauses = []
@@ -371,6 +371,7 @@ def prove(goal, bindings, db):
     query = db.query(goal.pred)
     if not query:
         return False
+    
     if not isinstance(query, list):
         # If the retrieved data from the database isn't a list of clauses,
         # it must be a primitive.
