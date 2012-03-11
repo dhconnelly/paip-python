@@ -398,7 +398,22 @@ class ProveTests(unittest.TestCase):
         self.assertEqual({x: judy}, bindings)
 
     def test_prove_all_no_subgoals_required(self):
-        pass
+        joe = logic.Atom('joe')
+        judy = logic.Atom('judy')
+        jorge = logic.Atom('jorge')
+        x = logic.Var('x')
+
+        db = logic.Database()
+        db.store(logic.Rule(logic.Relation('likes', (joe, x)),
+                            [logic.Relation('likes', (x, joe)),
+                             logic.Relation('hates', (judy, x))]))
+        db.store(logic.Fact(logic.Relation('likes', (jorge, joe))))
+        db.store(logic.Fact(logic.Relation('hates', (judy, jorge))))
+
+        goal1 = logic.Relation('likes', (x, joe))
+        goal2 = logic.Relation('hates', (judy, x))
+        bindings = logic.prove_all([goal1, goal2], {}, db)
+        self.assertEqual({x: jorge}, bindings)
 
     def test_prove_subgoals_required_fail(self):
         pass

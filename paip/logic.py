@@ -57,7 +57,8 @@ class Atom(object):
 
     def unify(self, other, bindings):
         logging.debug('Attempting to unify %s and %s, bindings=%s' %
-                      (self, other, bindings))
+                      (self, other,
+                       {str(v): str(bindings[v]) for v in bindings}))
         
         if isinstance(other, Atom):
             return dict(bindings) if self.atom == other.atom else False
@@ -135,13 +136,14 @@ class Var(object):
         if self and other don't unify, returns False.
         """
         
-        logging.debug('Attempting to unify %s and %s, bindings=%s' %
-                      (self, other, bindings))
-        
         if isinstance(other, Atom):
             # Let Atom handle unification with Vars.
             return other.unify(self, bindings)
 
+        logging.debug('Attempting to unify %s and %s, bindings=%s' %
+                      (self, other,
+                       {str(v): str(bindings[v]) for v in bindings}))
+        
         if isinstance(other, Var):
             bindings = dict(bindings)
             
@@ -215,7 +217,8 @@ class Relation(object):
 
     def unify(self, other, bindings):
         logging.debug('Attempting to unify %s and %s, bindings=%s' %
-                      (self, other, bindings))
+                      (self, other,
+                       {str(v): str(bindings[v]) for v in bindings}))
         
         if isinstance(other, Relation):
             if self.pred != other.pred:
@@ -280,7 +283,8 @@ class Clause(object):
             return False
 
         logging.debug('Attempting to unify %s and %s, bindings=%s' %
-                      (self, other, bindings))
+                      (self, other,
+                       {str(v): str(bindings[v]) for v in bindings}))
         
         bindings = self.head.unify(other.head, bindings)
         if bindings == False:
@@ -367,7 +371,8 @@ def prove(goal, bindings, db):
     Otherwise, returns False.
     """
 
-    logging.debug('Prove %s (bindings=%s)' % (goal, bindings))
+    logging.debug('Prove %s (bindings=%s)' %
+                  (goal, {str(v): str(bindings[v]) for v in bindings}))
     
     # Find the clauses in the database that might help us prove goal.
     query = db.query(goal.pred)
@@ -380,6 +385,8 @@ def prove(goal, bindings, db):
         return query(goal.args, bindings, db)
 
     for clause in query:
+        logging.debug('Trying candidate clause %s' % clause)
+        
         # First, rename the variables in clause so they don't collide with
         # those in goal.
         renamed = clause.recursive_rename()
@@ -390,20 +397,27 @@ def prove(goal, bindings, db):
         unified = goal.unify(renamed.head, bindings)
         if not unified:
             continue
-        bindings = unified
+
+        # Make sure the candidate clause doesn't lead to an infinite loop
+        # by checking to see if its head is in its body.
+        renamed = renamed.bind_vars(unified)
+        if renamed.head in renamed.body:
+            continue
 
         if renamed.body:
             # We need to prove the subgoals of the candidate clause before
             # using it to prove goal.
-            extended = prove_all(renamed.body, bindings, db)
+
+            extended = prove_all(renamed.body, unified, db)
         
             # If we can't prove all the subgoals of this clause, move on.
             if not extended:
                 continue
-            bindings = extended
+            
+            unified = extended
 
         # Return the bindings that satisfied the goal.
-        return bindings
+        return unified
 
     return False
 
