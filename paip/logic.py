@@ -360,7 +360,8 @@ def prove(goal, bindings, others, db):
         
         # First, rename the variables in clause so they don't collide with
         # those in goal.
-        renamed = clause.rename_vars()
+        renames = {v: Var.get_unused_var() for v in clause.get_vars()}
+        renamed = clause.rename_vars(renames)
         if not renamed:
             continue
 
