@@ -1,3 +1,4 @@
+import logging
 import unittest
 from paip import logic
 
@@ -132,6 +133,24 @@ class ClauseTests(unittest.TestCase):
         
         self.assertEqual(rule3, rule2)
 
+    def test_recursive_rename(self):
+        list = logic.Var('list')
+        x = logic.Var('x')
+        y = logic.Var('y')
+        z = logic.Var('z')
+
+        member = logic.Rule(logic.Relation('member', (x, list)),
+                            [logic.Relation('first', (list, y)),
+                             logic.Relation('rest', (list, z)),
+                             logic.Relation('member', (x, z))])
+
+        renamed = member.recursive_rename()
+        bindings = renamed.unify(member, {})
+
+        self.assertTrue(x in bindings)
+        self.assertTrue(y in bindings)
+        self.assertTrue(z in bindings)
+
     def test_get_vars(self):
         a = logic.Atom('a')
         b = logic.Atom('b')
@@ -176,7 +195,7 @@ class UnificationTests(unittest.TestCase):
     def test_var_var_both_unbound(self):
         x = logic.Var('x')
         y = logic.Var('y')
-        self.assertEqual({x: y}, x.unify(y, {}))
+        self.assertEqual({x: y, y: x}, x.unify(y, {}))
 
     def test_var_var_left_unbound(self):
         x = logic.Var('x')
@@ -299,5 +318,20 @@ class UnificationTests(unittest.TestCase):
         
 
 class ProveTests(unittest.TestCase):
-    def test_prove(self):
+    def test_prove_no_relevant_clauses(self):
+        pass
+
+    def test_prove_no_subgoals_required(self):
+        pass
+
+    def test_prove_all_no_subgoals_required(self):
+        pass
+
+    def test_prove_subgoals_required_fail(self):
+        pass
+
+    def test_prove_subgoals_required_pass(self):
+        pass
+
+    def test_prove_primitive_call(self):
         pass

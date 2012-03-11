@@ -56,8 +56,8 @@ class Atom(object):
         return isinstance(other, Atom) and other.atom == self.atom
 
     def unify(self, other, bindings):
-        logging.debug('Attempting to unify %s and %s' % (self, other))
-        logging.debug('Bindings: %s' % str(bindings))
+        logging.debug('Attempting to unify %s and %s, bindings=%s' %
+                      (self, other, bindings))
         
         if isinstance(other, Atom):
             return dict(bindings) if self.atom == other.atom else False
@@ -114,8 +114,19 @@ class Var(object):
     def lookup(self, bindings):
         """Find the Atom (or None) that self is bound to in bindings."""
         binding = bindings.get(self)
-        while isinstance(binding, Var) and binding in bindings:
+        
+        # While looking up the binding for self, we must detect:
+        # 1. That we are looking up the binding of a Var (otherwise meaningless)
+        # 2. That we stop before reaching None, in the case that there is no
+        #    terminal Atom in a transitive binding
+        # 3. That we don't go in a circle (eg, x->y and y->x)
+        encountered = [self, binding]
+        while (isinstance(binding, Var)
+               and binding in bindings
+               and bindings[binding] not in encountered):
             binding = bindings.get(binding)
+            encountered.append(binding)
+
         return binding
     
     def unify(self, other, bindings):
@@ -124,8 +135,8 @@ class Var(object):
         if self and other don't unify, returns False.
         """
         
-        logging.debug('Attempting to unify %s and %s' % (self, other))
-        logging.debug('Bindings: %s' % str(bindings))
+        logging.debug('Attempting to unify %s and %s, bindings=%s' %
+                      (self, other, bindings))
         
         if isinstance(other, Atom):
             # Let Atom handle unification with Vars.
@@ -145,6 +156,7 @@ class Var(object):
             # If both are unbound, bind them together.
             if not self_bind and not other_bind:
                 bindings[self] = other
+                bindings[other] = self
                 return bindings
 
             # Otherwise, try to bind the unbound to the bound (if possible).
@@ -155,8 +167,11 @@ class Var(object):
                 bindings[self] = other
                 return bindings
             
-            # If both are bound, make sure they bind to the same Atom.
-            if self_bind == other_bind:
+            # If both are bound, make sure they either bind to each other or
+            # the same atom.
+            if (self_bind == other_bind
+                or self_bind == other
+                or self == other_bind):
                 return bindings
             return False
 
@@ -199,8 +214,8 @@ class Relation(object):
                 and list(self.args) == list(other.args))
 
     def unify(self, other, bindings):
-        logging.debug('Attempting to unify %s and %s' % (self, other))
-        logging.debug('Bindings: %s' % bindings)
+        logging.debug('Attempting to unify %s and %s, bindings=%s' %
+                      (self, other, bindings))
         
         if isinstance(other, Relation):
             if self.pred != other.pred:
@@ -252,6 +267,9 @@ class Clause(object):
     def __repr__(self):
         return 'Clause(%s, %s)' % (repr(self.head), repr(self.body))
 
+    def __str__(self):
+        return '%s, %s' % (str(self.head), ', '.join(map(str, self.body)))
+
     def __eq__(self, other):
         return (isinstance(other, Clause)
                 and self.head == other.head
@@ -261,8 +279,8 @@ class Clause(object):
         if not isinstance(other, Clause):
             return False
 
-        logging.debug('Attempting to unify %s and %s' % (self, other))
-        logging.debug('Bindings: %s' % bindings)
+        logging.debug('Attempting to unify %s and %s, bindings=%s' %
+                      (self, other, bindings))
         
         bindings = self.head.unify(other.head, bindings)
         if bindings == False:
@@ -291,6 +309,11 @@ class Clause(object):
         for term in self.body:
             renamed_body.append(term.rename_vars(replacements))
         return Clause(renamed_head, renamed_body)
+
+    def recursive_rename(self):
+        """Replace each var in self with an unused one."""
+        renames = {v: Var.get_unused_var() for v in self.get_vars()}
+        return self.rename_vars(renames)
 
     def get_vars(self):
         vars = self.head.get_vars()
@@ -328,44 +351,35 @@ class Rule(Clause):
 ## Idea 3: Automatic backtracking
 
 def prove_all(goals, bindings, db):
-    logging.debug('Goals: %s' % map(str, goals))
-    logging.debug('Bindings: %s' % str(bindings))
+    bindings = dict(bindings)
+    for subgoal in subgoals:
+        bindings = prove(subgoal, bindings, db)
+        if not bindings:
+            return False
+    return bindings
     
-    if bindings == False:
+
+def prove(goal, bindings, db):
+    """
+    Try to prove goal using the given bindings and clause database.
+
+    If successful, returns the extended bindings that satisfy goal.
+    Otherwise, returns False.
+    """
+
+    # Find the clauses in the database that might help us prove goal.
+    query = db.query(goal.pred)
+    if not query:
         return False
-    if not goals:
-        return bindings
-    return prove(goals[0], bindings, goals[1:], db)
-
-
-def prove(goal, bindings, others, db):
-    logging.debug('Goal: %s' % str(goal))
-    logging.debug('Bindings: %s' % str(bindings))
-    logging.debug('Rest: %s' % str(others))
-    
-    results = db.query(goal.pred)
-    if not results:
-        return False
-
-    if not isinstance(results, list):
+    if not isinstance(query, list):
         # If the retrieved data from the database isn't a list of clauses,
         # it must be a primitive.
-        return results(goal.args, bindings, others, db)
+        return query(goal.args, bindings, others, db)
 
-    # results is a list of clauses whose head relation has the same predicate
-    # as the predicate of goal.
     for clause in results:
-        # Each clause retrieved from the database might help us prove goal.
-        logging.debug('Considering clause %s' % str(clause))
-        
         # First, rename the variables in clause so they don't collide with
         # those in goal.
-        renames = {v: Var.get_unused_var() for v in clause.get_vars()}
-        renamed = clause.rename_vars(renames)
-        if not renamed:
-            continue
-
-        logging.debug('Renamed vars: %s' % str(renamed))
+        renamed = recursive_rename(clause)
 
         # Next, we try to unify goal with the head of the candidate clause.
         # If unification is possible, then the candidate clause might either be
@@ -374,15 +388,16 @@ def prove(goal, bindings, others, db):
         if not unified:
             continue
 
-        logging.debug('It unified: %s' % str(unified))
-        
         # We need to prove the subgoals of the candidate clause before using
         # it to prove goal.
-        subgoals = renamed.body + others
+        extended = prove_all(renamed.body, bindings, db)
         
-        proved = prove_all(subgoals, unified, db)
-        if proved:
-            return proved
+        # If we can't prove all the subgoals of this clause, move on.
+        if not extended:
+            continue
+
+        # Otherwise, return the new bindings.
+        return extended
 
     return False
 
