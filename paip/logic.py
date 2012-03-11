@@ -76,6 +76,9 @@ class Atom(object):
             # If other resolves to a Var, then bind that var to self.
             elif isinstance(binding, Var):
                 bindings[binding] = self
+            # If other resolves to a Relation, we can't do anything.
+            elif isinstance(binding, Relation):
+                return False
             # Otherwise (ie, other is not bound to anything) bind to to self.
             else:
                 bindings[other] = self
@@ -116,7 +119,7 @@ class Var(object):
         return isinstance(other, Var) and other.var == self.var
 
     def lookup(self, bindings):
-        """Find the Atom (or None) that self is bound to in bindings."""
+        """Find the term that self is bound to in bindings."""
         binding = bindings.get(self)
         
         # While looking up the binding for self, we must detect:
@@ -130,6 +133,10 @@ class Var(object):
                and bindings[binding] not in encountered):
             binding = bindings.get(binding)
             encountered.append(binding)
+
+        # If the next binding leads to a relation, expand it.
+        if isinstance(binding, Relation):
+            return binding.bind_vars(bindings)
 
         return binding
     

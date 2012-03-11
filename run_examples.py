@@ -1,5 +1,9 @@
+import logging
 import os
 import sys
+
+# Uncomment to enable logging:
+#logging.basicConfig(level=logging.DEBUG)
 
 def get_choice(prompt, options):
     print prompt
@@ -32,12 +36,13 @@ from paip.examples.gps import school
 from paip.examples.eliza import eliza
 from paip.examples.search import pathfinding
 from paip.examples.logic import likes
+from paip.examples.logic import list
 
 examples = {
     'gps': [blocks, monkeys, school],
     'eliza': [eliza],
     'search': [pathfinding],
-    'logic': [likes]
+    'logic': [likes, list]
 }
 
 category = get_choice('Which category?', examples.keys())
