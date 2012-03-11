@@ -450,4 +450,25 @@ class ProveTests(unittest.TestCase):
         self.assertEqual(jorge, x.lookup(bindings))
 
     def test_prove_primitive_call(self):
-        pass
+        joe = logic.Atom('joe')
+        judy = logic.Atom('judy')
+        jorge = logic.Atom('jorge')
+        x = logic.Var('x')
+
+        db = logic.Database()
+        db.store(logic.Rule(logic.Relation('likes', (joe, x)),
+                            [logic.Relation('likes', (x, joe)),
+                             logic.Relation('hates', (judy, x))]))
+        db.store(logic.Fact(logic.Relation('likes', (jorge, joe))))
+        db.store(logic.Fact(logic.Relation('hates', (judy, jorge))))
+
+        things = []
+        def prim(a, b, c):
+            things.append(a)
+        db.define_primitive('prim', prim)
+
+        goal = logic.Relation('likes', (joe, x))
+        display = logic.Relation('prim', 'foo')
+        
+        bindings = logic.prove_all([goal, display], {}, db)
+        self.assertEqual(['foo'], things)

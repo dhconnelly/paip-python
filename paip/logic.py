@@ -425,14 +425,14 @@ def prove(goal, bindings, db):
     return False
 
 
-def display_bindings(vars, bindings, goals, db):
+def display_bindings(vars, bindings, db):
     if not vars:
         print 'Yes'
     for var in vars:
         print var, ':', var.lookup(bindings)
     if should_continue():
         return False
-    return prove_all(goals, bindings, db)
+    return bindings
 
 
 def should_continue():
