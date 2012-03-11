@@ -226,6 +226,38 @@ class UnificationTests(unittest.TestCase):
         bindings = {x: a, y: b}
         self.assertFalse(x.unify(y, bindings))
 
+    def test_var_relation(self):
+        x = logic.Var('x')
+        r = logic.Relation('foo', (logic.Var('bar'), logic.Atom('baz')))
+        bindings = {x: r}
+        self.assertEqual(bindings, x.unify(r, {}))
+
+    def test_var_var_resolves_to_relation(self):
+        x = logic.Var('x')
+        y = logic.Var('y')
+        r = logic.Relation('foo', (logic.Var('bar'), logic.Atom('baz')))
+        bindings = {x: y, y: r}
+        self.assertEqual(bindings, x.unify(y, {y: r}))
+
+    def test_var_resolves_to_relation_var(self):
+        x = logic.Var('x')
+        y = logic.Var('y')
+        r = logic.Relation('foo', (logic.Var('bar'), logic.Atom('baz')))
+        bindings = {y: x, x: r}
+        self.assertEqual(bindings, x.unify(y, {x: r}))
+
+    def test_var_var_both_resolve_to_relations(self):
+        x = logic.Var('x')
+        y = logic.Var('y')
+        bar = logic.Var('bar')
+        baz = logic.Atom('baz')
+        b = logic.Atom('b')
+        c = logic.Var('c')
+        r = logic.Relation('foo', (bar, baz))
+        s = logic.Relation('foo', (b, c))
+        bindings = {x: r, y: s, bar: b, c: baz}
+        self.assertEqual(bindings, x.unify(y, {x: r, y: s}))
+
     def test_relation_relation_different_preds(self):
         x = logic.Var('x')
         y = logic.Var('y')
