@@ -29,7 +29,7 @@ class Database(object):
 
     def query(self, pred):
         # Retrieve clauses by their head's predicate.
-        return self.clauses.get(pred)
+        return self.clauses.setdefault(pred, [])
 
     def __str__(self):
         clauses = []
@@ -329,7 +329,7 @@ class Fact(Clause):
         Clause.__init__(self, relation, [])
 
     def __repr__(self):
-        return 'Fact(%s)' % repr(self.relation)
+        return 'Fact(%s)' % repr(self.head)
 
     def __str__(self):
         return str(self.head)
@@ -352,8 +352,8 @@ class Rule(Clause):
 
 def prove_all(goals, bindings, db):
     bindings = dict(bindings)
-    for subgoal in subgoals:
-        bindings = prove(subgoal, bindings, db)
+    for goal in goals:
+        bindings = prove(goal, bindings, db)
         if not bindings:
             return False
     return bindings
@@ -375,12 +375,12 @@ def prove(goal, bindings, db):
     if not isinstance(query, list):
         # If the retrieved data from the database isn't a list of clauses,
         # it must be a primitive.
-        return query(goal.args, bindings, others, db)
+        return query(goal.args, bindings, db)
 
-    for clause in results:
+    for clause in query:
         # First, rename the variables in clause so they don't collide with
         # those in goal.
-        renamed = recursive_rename(clause)
+        renamed = clause.recursive_rename()
 
         # Next, we try to unify goal with the head of the candidate clause.
         # If unification is possible, then the candidate clause might either be

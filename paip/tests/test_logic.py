@@ -317,6 +317,53 @@ class UnificationTests(unittest.TestCase):
         self.assertEqual({x: jorge, y: joe}, c.unify(d, {}))
         
 
+class DatabaseTests(unittest.TestCase):
+    def test_store_empty_key(self):
+        x = logic.Var('x')
+        y = logic.Var('y')
+        f = logic.Fact(logic.Relation('likes', (x, y)))
+        db = logic.Database()
+        db.store(f)
+        self.assertEqual({'likes': [f]}, db.clauses)
+
+    def test_store_key_exists(self):
+        x = logic.Var('x')
+        y = logic.Var('y')
+        f = logic.Fact(logic.Relation('likes', (x, y)))
+        db = logic.Database()
+        db.store(f)
+
+        g = logic.Rule(logic.Relation('likes', (x, y)),
+                       [logic.Relation('cool', [y])])
+        db.store(g)
+
+        self.assertEqual({'likes': [f, g]}, db.clauses)
+
+    def test_query_empty_key(self):
+        db = logic.Database()
+        self.assertEqual([], db.query('likes'))
+
+    def test_query_key_exists(self):
+        x = logic.Var('x')
+        y = logic.Var('y')
+        f = logic.Fact(logic.Relation('likes', (x, y)))
+        g = logic.Rule(logic.Relation('likes', (x, y)),
+                       [logic.Relation('cool', [y])])
+        db = logic.Database()
+        db.store(f)
+        db.store(g)
+        self.assertEqual([f, g], db.query('likes'))
+
+    def test_define_primitive(self):
+        ok = []
+        def prim(goals, bindings, db):
+            ok.append(goals)
+        db = logic.Database()
+        db.define_primitive('prim', prim)
+        db.query('prim')('foo', None, None)
+        self.assertEqual(['foo'], ok)
+    
+
 class ProveTests(unittest.TestCase):
     def test_prove_no_relevant_clauses(self):
         joe = logic.Atom('joe')
@@ -335,7 +382,20 @@ class ProveTests(unittest.TestCase):
         self.assertFalse(bindings)
 
     def test_prove_no_subgoals_required(self):
-        pass
+        joe = logic.Atom('joe')
+        judy = logic.Atom('judy')
+        jorge = logic.Atom('jorge')
+        x = logic.Var('x')
+
+        db = logic.Database()
+        db.store(logic.Rule(logic.Relation('likes', (joe, x)),
+                            [logic.Relation('likes', (x, joe)),
+                             logic.Relation('hates', (judy, x))]))
+        db.store(logic.Fact(logic.Relation('likes', (jorge, judy))))
+
+        goal = logic.Relation('likes', (jorge, x))
+        bindings = logic.prove(goal, {}, db)
+        print bindings
 
     def test_prove_all_no_subgoals_required(self):
         pass
