@@ -395,7 +395,7 @@ class ProveTests(unittest.TestCase):
 
         goal = logic.Relation('likes', (jorge, x))
         bindings = logic.prove(goal, {}, db)
-        print bindings
+        self.assertEqual({x: judy}, bindings)
 
     def test_prove_all_no_subgoals_required(self):
         pass

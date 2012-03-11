@@ -367,6 +367,8 @@ def prove(goal, bindings, db):
     Otherwise, returns False.
     """
 
+    logging.debug('Prove %s (bindings=%s)' % (goal, bindings))
+    
     # Find the clauses in the database that might help us prove goal.
     query = db.query(goal.pred)
     if not query:
@@ -388,17 +390,20 @@ def prove(goal, bindings, db):
         unified = goal.unify(renamed.head, bindings)
         if not unified:
             continue
+        bindings = unified
 
-        # We need to prove the subgoals of the candidate clause before using
-        # it to prove goal.
-        extended = prove_all(renamed.body, bindings, db)
+        if renamed.body:
+            # We need to prove the subgoals of the candidate clause before
+            # using it to prove goal.
+            extended = prove_all(renamed.body, bindings, db)
         
-        # If we can't prove all the subgoals of this clause, move on.
-        if not extended:
-            continue
+            # If we can't prove all the subgoals of this clause, move on.
+            if not extended:
+                continue
+            bindings = extended
 
-        # Otherwise, return the new bindings.
-        return extended
+        # Return the bindings that satisfied the goal.
+        return bindings
 
     return False
 
