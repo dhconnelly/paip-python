@@ -463,7 +463,7 @@ class ProveTests(unittest.TestCase):
         db.store(logic.Fact(logic.Relation('hates', (judy, jorge))))
 
         things = []
-        def prim(a, b, c):
+        def prim(a, b, c, d):
             things.append(a)
         db.define_primitive('prim', prim)
 

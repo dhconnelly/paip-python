@@ -358,15 +358,14 @@ class Rule(Clause):
 ## Idea 3: Automatic backtracking
 
 def prove_all(goals, bindings, db):
-    bindings = dict(bindings)
-    for goal in goals:
-        bindings = prove(goal, bindings, db)
-        if not bindings:
-            return False
-    return bindings
-    
+    if bindings == False:
+        return False
+    if not goals:
+        return bindings
+    return prove(goals[0], bindings, db, goals[1:])
 
-def prove(goal, bindings, db):
+
+def prove(goal, bindings, db, remaining=None):
     """
     Try to prove goal using the given bindings and clause database.
 
@@ -374,8 +373,14 @@ def prove(goal, bindings, db):
     Otherwise, returns False.
     """
 
-    logging.debug('Prove %s (bindings=%s)' %
-                  (goal, {str(v): str(bindings[v]) for v in bindings}))
+    if bindings == False:
+        return False
+    
+    logging.debug('Prove %s (bindings=%s, remaining=%s)' %
+                  (goal,
+                   {str(v): str(bindings[v]) for v in bindings},
+                   remaining))
+    remaining = remaining or []
     
     # Find the clauses in the database that might help us prove goal.
     query = db.query(goal.pred)
@@ -385,10 +390,11 @@ def prove(goal, bindings, db):
     if not isinstance(query, list):
         # If the retrieved data from the database isn't a list of clauses,
         # it must be a primitive.
-        return query(goal.args, bindings, db)
+        return query(goal.args, bindings, db, remaining)
 
+    logging.debug('Candidate clauses: %s' % map(str, query))
     for clause in query:
-        logging.debug('Trying candidate clause %s' % clause)
+        logging.debug('Trying candidate clause %s for goal %s' % (clause, goal))
         
         # First, rename the variables in clause so they don't collide with
         # those in goal.
@@ -407,32 +413,29 @@ def prove(goal, bindings, db):
         if renamed.head in renamed.body:
             continue
 
-        if renamed.body:
-            # We need to prove the subgoals of the candidate clause before
-            # using it to prove goal.
-
-            extended = prove_all(renamed.body, unified, db)
+        # We need to prove the subgoals of the candidate clause before
+        # using it to prove goal.
+        extended = prove_all(renamed.body + remaining, unified, db)
         
-            # If we can't prove all the subgoals of this clause, move on.
-            if not extended:
-                continue
-            
-            unified = extended
+        # If we can't prove all the subgoals of this clause, move on.
+        if not extended:
+            continue
 
         # Return the bindings that satisfied the goal.
-        return unified
+        return extended
 
+    logging.debug('Failed to prove %s' % goal)
     return False
 
 
-def display_bindings(vars, bindings, db):
+def display_bindings(vars, bindings, db, remaining):
     if not vars:
         print 'Yes'
     for var in vars:
         print var, ':', var.lookup(bindings)
     if should_continue():
         return False
-    return bindings
+    return prove_all(remaining, bindings, db)
 
 
 def should_continue():
