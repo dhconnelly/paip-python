@@ -428,3 +428,185 @@ def prolog_prove(goals, db):
         db.define_primitive('display_bindings', display_bindings)
         prove_all(goals + [Relation('display_bindings', vars)], {}, db)
     print 'No.'
+
+
+## Parser and REPL
+
+# DEFN_BEGIN = "<-"
+# QUERY_BEGIN = "?-"
+# NUM = (-|+)?[0-9]+("."[0-9]+)?
+# IDENT: [a-zA-Z][a-zA-Z0-9_]*
+# WHEN = ":-"
+# LPAREN = "("
+# RPAREN = ")"
+# COMMA = ","
+
+# query: QUERY_BEGIN relation
+# defn: DEFN_BEGIN (relation|rule)
+# rule: relation WHEN relation_list
+# relation_list = relation [COMMA relation]*
+# relation: IDENT LPAREN term [COMMA term]* ")"
+# term: relation | var | atom
+# atom: NUM | IDENT
+# var: "?" IDENT
+
+
+class TokenError(Exception):
+    def __init__(self, err):
+        self.err = err
+
+
+LPAREN = 'LPAREN'
+RPAREN = 'RPAREN'
+COMMA = 'COMMA'
+DEFN_BEGIN = 'DEFN_BEGIN'
+QUERY_BEGIN = 'QUERY_BEGIN'
+NUM = 'NUM'
+IDENT = 'IDENT'
+WHEN = 'WHEN'
+EOF = 'EOF'
+
+
+class Lexer(object):
+    def __init__(self, line):
+        self.line = line
+        self.pos = 0
+        self.ch = line[self.pos]
+
+    def eat(self):
+        ret = self.ch
+        self.pos += 1
+        if self.pos >= len(self.line):
+            self.ch = EOF
+        else:
+            self.ch = self.line[self.pos]
+        return ret
+
+    def match(self, exp):
+        if self.ch != exp:
+            raise TokenError('expected %s' % exp)
+        self.eat()
+
+    def expect(self, is_type):
+        if not is_type():
+            raise TokenError('expected type %s' % repr(is_type))
+
+    def is_ws(self):
+        return self.ch in (' ', '\t', '\n')
+    
+    def DEFN_BEGIN(self):
+        self.match('<')
+        self.match('-')
+        return DEFN_BEGIN, '<-'
+
+    def QUERY_BEGIN(self):
+        self.match('?')
+        self.match('-')
+        return QUERY_BEGIN, '?-'
+
+    def is_when(self):
+        return self.ch == ':'
+
+    def WHEN(self):
+        self.match(':')
+        self.match('-')
+        return WHEN, ':-'
+
+    def is_number(self):
+        return self.ch in '0123456789'
+
+    def is_num(self):
+        return self.is_number() or self.ch in ('+', '-')
+    
+    def NUM(self):
+        # get the leading sign
+        sign = 1
+        if self.ch == '+':
+            self.eat()
+        elif self.ch == '-':
+            sign = -1
+            self.eat()
+
+        # read the whole part
+        num = ''
+        self.expect(self.is_number)
+        while self.is_number():
+            num += self.eat()
+
+        if not self.ch == '.':
+            return NUM, int(num)
+        num += self.eat()
+
+        # read the fractional part
+        self.expect(self.is_number)
+        while self.is_number():
+            num += self.eat()
+        return NUM, float(num)
+
+    def is_ident(self):
+        letters = 'abcdefghijklmnopqrstuvwxyz'
+        return self.ch in letters or self.ch in letters.upper()
+
+    def IDENT(self):
+        ident = ''
+        self.expect(self.is_ident)
+        while self.is_ident() or self.is_number():
+            ident += self.eat()
+        return IDENT, ident
+    
+    def gettok(self):
+        while self.pos < len(self.line):
+            if self.is_ws():
+                self.eat()
+                continue
+            if self.ch == '<':
+                return self.DEFN_BEGIN()
+            if self.ch == '?':
+                return self.QUERY_BEGIN()
+            if self.is_ident():
+                return self.IDENT()
+            if self.is_num():
+                return self.NUM()
+            if self.is_when():
+                return self.WHEN()
+            if self.ch == '(':
+                return LPAREN, self.eat()
+            if self.ch == ')':
+                return RPAREN, self.eat()
+            if self.ch == ',':
+                return COMMA, self.eat()
+            raise TokenError('no token begins with %s' % self.ch)
+        return EOF, EOF
+    
+
+def tokens(line):
+    lexer = Lexer(line)
+    while True:
+        tokt, tok = lexer.gettok()
+        if tokt == EOF:
+            return
+        yield tokt, tok
+
+        
+def main():
+    print 'Welcome to PyLogic.'
+    db = Database()
+
+    while True:
+        try:
+            line = raw_input('>> ')
+        except:
+            break
+        if not line:
+            continue
+        try:
+            for tokt, tok in tokens(line):
+                print tokt, tok
+        except TokenError as e:
+            print 'Syntax error: %s' % e.err
+
+    print 'Goodbye.'
+
+    
+if __name__ == '__main__':
+    main()
