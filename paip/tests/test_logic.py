@@ -145,7 +145,7 @@ class ClauseTests(unittest.TestCase):
                              logic.Relation('member', (x, z))])
 
         renamed = member.recursive_rename()
-        bindings = renamed.unify(member, {})
+        bindings = logic.unify(renamed, member, {})
 
         self.assertTrue(x in bindings)
         self.assertTrue(y in bindings)
@@ -167,56 +167,56 @@ class ClauseTests(unittest.TestCase):
 class UnificationTests(unittest.TestCase):
     def test_atom_atom_ok(self):
         a = logic.Atom('a')
-        self.assertEqual({}, a.unify(a, {}))
+        self.assertEqual({}, logic.unify(a, a, {}))
 
     def test_atom_atom_fail(self):
         a = logic.Atom('a')
         b = logic.Atom('b')
-        self.assertFalse(a.unify(b, {}))
+        self.assertFalse(logic.unify(a, b, {}))
 
     def test_atom_var_exists_ok(self):
         a = logic.Atom('a')
         x = logic.Var('x')
         bindings = {x: a}
-        self.assertEqual(bindings, a.unify(x, bindings))
+        self.assertEqual(bindings, logic.unify(a, x, bindings))
 
     def test_atom_var_exists_fail(self):
         a = logic.Atom('a')
         b = logic.Atom('b')
         x = logic.Var('x')
         bindings = {x: b}
-        self.assertFalse(a.unify(x, bindings))
+        self.assertFalse(logic.unify(a, x, bindings))
 
     def test_atom_var_new(self):
         a = logic.Atom('a')
         x = logic.Var('x')
-        self.assertEqual({x: a}, a.unify(x, {}))
+        self.assertEqual({x: a}, logic.unify(a, x, {}))
 
     def test_var_var_both_unbound(self):
         x = logic.Var('x')
         y = logic.Var('y')
-        self.assertEqual({x: y, y: x}, x.unify(y, {}))
+        self.assertEqual({x: y, y: x}, logic.unify(x, y, {}))
 
     def test_var_var_left_unbound(self):
         x = logic.Var('x')
         y = logic.Var('y')
         a = logic.Atom('a')
         bindings = {x: a}
-        self.assertEqual({x: a, y: x}, y.unify(x, bindings))
+        self.assertEqual({x: a, y: a}, logic.unify(y, x, bindings))
 
     def test_var_var_right_unbound(self):
         x = logic.Var('x')
         y = logic.Var('y')
         a = logic.Atom('a')
         bindings = {x: a}
-        self.assertEqual({x: a, y: x}, x.unify(y, bindings))
+        self.assertEqual({x: a, y: a}, logic.unify(x, y, bindings))
 
     def test_var_var_both_bound_equal(self):
         x = logic.Var('x')
         y = logic.Var('y')
         a = logic.Atom('a')
         bindings = {x: a, y: a}
-        self.assertEqual(bindings, x.unify(y, bindings))
+        self.assertEqual(bindings, logic.unify(x, y, bindings))
 
     def test_var_var_both_bound_unequal(self):
         x = logic.Var('x')
@@ -224,27 +224,27 @@ class UnificationTests(unittest.TestCase):
         a = logic.Atom('a')
         b = logic.Atom('b')
         bindings = {x: a, y: b}
-        self.assertFalse(x.unify(y, bindings))
+        self.assertFalse(logic.unify(x, y, bindings))
 
     def test_var_relation(self):
         x = logic.Var('x')
         r = logic.Relation('foo', (logic.Var('bar'), logic.Atom('baz')))
         bindings = {x: r}
-        self.assertEqual(bindings, x.unify(r, {}))
+        self.assertEqual(bindings, logic.unify(x, r, {}))
 
     def test_var_var_resolves_to_relation(self):
         x = logic.Var('x')
         y = logic.Var('y')
         r = logic.Relation('foo', (logic.Var('bar'), logic.Atom('baz')))
-        bindings = {x: y, y: r}
-        self.assertEqual(bindings, x.unify(y, {y: r}))
+        bindings = {x: r, y: r}
+        self.assertEqual(bindings, logic.unify(x, y, {y: r}))
 
     def test_var_resolves_to_relation_var(self):
         x = logic.Var('x')
         y = logic.Var('y')
         r = logic.Relation('foo', (logic.Var('bar'), logic.Atom('baz')))
-        bindings = {y: x, x: r}
-        self.assertEqual(bindings, x.unify(y, {x: r}))
+        bindings = {y: r, x: r}
+        self.assertEqual(bindings, logic.unify(x, y, {x: r}))
 
     def test_var_var_both_resolve_to_relations(self):
         x = logic.Var('x')
@@ -256,7 +256,7 @@ class UnificationTests(unittest.TestCase):
         r = logic.Relation('foo', (bar, baz))
         s = logic.Relation('foo', (b, c))
         bindings = {x: r, y: s, bar: b, c: baz}
-        self.assertEqual(bindings, x.unify(y, {x: r, y: s}))
+        self.assertEqual(bindings, logic.unify(x, y, {x: r, y: s}))
 
     def test_relation_relation_different_preds(self):
         x = logic.Var('x')
@@ -264,7 +264,7 @@ class UnificationTests(unittest.TestCase):
         a = logic.Atom('a')
         r = logic.Relation('likes', (x, y))
         s = logic.Relation('loves', (x, a))
-        self.assertFalse(r.unify(s, {}))
+        self.assertFalse(logic.unify(r, s, {}))
 
     def test_relation_relation_different_lengths(self):
         x = logic.Var('x')
@@ -272,7 +272,7 @@ class UnificationTests(unittest.TestCase):
         a = logic.Atom('a')
         r = logic.Relation('likes', (x, y))
         s = logic.Relation('likes', (x, a, y))
-        self.assertFalse(r.unify(s, {}))
+        self.assertFalse(logic.unify(r, s, {}))
 
     def test_relation_relation_different_args(self):
         x = logic.Var('x')
@@ -281,7 +281,7 @@ class UnificationTests(unittest.TestCase):
         b = logic.Atom('b')
         r = logic.Relation('likes', (x, a))
         s = logic.Relation('likes', (y, b))
-        self.assertFalse(r.unify(s, {}))
+        self.assertFalse(logic.unify(r, s, {}))
 
     def test_relation_relation_ok(self):
         x = logic.Var('x')
@@ -290,7 +290,7 @@ class UnificationTests(unittest.TestCase):
         b = logic.Atom('b')
         r = logic.Relation('likes', (x, y))
         s = logic.Relation('likes', (a, x))
-        self.assertEqual({x: a, y: x}, r.unify(s, {}))
+        self.assertEqual({x: a, y: a}, logic.unify(r, s, {}))
 
     def test_clauses_different_heads(self):
         joe = logic.Atom('joe')
@@ -302,7 +302,7 @@ class UnificationTests(unittest.TestCase):
         t = logic.Relation('hates', (x, jorge))
         c = logic.Clause(r, [s])
         d = logic.Clause(t, [s])
-        self.assertFalse(c.unify(d, {}))
+        self.assertFalse(logic.unify(c, d, {}))
 
     def test_clauses_different_length_bodies(self):
         joe = logic.Atom('joe')
@@ -316,7 +316,7 @@ class UnificationTests(unittest.TestCase):
         u = logic.Relation('hates', (joe, jorge))
         c = logic.Clause(r, [s])
         d = logic.Clause(t, [s, u])
-        self.assertFalse(c.unify(d, {}))
+        self.assertFalse(logic.unify(c, d, {}))
 
     def test_clauses_different_bodies(self):
         joe = logic.Atom('joe')
@@ -331,7 +331,7 @@ class UnificationTests(unittest.TestCase):
         v = logic.Relation('hates', (judy, x))
         c = logic.Clause(r, [s, v])
         d = logic.Clause(t, [s, u])
-        self.assertFalse(c.unify(d, {}))
+        self.assertFalse(logic.unify(c, d, {}))
 
     def test_clauses_ok(self):
         joe = logic.Atom('joe')
@@ -346,7 +346,7 @@ class UnificationTests(unittest.TestCase):
         v = logic.Relation('hates', (judy, y))
         c = logic.Clause(r, [s, v])
         d = logic.Clause(t, [s, u])
-        self.assertEqual({x: jorge, y: joe}, c.unify(d, {}))
+        self.assertEqual({x: jorge, y: joe}, logic.unify(c, d, {}))
         
 
 class DatabaseTests(unittest.TestCase):

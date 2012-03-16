@@ -40,6 +40,83 @@ class Database(object):
 
 ## Idea 2: Unification of logic variables
 
+def unify(a, b, bindings):
+    """Unify a and b, if possible.  Returns updated bindings or None."""
+    
+    # Resolve all vars before processing.  This ensures that all vars
+    # encountered below are not bound to atoms or relations.
+    if isinstance(a, Var) and a in bindings:
+        a = a.lookup(bindings) 
+    if isinstance(b, Var) and b in bindings:
+        b = b.lookup(bindings)
+
+    # make a new copy of bindings (for backtracking)
+    bindings = dict(bindings)
+    
+    # atoms and atoms
+    if isinstance(a, Atom) and isinstance(b, Atom):
+        # two atoms only unify if they are equal
+        return bindings if a == b else False
+
+    # atoms and vars
+    elif isinstance(a, Atom) and isinstance(b, Var):
+        return unify(b, a, bindings)
+    elif isinstance(a, Var) and isinstance(b, Atom):
+        # since a is not transitively bound to an atom or relation, bind to b.
+        bindings[a] = b
+        return bindings
+
+    # vars and vars
+    elif isinstance(a, Var) and isinstance(b, Var):
+        # neither a nor b are transitively bound to atoms or relations,
+        # so bind them to each other.
+        bindings[a], bindings[b] = b, a
+        return bindings
+
+    # vars and relations
+    elif isinstance(a, Var) and isinstance(b, Relation):
+        return unify(b, a, bindings)
+    elif isinstance(a, Relation) and isinstance(b, Var):
+        # b is not transitively bound to an atom or relation, so bind to a.
+        bindings[b] = a
+        return bindings
+
+    # relations and relations
+    elif isinstance(a, Relation) and isinstance(b, Relation):
+        if a.pred != b.pred:
+            return False
+        if len(a.args) != len(b.args):
+            return False
+        for i, arg in enumerate(a.args):
+            bindings = unify(arg, b.args[i], bindings)
+            if bindings == False:
+                return False
+        return bindings
+
+    # atoms and relations
+    elif isinstance(a, Atom) and isinstance(b, Relation):
+        return False
+    elif isinstance(a, Relation) and isinstance(b, Atom):
+        return False
+
+    # clauses
+    elif isinstance(a, Clause) and isinstance(b, Clause):
+        bindings = unify(a.head, b.head, bindings)
+        if bindings == False:
+            return False
+        if len(a.body) != len(b.body):
+            return False
+        for i, term in enumerate(a.body):
+            bindings = unify(term, b.body[i], bindings)
+            if bindings == False:
+                return False
+        return bindings
+
+    # anything else
+    else:
+        pass
+
+
 class Atom(object):
     """Represents any literal (symbol, number, string)."""
     
@@ -140,66 +217,6 @@ class Var(object):
 
         return binding
     
-    def unify(self, other, bindings):
-        """
-        Unify self with other (if possible), returning the updated bindings.
-        if self and other don't unify, returns False.
-        """
-        
-        if isinstance(other, Atom):
-            # Let Atom handle unification with Vars.
-            return other.unify(self, bindings)
-
-        logging.debug('Attempting to unify %s and %s, bindings=%s' %
-                      (self, other,
-                       {str(v): str(bindings[v]) for v in bindings}))
-        
-        if isinstance(other, Var):
-            bindings = dict(bindings)
-            
-            # If two variables are identical, we can leave the bindings alone.
-            if self == other:
-                return bindings
-
-            # Check if either of us are already bound to an Atom.
-            self_bind = self.lookup(bindings)
-            other_bind = other.lookup(bindings)
-            
-            # If both are unbound, bind them together.
-            if not self_bind and not other_bind:
-                bindings[self] = other
-                bindings[other] = self
-                return bindings
-
-            # Otherwise, try to bind the unbound to the bound (if possible).
-            if self_bind and not other_bind:
-                bindings[other] = self
-                return bindings
-            if not self_bind and other_bind:
-                bindings[self] = other
-                return bindings
-            
-            # If both are bound, make sure they either bind to each other or
-            # the same atom.
-            if (self_bind == other_bind
-                or self_bind == other
-                or self == other_bind):
-                return bindings
-            return False
-
-        if isinstance(other, Relation):
-            bindings = dict(bindings)
-            bound = self.lookup(bindings)
-            if bound and bound != other:
-                return False
-            if bound and bound == other:
-                return bindings
-            bindings[self] = other
-            return bindings
-
-        # A Var can only unify with an Atom or another Var.
-        return False
-
     def rename_vars(self, replacements):
         return replacements[self] if self in replacements else self
 
@@ -224,32 +241,6 @@ class Relation(object):
         return (isinstance(other, Relation)
                 and self.pred == other.pred
                 and list(self.args) == list(other.args))
-
-    def unify(self, other, bindings):
-        logging.debug('Attempting to unify %s and %s, bindings=%s' %
-                      (self, other,
-                       {str(v): str(bindings[v]) for v in bindings}))
-        
-        if isinstance(other, Relation):
-            if self.pred != other.pred:
-                return False
-
-            if len(self.args) != len(other.args):
-                return False
-
-            bindings = dict(bindings)
-            for i, term in enumerate(self.args):
-                bindings = term.unify(other.args[i], bindings)
-                if bindings == False:
-                    logging.debug('Unification failed')
-                    return False
-
-            return bindings
-        
-        if isinstance(other, Var):
-            return other.unify(self, bindings)
-        
-        return False
 
     def bind_vars(self, bindings):
         bound = []
@@ -287,30 +278,6 @@ class Clause(object):
         return (isinstance(other, Clause)
                 and self.head == other.head
                 and list(self.body) == list(other.body))
-
-    def unify(self, other, bindings):
-        if not isinstance(other, Clause):
-            return False
-
-        logging.debug('Attempting to unify %s and %s, bindings=%s' %
-                      (self, other,
-                       {str(v): str(bindings[v]) for v in bindings}))
-        
-        bindings = self.head.unify(other.head, bindings)
-        if bindings == False:
-            logging.debug('Unification failed')
-            return False
-
-        if len(self.body) != len(other.body):
-            return False
-        
-        for i, relation in enumerate(self.body):
-            bindings = relation.unify(other.body[i], bindings)
-            if bindings == False:
-                logging.debug('Unification failed')
-                return False
-
-        return bindings
 
     def bind_vars(self, bindings):
         head = self.head.bind_vars(bindings)
@@ -410,7 +377,7 @@ def prove(goal, bindings, db, remaining=None):
         # Next, we try to unify goal with the head of the candidate clause.
         # If unification is possible, then the candidate clause might either be
         # a rule that can prove goal or a fact that states goal is already true.
-        unified = goal.unify(renamed.head, bindings)
+        unified = unify(goal, renamed.head, bindings)
         if not unified:
             continue
 
