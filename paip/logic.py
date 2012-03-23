@@ -443,8 +443,7 @@ def prolog_prove(goals, db):
 # COMMA = ","
 
 # query: QUERY_BEGIN relation
-# defn: DEFN_BEGIN (relation|rule)
-# rule: relation WHEN relation_list
+# clause: DEFN_BEGIN relation (WHEN relation_list)?
 # relation_list = relation [COMMA relation]*
 # relation: IDENT LPAREN term [COMMA term]* RPAREN
 # term: relation | var | atom
@@ -464,6 +463,10 @@ relation = 'relation'
 term = 'term'
 var = 'var'
 atom = 'atom'
+clause = 'clause'
+rule = 'rule'
+fact = 'fact'
+relation_list = 'relation_list'
 
 
 class Parser(object):
@@ -485,6 +488,24 @@ class Parser(object):
         self.lookahead.pop(0)
         self.lookahead.append(self.lexer.next())
         return tok
+
+    def clause(self):
+        self.match(DEFN_BEGIN)
+        head = self.relation()
+        tt, tok = self.la(1)
+        if tt == WHEN:
+            self.match(WHEN)
+            return Rule(head, self.relation_list())
+        return Fact(head)
+
+    def relation_list(self):
+        rels = [self.relation()]
+        tt, tok = self.la(1)
+        while tt == COMMA:
+            self.match(COMMA)
+            rels.append(self.relation())
+            tt, tok = self.la(1)
+        return rels
 
     def relation(self):
         pred = self.match(IDENT)
@@ -670,7 +691,7 @@ def tokens(line):
 
 def parse(line):
     p = Parser(Lexer(line))
-    return p.term()
+    return p.clause()
 
 
 def main():
