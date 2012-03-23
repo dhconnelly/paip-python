@@ -432,8 +432,9 @@ def prolog_prove(goals, db):
 
 ## Parser and REPL
 
+# QUESTION = "?"
 # DEFN_BEGIN = "<-"
-# QUERY_BEGIN = "?-"
+# QUERY_BEGIN = QUESTION "-"
 # NUM = (-|+)?[0-9]+("."[0-9]+)?
 # IDENT: [a-zA-Z][a-zA-Z0-9_]*
 # WHEN = ":-"
@@ -445,20 +446,100 @@ def prolog_prove(goals, db):
 # defn: DEFN_BEGIN (relation|rule)
 # rule: relation WHEN relation_list
 # relation_list = relation [COMMA relation]*
-# relation: IDENT LPAREN term [COMMA term]* ")"
+# relation: IDENT LPAREN term [COMMA term]* RPAREN
 # term: relation | var | atom
 # atom: NUM | IDENT
-# var: "?" IDENT
+# var: QUESTION IDENT
+
+
+class ParseError(Exception):
+    def __init__(self, err):
+        self.err = err
+
+    def __str__(self):
+        return 'Parse error: %s' % self.err
+
+
+relation = 'relation'
+term = 'term'
+var = 'var'
+atom = 'atom'
+
+
+class Parser(object):
+    k = 2
+
+    def __init__(self, lexer):
+        self.lexer = lexer
+        self.lookahead = []
+        for i in xrange(Parser.k):
+            self.lookahead.append(lexer.next())
+
+    def la(self, i):
+        return self.lookahead[i-1]
+
+    def match(self, exp_tt):
+        tt, tok = self.la(1)
+        if tt != exp_tt:
+            raise ParseError('Expected %s, got %s' % (exp_tt, tt))
+        self.lookahead.pop(0)
+        self.lookahead.append(self.lexer.next())
+        return tok
+
+    def relation(self):
+        pred = self.match(IDENT)
+        body = []
+        self.match(LPAREN)
+        body.append(self.term())
+        tt, tok = self.la(1)
+        while tt == COMMA:
+            self.match(COMMA)
+            body.append(self.term())
+            tt, tok = self.la(1)
+        self.match(RPAREN)
+        return Relation(pred, body)
+
+    def term(self):
+        tt, tok = self.la(1)
+        if tt == QUESTION:
+            return self.var()
+        elif tt == NUM:
+            return self.atom()
+        elif tt == IDENT:
+            tt2, tok2 = self.la(2)
+            if tt2 == LPAREN:
+                return self.relation()
+            else:
+                return self.atom()
+        else:
+            raise ParseError('Unknown term lookahead: %s' % tok)
+
+    def var(self):
+        self.match(QUESTION)
+        return Var(self.match(IDENT))
+
+    def atom(self):
+        tt, tok = self.la(1)
+        if tt == NUM:
+            return Atom(self.match(NUM))
+        elif tt == IDENT:
+            return Atom(self.match(IDENT))
+        else:
+            raise ParseError('Unknown atom: %s' % tok)
 
 
 class TokenError(Exception):
     def __init__(self, err):
         self.err = err
 
+    def __str__(self):
+        return 'Token error: %s' % self.err
+
 
 LPAREN = 'LPAREN'
 RPAREN = 'RPAREN'
 COMMA = 'COMMA'
+QUESTION = 'QUESTION'
 DEFN_BEGIN = 'DEFN_BEGIN'
 QUERY_BEGIN = 'QUERY_BEGIN'
 NUM = 'NUM'
@@ -498,11 +579,6 @@ class Lexer(object):
         self.match('<')
         self.match('-')
         return DEFN_BEGIN, '<-'
-
-    def QUERY_BEGIN(self):
-        self.match('?')
-        self.match('-')
-        return QUERY_BEGIN, '?-'
 
     def is_when(self):
         return self.ch == ':'
@@ -554,7 +630,7 @@ class Lexer(object):
             ident += self.eat()
         return IDENT, ident
     
-    def gettok(self):
+    def next(self):
         while self.pos < len(self.line):
             if self.is_ws():
                 self.eat()
@@ -562,7 +638,11 @@ class Lexer(object):
             if self.ch == '<':
                 return self.DEFN_BEGIN()
             if self.ch == '?':
-                return self.QUERY_BEGIN()
+                self.eat()
+                if self.ch == '-':
+                    self.eat()
+                    return QUERY_BEGIN, '?-'
+                return QUESTION, '?'
             if self.is_ident():
                 return self.IDENT()
             if self.is_num():
@@ -582,12 +662,17 @@ class Lexer(object):
 def tokens(line):
     lexer = Lexer(line)
     while True:
-        tokt, tok = lexer.gettok()
+        tokt, tok = lexer.next()
         if tokt == EOF:
             return
         yield tokt, tok
 
-        
+
+def parse(line):
+    p = Parser(Lexer(line))
+    return p.term()
+
+
 def main():
     print 'Welcome to PyLogic.'
     db = Database()
@@ -599,11 +684,14 @@ def main():
             break
         if not line:
             continue
+        if line == 'quit':
+            break
         try:
-            for tokt, tok in tokens(line):
-                print tokt, tok
+            print repr(parse(line))
+        except ParseError as e:
+            print e
         except TokenError as e:
-            print 'Syntax error: %s' % e.err
+            print e
 
     print 'Goodbye.'
 
