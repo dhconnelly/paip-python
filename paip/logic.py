@@ -442,8 +442,9 @@ def prolog_prove(goals, db):
 # RPAREN = ")"
 # COMMA = ","
 
+# command: query | defn
 # query: QUERY_BEGIN relation
-# clause: DEFN_BEGIN relation (WHEN relation_list)?
+# defn: DEFN_BEGIN relation (WHEN relation_list)?
 # relation_list = relation [COMMA relation]*
 # relation: IDENT LPAREN term [COMMA term]* RPAREN
 # term: relation | var | atom
@@ -457,16 +458,6 @@ class ParseError(Exception):
 
     def __str__(self):
         return 'Parse error: %s' % self.err
-
-
-relation = 'relation'
-term = 'term'
-var = 'var'
-atom = 'atom'
-clause = 'clause'
-rule = 'rule'
-fact = 'fact'
-relation_list = 'relation_list'
 
 
 class Parser(object):
@@ -489,7 +480,19 @@ class Parser(object):
         self.lookahead.append(self.lexer.next())
         return tok
 
-    def clause(self):
+    def command(self):
+        tt, tok = self.la(1)
+        if tt == QUERY_BEGIN:
+            return self.query()
+        elif tt == DEFN_BEGIN:
+            return self.defn()
+        raise ParseError('Unknown command: %s' % tok)
+
+    def query(self):
+        self.match(QUERY_BEGIN)
+        return self.relation()
+
+    def defn(self):
         self.match(DEFN_BEGIN)
         head = self.relation()
         tt, tok = self.la(1)
@@ -691,7 +694,7 @@ def tokens(line):
 
 def parse(line):
     p = Parser(Lexer(line))
-    return p.clause()
+    return p.command()
 
 
 def main():
@@ -708,7 +711,13 @@ def main():
         if line == 'quit':
             break
         try:
-            print repr(parse(line))
+            q = parse(line)
+            if isinstance(q, Relation):
+                prolog_prove([q], db)
+            elif isinstance(q, Clause):
+                db.store(q)
+            else:
+                print 'Bad command!'
         except ParseError as e:
             print e
         except TokenError as e:
