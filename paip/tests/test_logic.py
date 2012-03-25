@@ -78,14 +78,21 @@ class RelationTests(unittest.TestCase):
         r = logic.Relation('pair', [u, logic.Relation('pair', [a, v])])
         self.assertEqual(r, p1.rename_vars(rep))
 
+    def test_rename_repeated_var(self):
+        x = logic.Var('x')
+        y = logic.Var('y')
+        r = logic.Relation('likes', (x, x))
+        s = logic.Relation('likes', (y, y))
+        self.assertEqual(s, r.rename_vars({x: y}))
+
     def test_get_vars(self):
         a = logic.Atom('a')
         x = logic.Var('x')
         y = logic.Var('y')
-        p3 = logic.Relation('pair', (y, x))
+        p3 = logic.Relation('pair', (x, x))
         p2 = logic.Relation('pair', (a, p3))
-        p1 = logic.Relation('pair', (x, p2))
-        self.assertEqual([x, y], p1.get_vars())
+        p1 = logic.Relation('pair', (y, p2))
+        self.assertEqual(set([x, y]), set(p1.get_vars()))
         
 
 class ClauseTests(unittest.TestCase):

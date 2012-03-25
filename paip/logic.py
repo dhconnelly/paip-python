@@ -177,6 +177,9 @@ class Var(object):
     def __eq__(self, other):
         return isinstance(other, Var) and other.var == self.var
 
+    def __hash__(self):
+        return hash(self.var)
+
     def lookup(self, bindings):
         """Find the term that self is bound to in bindings."""
         binding = bindings.get(self)
@@ -200,7 +203,7 @@ class Var(object):
         return binding
     
     def rename_vars(self, replacements):
-        return replacements[self] if self in replacements else self
+        return replacements.get(self, self)
 
     def get_vars(self):
         return [self]
@@ -239,8 +242,8 @@ class Relation(object):
     def get_vars(self):
         vars = []
         for arg in self.args:
-            vars.extend(arg.get_vars())
-        return list(set(vars))
+            vars.extend(v for v in arg.get_vars() if v not in vars)
+        return vars
 
 
 class Clause(object):
@@ -282,8 +285,8 @@ class Clause(object):
     def get_vars(self):
         vars = self.head.get_vars()
         for rel in self.body:
-            vars.extend(rel.get_vars())
-        return list(set(vars))
+            vars.extend(v for v in rel.get_vars() if v not in vars)
+        return vars
     
 
 class Fact(Clause):
@@ -687,7 +690,10 @@ def main():
 
     while True:
         print db
-        line = raw_input('>> ')
+        try:
+            line = raw_input('>> ')
+        except EOFError:
+            break
         if not line:
             continue
         if line == 'quit':
