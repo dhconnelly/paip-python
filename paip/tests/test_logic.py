@@ -147,9 +147,9 @@ class ClauseTests(unittest.TestCase):
         renamed = member.recursive_rename()
         bindings = logic.unify(renamed, member, {})
 
-        self.assertTrue(x in bindings)
-        self.assertTrue(y in bindings)
-        self.assertTrue(z in bindings)
+        self.assertTrue(x in bindings or x in bindings.values())
+        self.assertTrue(y in bindings or y in bindings.values())
+        self.assertTrue(z in bindings or z in bindings.values())
 
     def test_get_vars(self):
         a = logic.Atom('a')
@@ -195,7 +195,7 @@ class UnificationTests(unittest.TestCase):
     def test_var_var_both_unbound(self):
         x = logic.Var('x')
         y = logic.Var('y')
-        self.assertEqual({x: y, y: x}, logic.unify(x, y, {}))
+        self.assertEqual({x: y}, logic.unify(x, y, {}))
 
     def test_var_var_left_unbound(self):
         x = logic.Var('x')

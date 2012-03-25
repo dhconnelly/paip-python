@@ -40,85 +40,61 @@ class Database(object):
 
 ## Idea 2: Unification of logic variables
 
-def unify(a, b, bindings):
-    """Unify a and b, if possible.  Returns updated bindings or None."""
-    
-    # Resolve all vars before processing.  This ensures that all vars
-    # encountered below are not bound to atoms or relations.
-    if isinstance(a, Var) and a in bindings:
-        a = a.lookup(bindings) 
-    if isinstance(b, Var) and b in bindings:
-        b = b.lookup(bindings)
+def unify(x, y, bindings):
+    """Unify x and y, if possible.  Returns updated bindings or None."""
+    if bindings == False:
+        return False
 
-    # make a new copy of bindings (for backtracking)
+    # Make a copy of bindings so we can backtrack if necessary.
     bindings = dict(bindings)
-    
-    # atoms and atoms
-    if isinstance(a, Atom) and isinstance(b, Atom):
-        # two atoms only unify if they are equal
-        return bindings if a == b else False
 
-    # atoms and vars
-    elif isinstance(a, Atom) and isinstance(b, Var):
-        return unify(b, a, bindings)
-    elif isinstance(a, Var) and isinstance(b, Atom):
-        # since a is not transitively bound to an atom or relation, bind to b.
-        bindings[a] = b
-        logging.debug('unify: %s bound to %s' % (a, b))
+    logging.debug('Unify %s and %s with bindings %s' % (x, y, bindings))
+
+    if x == y:
         return bindings
 
-    # vars and vars
-    elif isinstance(a, Var) and isinstance(b, Var):
-        # neither a nor b are transitively bound to atoms or relations,
-        # so bind them to each other.
-        bindings[a], bindings[b] = b, a
-        logging.debug('unify: %s bound to %s' % (a, b))
-        logging.debug('unify: %s bound to %s' % (b, a))
+    if isinstance(x, Var):
+        # If x (or y) is already bound to something, dereference and try again.
+        if x in bindings:
+            return unify(bindings[x], y, bindings)
+        if y in bindings:
+            return unify(x, bindings[y], bindings)
+
+        # Otherwise, bind x to y.
+        bindings[x] = y
         return bindings
 
-    # vars and relations
-    elif isinstance(a, Var) and isinstance(b, Relation):
-        return unify(b, a, bindings)
-    elif isinstance(a, Relation) and isinstance(b, Var):
-        # b is not transitively bound to an atom or relation, so bind to a.
-        bindings[b] = a
-        logging.debug('unify: %s bound to %s' % (b, a))
-        return bindings
+    if isinstance(y, Var):
+        return unify(y, x, bindings)
 
-    # relations and relations
-    elif isinstance(a, Relation) and isinstance(b, Relation):
-        if a.pred != b.pred:
+    if isinstance(x, Relation) and isinstance(y, Relation):
+        if x.pred != y.pred:
             return False
-        if len(a.args) != len(b.args):
+        if len(x.args) != len(y.args):
             return False
-        for i, arg in enumerate(a.args):
-            bindings = unify(arg, b.args[i], bindings)
+        # Unify corresponding terms in the relations.
+        for i, xi in enumerate(x.args):
+            yi = y.args[i]
+            bindings = unify(xi, yi, bindings)
             if bindings == False:
                 return False
         return bindings
 
-    # atoms and relations
-    elif isinstance(a, Atom) and isinstance(b, Relation):
-        return False
-    elif isinstance(a, Relation) and isinstance(b, Atom):
-        return False
-
-    # clauses
-    elif isinstance(a, Clause) and isinstance(b, Clause):
-        bindings = unify(a.head, b.head, bindings)
+    if isinstance(x, Clause) and isinstance(y, Clause):
+        if len(x.body) != len(y.body):
+            return False
+        # Unify head and body terms.
+        bindings = unify(x.head, y.head, bindings)
         if bindings == False:
             return False
-        if len(a.body) != len(b.body):
-            return False
-        for i, term in enumerate(a.body):
-            bindings = unify(term, b.body[i], bindings)
+        for i, xi in enumerate(x.body):
+            yi = y.body[i]
+            bindings = unify(xi, yi, bindings)
             if bindings == False:
                 return False
         return bindings
 
-    # anything else
-    else:
-        pass
+    return False
 
 
 class Atom(object):
