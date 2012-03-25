@@ -64,6 +64,7 @@ def unify(a, b, bindings):
     elif isinstance(a, Var) and isinstance(b, Atom):
         # since a is not transitively bound to an atom or relation, bind to b.
         bindings[a] = b
+        logging.debug('unify: %s bound to %s' % (a, b))
         return bindings
 
     # vars and vars
@@ -71,6 +72,8 @@ def unify(a, b, bindings):
         # neither a nor b are transitively bound to atoms or relations,
         # so bind them to each other.
         bindings[a], bindings[b] = b, a
+        logging.debug('unify: %s bound to %s' % (a, b))
+        logging.debug('unify: %s bound to %s' % (b, a))
         return bindings
 
     # vars and relations
@@ -79,6 +82,7 @@ def unify(a, b, bindings):
     elif isinstance(a, Relation) and isinstance(b, Var):
         # b is not transitively bound to an atom or relation, so bind to a.
         bindings[b] = a
+        logging.debug('unify: %s bound to %s' % (b, a))
         return bindings
 
     # relations and relations
@@ -294,6 +298,7 @@ class Clause(object):
     def recursive_rename(self):
         """Replace each var in self with an unused one."""
         renames = {v: Var.get_unused_var() for v in self.get_vars()}
+        logging.debug('Renamed vars: %s' % renames)
         return self.rename_vars(renames)
 
     def get_vars(self):
@@ -700,9 +705,11 @@ def parse(line):
 def main():
     print 'Welcome to PyLogic.'
     db = Database()
+    logging.basicConfig(level=logging.DEBUG)
 
     while True:
         try:
+            print db
             line = raw_input('>> ')
         except:
             break
