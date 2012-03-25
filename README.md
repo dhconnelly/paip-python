@@ -29,6 +29,7 @@ You can follow the progress of the project on [Trello][].
 - [Download][] the paip-python code.
 - Type `python run_examples.py` and follow the prompts to run the examples.
 
+To run the Prolog interpreter, run `python paip/logic.py`.
 
 ## Documentation
 
