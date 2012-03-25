@@ -82,7 +82,8 @@ class RelationTests(unittest.TestCase):
         a = logic.Atom('a')
         x = logic.Var('x')
         y = logic.Var('y')
-        p2 = logic.Relation('pair', (a, y))
+        p3 = logic.Relation('pair', (y, x))
+        p2 = logic.Relation('pair', (a, p3))
         p1 = logic.Relation('pair', (x, p2))
         self.assertEqual([x, y], p1.get_vars())
         

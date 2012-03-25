@@ -34,7 +34,8 @@ class Database(object):
     def __str__(self):
         clauses = []
         for cl in self.clauses.values():
-            clauses.extend(cl)
+            if isinstance(cl, list):
+                clauses.extend(cl)
         return '\n'.join(['  ' + str(clause) for clause in clauses])
 
 
@@ -239,7 +240,7 @@ class Relation(object):
         vars = []
         for arg in self.args:
             vars.extend(arg.get_vars())
-        return vars
+        return list(set(vars))
 
 
 class Clause(object):
@@ -685,11 +686,8 @@ def main():
     logging.basicConfig(level=logging.DEBUG)
 
     while True:
-        try:
-            print db
-            line = raw_input('>> ')
-        except:
-            break
+        print db
+        line = raw_input('>> ')
         if not line:
             continue
         if line == 'quit':
