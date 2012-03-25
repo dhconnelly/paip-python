@@ -55,5 +55,4 @@ def main():
     print 'Query:', has_foo, length_4
     print
 
-    logging.basicConfig(level=logging.DEBUG)
     logic.prolog_prove([has_foo, length_4], db)
