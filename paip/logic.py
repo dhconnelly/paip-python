@@ -48,7 +48,8 @@ def unify(x, y, bindings):
     # Make a copy of bindings so we can backtrack if necessary.
     bindings = dict(bindings)
 
-    logging.debug('Unify %s and %s with bindings %s' % (x, y, bindings))
+    logging.debug('Unify %s and %s(bindings=%s)' % 
+        (str(x), str(y), {str(a): str(b) for a, b in bindings.items()}))
 
     if x == y:
         return bindings
