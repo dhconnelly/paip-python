@@ -686,7 +686,7 @@ def parse(line):
 def main():
     print 'Welcome to PyLogic.'
     db = Database()
-    logging.basicConfig(level=logging.DEBUG)
+    #logging.basicConfig(level=logging.DEBUG)
 
     while True:
         print db
@@ -700,16 +700,22 @@ def main():
             break
         try:
             q = parse(line)
-            if isinstance(q, Relation):
-                prolog_prove([q], db)
-            elif isinstance(q, Clause):
-                db.store(q)
-            else:
-                print 'Bad command!'
         except ParseError as e:
             print e
+            continue
         except TokenError as e:
             print e
+            continue
+
+        if isinstance(q, Relation):
+            try:
+                prolog_prove([q], db)
+            except KeyboardInterrupt:
+                print 'Cancelled.'
+        elif isinstance(q, Clause):
+            db.store(q)
+        else:
+            print 'Bad command!'
 
     print 'Goodbye.'
 
