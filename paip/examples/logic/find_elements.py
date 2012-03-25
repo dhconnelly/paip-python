@@ -8,13 +8,13 @@ def main():
     nil = logic.Atom('nil')
     more = logic.Var('more')
 
-    member_first = logic.Fact(
+    member_first = logic.Clause(
         logic.Relation('member', (x, logic.Relation('pair', (x, more)))))
 
-    member_last = logic.Fact(
+    member_last = logic.Clause(
         logic.Relation('member', (x, logic.Relation('pair', (y, x)))))
     
-    member_rest = logic.Rule(
+    member_rest = logic.Clause(
         logic.Relation('member', (x, logic.Relation('pair', (y, more)))),
         [logic.Relation('member', (x, more))])
 

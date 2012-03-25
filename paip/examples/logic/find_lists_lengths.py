@@ -10,23 +10,23 @@ def main():
     more = logic.Var('more')
     zero = logic.Atom('0')
 
-    length_nil = logic.Fact(logic.Relation('length', (nil, zero)))
-    length_one = logic.Rule(
+    length_nil = logic.Clause(logic.Relation('length', (nil, zero)))
+    length_one = logic.Clause(
         logic.Relation('length',
                        (logic.Relation('pair', (x, more)),
                         logic.Relation('+1', [a]))),
         [logic.Relation('length', (more, a))])
 
-    member_first = logic.Fact(
+    member_first = logic.Clause(
         logic.Relation('member', (x, logic.Relation('pair', (x, more)))))
 
-    member_last = logic.Fact(
+    member_last = logic.Clause(
         logic.Relation('member', (x, logic.Relation('pair', (y, x)))))
 
-    member_end = logic.Fact(
+    member_end = logic.Clause(
         logic.Relation('member', (x, logic.Relation('pair', (x, nil)))))
     
-    member_rest = logic.Rule(
+    member_rest = logic.Clause(
         logic.Relation('member', (x, logic.Relation('pair', (y, more)))),
         [logic.Relation('member', (x, more))])
 

@@ -14,15 +14,15 @@ def main():
     y = logic.Var('y')
     z = logic.Var('z')
 
-    self_likes = logic.Fact(logic.Relation('likes', (x, x)))
-    transitive_likes = logic.Rule(logic.Relation('likes', (x, y)),
+    self_likes = logic.Clause(logic.Relation('likes', (x, x)))
+    transitive_likes = logic.Clause(logic.Relation('likes', (x, y)),
         (logic.Relation('likes', (x, z)), logic.Relation('likes', (z, y))))
 
-    klr = logic.Fact(logic.Relation('likes', (kim, robin)))
-    sll = logic.Fact(logic.Relation('likes', (sandy, lee)))
-    slk = logic.Fact(logic.Relation('likes', (sandy, kim)))
-    rlc = logic.Fact(logic.Relation('likes', (robin, cats)))
-    llr = logic.Fact(logic.Relation('likes', (lee, robin)))
+    klr = logic.Clause(logic.Relation('likes', (kim, robin)))
+    sll = logic.Clause(logic.Relation('likes', (sandy, lee)))
+    slk = logic.Clause(logic.Relation('likes', (sandy, kim)))
+    rlc = logic.Clause(logic.Relation('likes', (robin, cats)))
+    llr = logic.Clause(logic.Relation('likes', (lee, robin)))
 
     db.store(klr)
     db.store(sll)

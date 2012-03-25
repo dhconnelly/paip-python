@@ -10,8 +10,8 @@ def main():
     more = logic.Var('more')
     zero = logic.Atom('0')
 
-    length_nil = logic.Fact(logic.Relation('length', (nil, zero)))
-    length_one = logic.Rule(
+    length_nil = logic.Clause(logic.Relation('length', (nil, zero)))
+    length_one = logic.Clause(
         logic.Relation('length',
                        (logic.Relation('pair', (x, more)),
                         logic.Relation('+1', [a]))),

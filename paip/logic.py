@@ -3,7 +3,7 @@ import logging
 ## Idea 1: Uniform database
 
 class Database(object):
-    """A store for clauses and primitives."""
+    """A database for clauses and primitives."""
 
     # We store all of the clauses--rules and facts--in one database, indexed
     # by the predicates of their head relations.  This makes it quicker and
@@ -20,15 +20,16 @@ class Database(object):
             self.store(clause)
 
     def store(self, clause):
-        # Add each clause in the database to the list of clauses indexed
-        # on the head's predicate.
+        """Add a rule or fact to the database."""
+        # We index clauses on the head's predicate.
         self.clauses.setdefault(clause.head.pred, []).append(clause)
 
     def define_primitive(self, name, fn):
+        """Store a procedure with the given name."""
         self.clauses[name] = fn
 
     def query(self, pred):
-        # Retrieve clauses by their head's predicate.
+        """Retrieve all clauses and procedures with the given name."""
         return self.clauses.setdefault(pred, [])
 
     def __str__(self):
@@ -52,9 +53,11 @@ def unify(x, y, bindings):
     logging.debug('Unify %s and %s(bindings=%s)' % 
         (str(x), str(y), {str(a): str(b) for a, b in bindings.items()}))
 
+    # When x and y are equal (the same Var or Atom), there's nothing to do.
     if x == y:
         return bindings
 
+    # Unify Vars and anything
     if isinstance(x, Var):
         # If x (or y) is already bound to something, dereference and try again.
         if x in bindings:
@@ -65,27 +68,33 @@ def unify(x, y, bindings):
         # Otherwise, bind x to y.
         bindings[x] = y
         return bindings
-
     if isinstance(y, Var):
         return unify(y, x, bindings)
 
+    # Unify Relations with Relations
     if isinstance(x, Relation) and isinstance(y, Relation):
+        # Two relations must have the same predicate and arity to unify.
         if x.pred != y.pred:
             return False
         if len(x.args) != len(y.args):
             return False
+
         # Unify corresponding terms in the relations.
         for i, xi in enumerate(x.args):
             yi = y.args[i]
             bindings = unify(xi, yi, bindings)
             if bindings == False:
                 return False
+
         return bindings
 
+    # Unify Clauses with Clauses
     if isinstance(x, Clause) and isinstance(y, Clause):
+        # Clause bodies must have the same length to unify.
         if len(x.body) != len(y.body):
             return False
-        # Unify head and body terms.
+
+        # Unify head term and body terms.
         bindings = unify(x.head, y.head, bindings)
         if bindings == False:
             return False
@@ -96,6 +105,7 @@ def unify(x, y, bindings):
                 return False
         return bindings
 
+    # Nothing else can unify.
     return False
 
 
@@ -128,6 +138,7 @@ class Var(object):
 
     @staticmethod
     def get_unused_var():
+        """Get a new, unused Var."""
         v = Var('var%d' % Var.counter)
         Var.counter += 1
         return v
@@ -195,18 +206,21 @@ class Relation(object):
                 and list(self.args) == list(other.args))
 
     def bind_vars(self, bindings):
+        """Replace each Var in this relation with its bound term."""
         bound = []
         for arg in self.args:
             bound.append(arg.lookup(bindings) if arg in bindings else arg)
         return Relation(self.pred, bound)
 
     def rename_vars(self, replacements):
+        """Recursively rename each Var in this relation."""
         renamed = []
         for arg in self.args:
             renamed.append(arg.rename_vars(replacements))
         return Relation(self.pred, renamed)
 
     def get_vars(self):
+        """Return all Vars in this relation."""
         vars = []
         for arg in self.args:
             vars.extend(v for v in arg.get_vars() if v not in vars)
@@ -216,9 +230,9 @@ class Relation(object):
 class Clause(object):
     """A general clause with a head relation and some body relations."""
     
-    def __init__(self, head, body):
+    def __init__(self, head, body=None):
         self.head = head
-        self.body = body
+        self.body = body or []
 
     def __repr__(self):
         return 'Clause(%s, %s)' % (repr(self.head), repr(self.body))
@@ -232,11 +246,13 @@ class Clause(object):
                 and list(self.body) == list(other.body))
 
     def bind_vars(self, bindings):
+        """Replace all Vars in this clause with their bound values."""
         head = self.head.bind_vars(bindings)
         body = [r.bind_vars(bindings) for r in self.body]
         return Clause(head, body)
 
     def rename_vars(self, replacements):
+        """Recursively rename each Var in this Clause."""
         renamed_head = self.head.rename_vars(replacements)
         renamed_body = []
         for term in self.body:
@@ -250,36 +266,11 @@ class Clause(object):
         return self.rename_vars(renames)
 
     def get_vars(self):
+        """Return a list of all Vars in this Clause."""
         vars = self.head.get_vars()
         for rel in self.body:
             vars.extend(v for v in rel.get_vars() if v not in vars)
         return vars
-    
-
-class Fact(Clause):
-    """A relation whose truth is not dependent on any variable."""
-    
-    def __init__(self, relation, rest=None):
-        Clause.__init__(self, relation, [])
-
-    def __repr__(self):
-        return 'Fact(%s)' % repr(self.head)
-
-    def __str__(self):
-        return str(self.head)
-
-
-class Rule(Clause):
-    """A clause where the head relation holds if the body relations do."""
-    
-    def __init__(self, head, body):
-        Clause.__init__(self, head, body)
-
-    def __repr__(self):
-        return 'Rule(%s, %s)' % (repr(self.head), repr(self.body))
-
-    def __str__(self):
-        return '%s <= %s' % (str(self.head), ', '.join(map(str, self.body)))
 
     
 ## Idea 3: Automatic backtracking

@@ -14,18 +14,18 @@ def main():
 
     sandy_likes = logic.Relation('likes', (sandy, x))
     likes_cats = logic.Relation('likes', (x, cats))
-    sandy_likes_rule = logic.Rule(sandy_likes, [likes_cats])
+    sandy_likes_rule = logic.Clause(sandy_likes, [likes_cats])
 
     kim_likes = logic.Relation('likes', (kim, x))
     likes_lee = logic.Relation('likes', (x, lee))
     likes_kim = logic.Relation('likes', (x, kim))
-    kim_likes_rule = logic.Rule(kim_likes, [likes_lee, likes_kim])
+    kim_likes_rule = logic.Clause(kim_likes, [likes_lee, likes_kim])
 
-    likes_self = logic.Fact(logic.Relation('likes', (x, x)))
-    klr = logic.Fact(logic.Relation('likes', (kim, robin)))
-    sll = logic.Fact(logic.Relation('likes', (sandy, lee)))
-    slk = logic.Fact(logic.Relation('likes', (sandy, kim)))
-    rlc = logic.Fact(logic.Relation('likes', (robin, cats)))
+    likes_self = logic.Clause(logic.Relation('likes', (x, x)))
+    klr = logic.Clause(logic.Relation('likes', (kim, robin)))
+    sll = logic.Clause(logic.Relation('likes', (sandy, lee)))
+    slk = logic.Clause(logic.Relation('likes', (sandy, kim)))
+    rlc = logic.Clause(logic.Relation('likes', (robin, cats)))
 
     db.store(sandy_likes_rule)
     db.store(kim_likes_rule)

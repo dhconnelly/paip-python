@@ -147,7 +147,7 @@ class ClauseTests(unittest.TestCase):
         y = logic.Var('y')
         z = logic.Var('z')
 
-        member = logic.Rule(logic.Relation('member', (x, list)),
+        member = logic.Clause(logic.Relation('member', (x, list)),
                             [logic.Relation('first', (list, y)),
                              logic.Relation('rest', (list, z)),
                              logic.Relation('member', (x, z))])
@@ -361,7 +361,7 @@ class DatabaseTests(unittest.TestCase):
     def test_store_empty_key(self):
         x = logic.Var('x')
         y = logic.Var('y')
-        f = logic.Fact(logic.Relation('likes', (x, y)))
+        f = logic.Clause(logic.Relation('likes', (x, y)))
         db = logic.Database()
         db.store(f)
         self.assertEqual({'likes': [f]}, db.clauses)
@@ -369,11 +369,11 @@ class DatabaseTests(unittest.TestCase):
     def test_store_key_exists(self):
         x = logic.Var('x')
         y = logic.Var('y')
-        f = logic.Fact(logic.Relation('likes', (x, y)))
+        f = logic.Clause(logic.Relation('likes', (x, y)))
         db = logic.Database()
         db.store(f)
 
-        g = logic.Rule(logic.Relation('likes', (x, y)),
+        g = logic.Clause(logic.Relation('likes', (x, y)),
                        [logic.Relation('cool', [y])])
         db.store(g)
 
@@ -386,8 +386,8 @@ class DatabaseTests(unittest.TestCase):
     def test_query_key_exists(self):
         x = logic.Var('x')
         y = logic.Var('y')
-        f = logic.Fact(logic.Relation('likes', (x, y)))
-        g = logic.Rule(logic.Relation('likes', (x, y)),
+        f = logic.Clause(logic.Relation('likes', (x, y)))
+        g = logic.Clause(logic.Relation('likes', (x, y)),
                        [logic.Relation('cool', [y])])
         db = logic.Database()
         db.store(f)
@@ -412,10 +412,10 @@ class ProveTests(unittest.TestCase):
         x = logic.Var('x')
 
         db = logic.Database()
-        db.store(logic.Rule(logic.Relation('likes', (joe, x)),
+        db.store(logic.Clause(logic.Relation('likes', (joe, x)),
                             [logic.Relation('likes', (x, joe)),
                              logic.Relation('hates', (judy, x))]))
-        db.store(logic.Fact(logic.Relation('likes', (jorge, judy))))
+        db.store(logic.Clause(logic.Relation('likes', (jorge, judy))))
 
         goal = logic.Relation('hates', (joe, x))
         bindings = logic.prove(goal, {}, db)
@@ -428,10 +428,10 @@ class ProveTests(unittest.TestCase):
         x = logic.Var('x')
 
         db = logic.Database()
-        db.store(logic.Rule(logic.Relation('likes', (joe, x)),
+        db.store(logic.Clause(logic.Relation('likes', (joe, x)),
                             [logic.Relation('likes', (x, joe)),
                              logic.Relation('hates', (judy, x))]))
-        db.store(logic.Fact(logic.Relation('likes', (jorge, judy))))
+        db.store(logic.Clause(logic.Relation('likes', (jorge, judy))))
 
         goal = logic.Relation('likes', (jorge, x))
         bindings = logic.prove(goal, {}, db)
@@ -444,11 +444,11 @@ class ProveTests(unittest.TestCase):
         x = logic.Var('x')
 
         db = logic.Database()
-        db.store(logic.Rule(logic.Relation('likes', (joe, x)),
+        db.store(logic.Clause(logic.Relation('likes', (joe, x)),
                             [logic.Relation('likes', (x, joe)),
                              logic.Relation('hates', (judy, x))]))
-        db.store(logic.Fact(logic.Relation('likes', (jorge, joe))))
-        db.store(logic.Fact(logic.Relation('hates', (judy, jorge))))
+        db.store(logic.Clause(logic.Relation('likes', (jorge, joe))))
+        db.store(logic.Clause(logic.Relation('hates', (judy, jorge))))
 
         goal1 = logic.Relation('likes', (x, joe))
         goal2 = logic.Relation('hates', (judy, x))
@@ -462,11 +462,11 @@ class ProveTests(unittest.TestCase):
         x = logic.Var('x')
 
         db = logic.Database()
-        db.store(logic.Rule(logic.Relation('likes', (joe, x)),
+        db.store(logic.Clause(logic.Relation('likes', (joe, x)),
                             [logic.Relation('likes', (x, joe)),
                              logic.Relation('hates', (judy, x))]))
-        db.store(logic.Fact(logic.Relation('likes', (jorge, joe))))
-        db.store(logic.Fact(logic.Relation('hates', (judy, joe))))
+        db.store(logic.Clause(logic.Relation('likes', (jorge, joe))))
+        db.store(logic.Clause(logic.Relation('hates', (judy, joe))))
 
         goal = logic.Relation('likes', (joe, jorge))
         bindings = logic.prove(goal, {}, db)
@@ -479,11 +479,11 @@ class ProveTests(unittest.TestCase):
         x = logic.Var('x')
 
         db = logic.Database()
-        db.store(logic.Rule(logic.Relation('likes', (joe, x)),
+        db.store(logic.Clause(logic.Relation('likes', (joe, x)),
                             [logic.Relation('likes', (x, joe)),
                              logic.Relation('hates', (judy, x))]))
-        db.store(logic.Fact(logic.Relation('likes', (jorge, joe))))
-        db.store(logic.Fact(logic.Relation('hates', (judy, jorge))))
+        db.store(logic.Clause(logic.Relation('likes', (jorge, joe))))
+        db.store(logic.Clause(logic.Relation('hates', (judy, jorge))))
 
         goal = logic.Relation('likes', (joe, x))
         bindings = logic.prove(goal, {}, db)
@@ -496,11 +496,11 @@ class ProveTests(unittest.TestCase):
         x = logic.Var('x')
 
         db = logic.Database()
-        db.store(logic.Rule(logic.Relation('likes', (joe, x)),
+        db.store(logic.Clause(logic.Relation('likes', (joe, x)),
                             [logic.Relation('likes', (x, joe)),
                              logic.Relation('hates', (judy, x))]))
-        db.store(logic.Fact(logic.Relation('likes', (jorge, joe))))
-        db.store(logic.Fact(logic.Relation('hates', (judy, jorge))))
+        db.store(logic.Clause(logic.Relation('likes', (jorge, joe))))
+        db.store(logic.Clause(logic.Relation('hates', (judy, jorge))))
 
         things = []
         def prim(a, b, c, d):

@@ -68,8 +68,8 @@ class Parser(object):
         tt, tok = self.la(1)
         if tt == WHEN:
             self.match(WHEN)
-            return logic.Rule(head, self.relation_list())
-        return logic.Fact(head)
+            return logic.Clause(head, self.relation_list())
+        return logic.Clause(head)
 
     def relation_list(self):
         rels = [self.relation()]
