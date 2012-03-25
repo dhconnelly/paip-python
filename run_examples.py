@@ -41,13 +41,14 @@ from paip.examples.logic import find_list
 from paip.examples.logic import find_length
 from paip.examples.logic import find_list_length_4
 from paip.examples.logic import find_lists_lengths
+from paip.examples.logic import transitive
 
 examples = {
     'gps': [blocks, monkeys, school],
     'eliza': [eliza],
     'search': [pathfinding],
     'logic': [likes, find_elements, find_list,
-              find_length, find_list_length_4, find_lists_lengths]
+              find_length, find_list_length_4, find_lists_lengths, transitive]
 }
 
 category = get_choice('Which category?', examples.keys())
