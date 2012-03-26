@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 import logging
 from paip import logic
 
@@ -271,11 +273,9 @@ def parse(line):
 def print_db(db):
     print 'Database:'
     for pred, items in db.items():
-        print pred
         if not isinstance(items, list):
             continue
-        for cl in items:
-            print '\t%s' % str(cl)
+        print '%s:\t%s' % (pred, '\n\t'.join(map(str, items)))
 
 
 def main():

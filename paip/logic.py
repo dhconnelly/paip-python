@@ -1,15 +1,18 @@
 import logging
 
+## Unification of logic variables
+
+# TODO description
+
 def unify(x, y, bindings):
     """Unify x and y, if possible.  Returns updated bindings or None."""
+    logging.debug('Unify %s and %s (bindings=%s)' % (x, y, bindings))
+
     if bindings == False:
         return False
 
     # Make a copy of bindings so we can backtrack if necessary.
     bindings = dict(bindings)
-
-    logging.debug('Unify %s and %s (bindings=%s)' % 
-        (str(x), str(y), {str(a): str(b) for a, b in bindings.items()}))
 
     # When x and y are equal (the same Var or Atom), there's nothing to do.
     if x == y:
@@ -73,11 +76,8 @@ class Atom(object):
     def __init__(self, atom):
         self.atom = atom
         
-    def __str__(self):
-        return str(self.atom)
-
     def __repr__(self):
-        return 'Atom(%s)' % repr(self.atom)
+        return str(self.atom)
 
     def __eq__(self, other):
         return isinstance(other, Atom) and other.atom == self.atom
@@ -104,11 +104,8 @@ class Var(object):
     def __init__(self, var):
         self.var = var
         
-    def __str__(self):
-        return '?%s' % str(self.var)
-
     def __repr__(self):
-        return 'Var(%s)' % repr(self.var)
+        return '?%s' % str(self.var)
 
     def __eq__(self, other):
         return isinstance(other, Var) and other.var == self.var
@@ -152,11 +149,8 @@ class Relation(object):
         self.pred = pred
         self.args = args
         
-    def __str__(self):
-        return '%s(%s)' % (self.pred, ', '.join(map(str, self.args)))
-
     def __repr__(self):
-        return 'Relation(%s, %s)' % (repr(self.pred), repr(self.args))
+        return '%s(%s)' % (self.pred, ', '.join(map(str, self.args)))
 
     def __eq__(self, other):
         return (isinstance(other, Relation)
@@ -193,12 +187,8 @@ class Clause(object):
         self.body = body or []
 
     def __repr__(self):
-        return 'Clause(%s, %s)' % (repr(self.head), repr(self.body))
-
-    def __str__(self):
         if self.body:
-            body = map(str, self.body)
-            return '%s :- %s' % (str(self.head), ', '.join(body))
+            return '%s :- %s' % (self.head, ', '.join(map(str, self.body)))
         return str(self.head)
 
     def __eq__(self, other):
@@ -235,10 +225,12 @@ class Clause(object):
 
 
 def prove_all(goals, bindings, db):
+    """Prove all the goals with the given bindings and rule database."""
     if bindings == False:
         return False
     if not goals:
         return bindings
+    logging.debug('Proving goals: %s (bindings=%s)' % (goals, bindings))
     return prove(goals[0], bindings, db, goals[1:])
 
 
@@ -253,10 +245,7 @@ def prove(goal, bindings, db, remaining=None):
     if bindings == False:
         return False
     
-    logging.debug('Prove %s (bindings=%s, remaining=%s)' %
-                  (goal,
-                   {str(v): str(bindings[v]) for v in bindings},
-                   remaining))
+    logging.debug('Prove %s (bindings=%s)' % (goal, bindings))
     remaining = remaining or []
     
     # Find the clauses in the database that might help us prove goal.
@@ -269,7 +258,7 @@ def prove(goal, bindings, db, remaining=None):
         # it must be a primitive.
         return query(goal.args, bindings, db, remaining)
 
-    logging.debug('Candidate clauses: %s' % map(str, query))
+    logging.debug('Candidate clauses: %s' % query)
     for clause in query:
         logging.debug('Trying candidate clause %s for goal %s' % (clause, goal))
         
@@ -305,25 +294,21 @@ def prove(goal, bindings, db, remaining=None):
     return False
 
 
+## Helper functions for external interface
+
 def display_bindings(vars, bindings, db, remaining):
+    """Primitive procedure for displaying bindings to the user."""
     if not vars:
-        print 'Yes'
+        print 'Yes.'
     for var in vars:
         print var, ':', var.lookup(bindings)
-    if should_continue():
+    if raw_input('Continue? ').strip().lower() in ('yes', 'y'):
         return False
     return prove_all(remaining, bindings, db)
 
 
-def should_continue():
-    try:
-        yes = raw_input('Continue? ').strip().lower() in ('yes', 'y')
-    except:
-        yes = False
-    return yes
-
-
 def prolog_prove(goals, db):
+    """Prove each goal in goals using the rules and facts in db."""
     if goals:
         vars = []
         for goal in goals:
