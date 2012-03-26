@@ -30,13 +30,13 @@ def main():
         logic.Relation('member', (x, logic.Relation('pair', (y, more)))),
         [logic.Relation('member', (x, more))])
 
-    db = logic.Database()
-    db.store(length_nil)
-    db.store(length_one)
-    db.store(member_end)
-    db.store(member_first)
-    db.store(member_last)
-    db.store(member_rest)
+    db = {}
+    logic.store(db, length_nil)
+    logic.store(db, length_one)
+    logic.store(db, member_end)
+    logic.store(db, member_first)
+    logic.store(db, member_last)
+    logic.store(db, member_rest)
 
     print 'Database:'
     print db

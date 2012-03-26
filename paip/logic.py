@@ -1,3 +1,5 @@
+# TODO overview
+
 import logging
 
 ## Unification of logic variables
@@ -118,6 +120,7 @@ class Var(object):
         binding = bindings.get(self)
         
         # While looking up the binding for self, we must detect:
+        # 
         # 1. That we are looking up the binding of a Var (otherwise meaningless)
         # 2. That we stop before reaching None, in the case that there is no
         #    terminal Atom in a transitive binding
@@ -295,6 +298,10 @@ def prove(goal, bindings, db, remaining=None):
 
 
 ## Helper functions for external interface
+
+def store(db, clause):
+    db.setdefault(clause.head.pred, []).append(clause)
+    
 
 def display_bindings(vars, bindings, db, remaining):
     """Primitive procedure for displaying bindings to the user."""

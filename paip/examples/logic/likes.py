@@ -3,7 +3,7 @@ from paip import logic
 
 def main():
     #logging.basicConfig(level=logging.DEBUG)
-    db = logic.Database()
+    db = {}
 
     kim = logic.Atom('Kim')
     robin = logic.Atom('Robin')
@@ -27,13 +27,13 @@ def main():
     slk = logic.Clause(logic.Relation('likes', (sandy, kim)))
     rlc = logic.Clause(logic.Relation('likes', (robin, cats)))
 
-    db.store(sandy_likes_rule)
-    db.store(kim_likes_rule)
-    db.store(likes_self)
-    db.store(klr)
-    db.store(sll)
-    db.store(slk)
-    db.store(rlc)
+    logic.store(db, sandy_likes_rule)
+    logic.store(db, kim_likes_rule)
+    logic.store(db, likes_self)
+    logic.store(db, klr)
+    logic.store(db, sll)
+    logic.store(db, slk)
+    logic.store(db, rlc)
 
     print 'Database:'
     print db

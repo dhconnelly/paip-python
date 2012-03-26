@@ -17,9 +17,9 @@ def main():
                         logic.Relation('+1', [a]))),
         [logic.Relation('length', (more, a))])
 
-    db = logic.Database()
-    db.store(length_nil)
-    db.store(length_one)
+    db = {}
+    logic.store(db, length_nil)
+    logic.store(db, length_one)
 
     print 'Database:'
     print db
