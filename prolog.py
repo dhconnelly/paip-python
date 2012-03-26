@@ -1,3 +1,4 @@
+import logging
 from paip import logic
 
 ## Parser and REPL
@@ -267,13 +268,23 @@ def parse(line):
     return p.command()
 
 
+def print_db(db):
+    print 'Database:'
+    for pred, items in db.items():
+        print pred
+        if not isinstance(items, list):
+            continue
+        for cl in items:
+            print '\t%s' % str(cl)
+
+
 def main():
     print 'Welcome to PyLogic.'
-    db = logic.Database()
-    #logging.basicConfig(level=logging.DEBUG)
+    db = {}
+    logging.basicConfig(level=logging.DEBUG)
 
     while True:
-        print db
+        print_db(db)
         try:
             line = raw_input('>> ')
         except EOFError:
@@ -297,7 +308,7 @@ def main():
             except KeyboardInterrupt:
                 print 'Cancelled.'
         elif isinstance(q, logic.Clause):
-            db.store(q)
+            db.setdefault(q.head.pred, []).append(q)
         else:
             print 'Bad command!'
 

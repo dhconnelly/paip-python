@@ -1,47 +1,5 @@
 import logging
 
-## Idea 1: Uniform database
-
-class Database(object):
-    """A database for clauses and primitives."""
-
-    # We store all of the clauses--rules and facts--in one database, indexed
-    # by the predicates of their head relations.  This makes it quicker and
-    # easier to search through possibly applicable rules and facts when we
-    # encounter a goal relation.
-
-    # We can also store "primitives", or procedures, in the database.
-    
-    def __init__(self, facts=None, rules=None):
-        facts = facts or []
-        rules = rules or []
-        self.clauses = {}
-        for clause in facts + rules:
-            self.store(clause)
-
-    def store(self, clause):
-        """Add a rule or fact to the database."""
-        # We index clauses on the head's predicate.
-        self.clauses.setdefault(clause.head.pred, []).append(clause)
-
-    def define_primitive(self, name, fn):
-        """Store a procedure with the given name."""
-        self.clauses[name] = fn
-
-    def query(self, pred):
-        """Retrieve all clauses and procedures with the given name."""
-        return self.clauses.setdefault(pred, [])
-
-    def __str__(self):
-        clauses = []
-        for cl in self.clauses.values():
-            if isinstance(cl, list):
-                clauses.extend(cl)
-        return '\n'.join(['  ' + str(clause) for clause in clauses])
-
-
-## Idea 2: Unification of logic variables
-
 def unify(x, y, bindings):
     """Unify x and y, if possible.  Returns updated bindings or None."""
     if bindings == False:
@@ -50,7 +8,7 @@ def unify(x, y, bindings):
     # Make a copy of bindings so we can backtrack if necessary.
     bindings = dict(bindings)
 
-    logging.debug('Unify %s and %s(bindings=%s)' % 
+    logging.debug('Unify %s and %s (bindings=%s)' % 
         (str(x), str(y), {str(a): str(b) for a, b in bindings.items()}))
 
     # When x and y are equal (the same Var or Atom), there's nothing to do.
@@ -147,7 +105,7 @@ class Var(object):
         self.var = var
         
     def __str__(self):
-        return str(self.var)
+        return '?%s' % str(self.var)
 
     def __repr__(self):
         return 'Var(%s)' % repr(self.var)
@@ -238,7 +196,10 @@ class Clause(object):
         return 'Clause(%s, %s)' % (repr(self.head), repr(self.body))
 
     def __str__(self):
-        return '%s, %s' % (str(self.head), ', '.join(map(str, self.body)))
+        if self.body:
+            body = map(str, self.body)
+            return '%s :- %s' % (str(self.head), ', '.join(body))
+        return str(self.head)
 
     def __eq__(self, other):
         return (isinstance(other, Clause)
@@ -272,8 +233,6 @@ class Clause(object):
             vars.extend(v for v in rel.get_vars() if v not in vars)
         return vars
 
-    
-## Idea 3: Automatic backtracking
 
 def prove_all(goals, bindings, db):
     if bindings == False:
@@ -301,7 +260,7 @@ def prove(goal, bindings, db, remaining=None):
     remaining = remaining or []
     
     # Find the clauses in the database that might help us prove goal.
-    query = db.query(goal.pred)
+    query = db.get(goal.pred)
     if not query:
         return False
     
@@ -322,7 +281,7 @@ def prove(goal, bindings, db, remaining=None):
         # If unification is possible, then the candidate clause might either be
         # a rule that can prove goal or a fact that states goal is already true.
         unified = unify(goal, renamed.head, bindings)
-        if not unified:
+        if unified == False:
             continue
 
         # Make sure the candidate clause doesn't lead to an infinite loop
@@ -336,7 +295,7 @@ def prove(goal, bindings, db, remaining=None):
         extended = prove_all(renamed.body + remaining, unified, db)
         
         # If we can't prove all the subgoals of this clause, move on.
-        if not extended:
+        if extended == False:
             continue
 
         # Return the bindings that satisfied the goal.
@@ -369,6 +328,6 @@ def prolog_prove(goals, db):
         vars = []
         for goal in goals:
             vars.extend(goal.get_vars())
-        db.define_primitive('display_bindings', display_bindings)
+        db['display_bindings'] = display_bindings
         prove_all(goals + [Relation('display_bindings', vars)], {}, db)
     print 'No.'

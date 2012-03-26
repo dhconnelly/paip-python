@@ -355,53 +355,6 @@ class UnificationTests(unittest.TestCase):
         c = logic.Clause(r, [s, v])
         d = logic.Clause(t, [s, u])
         self.assertEqual({x: jorge, y: joe}, logic.unify(c, d, {}))
-        
-
-class DatabaseTests(unittest.TestCase):
-    def test_store_empty_key(self):
-        x = logic.Var('x')
-        y = logic.Var('y')
-        f = logic.Clause(logic.Relation('likes', (x, y)))
-        db = logic.Database()
-        db.store(f)
-        self.assertEqual({'likes': [f]}, db.clauses)
-
-    def test_store_key_exists(self):
-        x = logic.Var('x')
-        y = logic.Var('y')
-        f = logic.Clause(logic.Relation('likes', (x, y)))
-        db = logic.Database()
-        db.store(f)
-
-        g = logic.Clause(logic.Relation('likes', (x, y)),
-                       [logic.Relation('cool', [y])])
-        db.store(g)
-
-        self.assertEqual({'likes': [f, g]}, db.clauses)
-
-    def test_query_empty_key(self):
-        db = logic.Database()
-        self.assertEqual([], db.query('likes'))
-
-    def test_query_key_exists(self):
-        x = logic.Var('x')
-        y = logic.Var('y')
-        f = logic.Clause(logic.Relation('likes', (x, y)))
-        g = logic.Clause(logic.Relation('likes', (x, y)),
-                       [logic.Relation('cool', [y])])
-        db = logic.Database()
-        db.store(f)
-        db.store(g)
-        self.assertEqual([f, g], db.query('likes'))
-
-    def test_define_primitive(self):
-        ok = []
-        def prim(goals, bindings, db):
-            ok.append(goals)
-        db = logic.Database()
-        db.define_primitive('prim', prim)
-        db.query('prim')('foo', None, None)
-        self.assertEqual(['foo'], ok)
     
 
 class ProveTests(unittest.TestCase):
@@ -411,11 +364,11 @@ class ProveTests(unittest.TestCase):
         jorge = logic.Atom('jorge')
         x = logic.Var('x')
 
-        db = logic.Database()
-        db.store(logic.Clause(logic.Relation('likes', (joe, x)),
+        db = {'likes': []}
+        db['likes'].append(logic.Clause(logic.Relation('likes', (joe, x)),
                             [logic.Relation('likes', (x, joe)),
                              logic.Relation('hates', (judy, x))]))
-        db.store(logic.Clause(logic.Relation('likes', (jorge, judy))))
+        db['likes'].append(logic.Clause(logic.Relation('likes', (jorge, judy))))
 
         goal = logic.Relation('hates', (joe, x))
         bindings = logic.prove(goal, {}, db)
@@ -427,11 +380,11 @@ class ProveTests(unittest.TestCase):
         jorge = logic.Atom('jorge')
         x = logic.Var('x')
 
-        db = logic.Database()
-        db.store(logic.Clause(logic.Relation('likes', (joe, x)),
+        db = {'likes': []}
+        db['likes'].append(logic.Clause(logic.Relation('likes', (joe, x)),
                             [logic.Relation('likes', (x, joe)),
                              logic.Relation('hates', (judy, x))]))
-        db.store(logic.Clause(logic.Relation('likes', (jorge, judy))))
+        db['likes'].append(logic.Clause(logic.Relation('likes', (jorge, judy))))
 
         goal = logic.Relation('likes', (jorge, x))
         bindings = logic.prove(goal, {}, db)
@@ -443,12 +396,12 @@ class ProveTests(unittest.TestCase):
         jorge = logic.Atom('jorge')
         x = logic.Var('x')
 
-        db = logic.Database()
-        db.store(logic.Clause(logic.Relation('likes', (joe, x)),
+        db = {'likes': [], 'hates': []}
+        db['likes'].append(logic.Clause(logic.Relation('likes', (joe, x)),
                             [logic.Relation('likes', (x, joe)),
                              logic.Relation('hates', (judy, x))]))
-        db.store(logic.Clause(logic.Relation('likes', (jorge, joe))))
-        db.store(logic.Clause(logic.Relation('hates', (judy, jorge))))
+        db['likes'].append(logic.Clause(logic.Relation('likes', (jorge, joe))))
+        db['hates'].append(logic.Clause(logic.Relation('hates', (judy, jorge))))
 
         goal1 = logic.Relation('likes', (x, joe))
         goal2 = logic.Relation('hates', (judy, x))
@@ -461,12 +414,12 @@ class ProveTests(unittest.TestCase):
         jorge = logic.Atom('jorge')
         x = logic.Var('x')
 
-        db = logic.Database()
-        db.store(logic.Clause(logic.Relation('likes', (joe, x)),
+        db = {'likes': [], 'hates': []}
+        db['likes'].append(logic.Clause(logic.Relation('likes', (joe, x)),
                             [logic.Relation('likes', (x, joe)),
                              logic.Relation('hates', (judy, x))]))
-        db.store(logic.Clause(logic.Relation('likes', (jorge, joe))))
-        db.store(logic.Clause(logic.Relation('hates', (judy, joe))))
+        db['likes'].append(logic.Clause(logic.Relation('likes', (jorge, joe))))
+        db['hates'].append(logic.Clause(logic.Relation('hates', (judy, joe))))
 
         goal = logic.Relation('likes', (joe, jorge))
         bindings = logic.prove(goal, {}, db)
@@ -478,12 +431,12 @@ class ProveTests(unittest.TestCase):
         jorge = logic.Atom('jorge')
         x = logic.Var('x')
 
-        db = logic.Database()
-        db.store(logic.Clause(logic.Relation('likes', (joe, x)),
+        db = {'likes': [], 'hates': []}
+        db['likes'].append(logic.Clause(logic.Relation('likes', (joe, x)),
                             [logic.Relation('likes', (x, joe)),
                              logic.Relation('hates', (judy, x))]))
-        db.store(logic.Clause(logic.Relation('likes', (jorge, joe))))
-        db.store(logic.Clause(logic.Relation('hates', (judy, jorge))))
+        db['likes'].append(logic.Clause(logic.Relation('likes', (jorge, joe))))
+        db['hates'].append(logic.Clause(logic.Relation('hates', (judy, jorge))))
 
         goal = logic.Relation('likes', (joe, x))
         bindings = logic.prove(goal, {}, db)
@@ -495,17 +448,17 @@ class ProveTests(unittest.TestCase):
         jorge = logic.Atom('jorge')
         x = logic.Var('x')
 
-        db = logic.Database()
-        db.store(logic.Clause(logic.Relation('likes', (joe, x)),
+        db = {'likes': [], 'hates': []}
+        db['likes'].append(logic.Clause(logic.Relation('likes', (joe, x)),
                             [logic.Relation('likes', (x, joe)),
                              logic.Relation('hates', (judy, x))]))
-        db.store(logic.Clause(logic.Relation('likes', (jorge, joe))))
-        db.store(logic.Clause(logic.Relation('hates', (judy, jorge))))
+        db['likes'].append(logic.Clause(logic.Relation('likes', (jorge, joe))))
+        db['hates'].append(logic.Clause(logic.Relation('hates', (judy, jorge))))
 
         things = []
         def prim(a, b, c, d):
             things.append(a)
-        db.define_primitive('prim', prim)
+        db['prim'] = prim
 
         goal = logic.Relation('likes', (joe, x))
         display = logic.Relation('prim', 'foo')
