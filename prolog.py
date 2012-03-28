@@ -285,6 +285,7 @@ def print_db(db):
 def read_db(db_file):
     db = {}
     for line in db_file:
+        if line == '\n': continue
         logic.store(db, parse(line))
     return db
 
