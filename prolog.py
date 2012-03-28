@@ -1,7 +1,11 @@
 #! /usr/bin/env python
 
+import argparse
 import logging
+import sys
+
 from paip import logic
+
 
 ## Parser and REPL
 
@@ -278,13 +282,36 @@ def print_db(db):
         print '%s:\t%s' % (pred, '\n\t'.join(map(str, items)))
 
 
+def read_db(db_file):
+    db = {}
+    for line in db_file:
+        logic.store(db, parse(line))
+    return db
+
+
+## Running
+
+argparser = argparse.ArgumentParser(description='A Prolog implementation.')
+argparser.add_argument('--logging',
+                       action='store_true',
+                       help='Enable logging',
+                       dest='log')
+argparser.add_argument('--db',
+                       type=file,
+                       help='Database file',
+                       dest='db_file')
+
+
 def main():
     print 'Welcome to PyLogic.'
-    db = {}
-    logging.basicConfig(level=logging.DEBUG)
+    
+    args = argparser.parse_args()
+    db = read_db(args.db_file) if args.db_file else {}
+    if args.log:
+        logging.basicConfig(level=logging.DEBUG)
 
+    print_db(db)
     while True:
-        print_db(db)
         try:
             line = raw_input('>> ')
         except EOFError:
@@ -308,7 +335,8 @@ def main():
             except KeyboardInterrupt:
                 print 'Cancelled.'
         elif isinstance(q, logic.Clause):
-            db.setdefault(q.head.pred, []).append(q)
+            logic.store(db, q)
+            print_db(db)
         else:
             print 'Bad command!'
 
