@@ -1,76 +1,118 @@
-# TODO overview
+"""
+**Logic programming** is a model of computation that applies mathematical logic
+to problem solving.
+
+### Introduction
+
+Logic programming is declarative, not procedural.  In the procedural programming
+paradigm, the programmer specifies data and the algorithms that should be
+executed on those data to reach a solution.  In the logic programming paradigm,
+the programmer specifies relationships that hold between the data in the form of
+facts and rules.  The programmer then specifies a goal, and the computer works
+out the implementation details.
+
+### Specifying relationships
+
+We specify relationships, or relations, using *clauses*.  A clause consists of a
+*head* relation and some *body* relations.  For example, in the clause
+`compatible(John, June) :- common_interests(John, June), lazy(June)`, we are
+specifying that John and June are compatible if they have common interests and
+June is lazy.  The head of this clause is `compatible(John, June)` and the body
+consists of the two relations `common_interests(John, June)` and `lazy(June)`.
+We call clauses of this form *rules*, since they specify when a relation is
+true.  To specify a relation that is unconditionally true, we use a clause with
+no body, called a *fact*: `girl(June)`.
+
+We can use *logic variables* to describe more abstract relations.  Consider the
+following clauses:
+
+    female(June)
+    likes(June, running)
+    likes(John, running)
+    similar_hobbies(?x, ?y) :- likes(?x, ?z), likes(?y, ?z)
+    compatible(John, ?x) :- female(?x), similar_hobbies(John, ?x)
+
+The last two rules use logic variables.  The second-to-last rule specifies when
+two people have similar hobbies (that is, there is something they both like),
+and the last rule specifies the people with whom John is compatible.
+
+### Queries
+
+Once we have some clauses, we can specify a goal, and the system will attempt to
+satisfy that goal.  In logic programming parlance, we call this *proving* a
+goal.
+
+Sometimes our goal is a yes or no answer.  The system will use the specified
+clauses to determine whether the given goal can be satisfied.  For example,
+using the five clauses defined above, we might specify the goal
+`compatible(John, June)`.  If we try to prove this goal, the result will simply
+be "Yes."  If we try to prove the goal `male(June)`, the result will be "No.",
+as the system is unable to prove that June is male from the specified clauses.
+
+We can specify much more interesting goals.  For instance, we might specify the
+goal `likes(?x, running)`.  Here, we are interested in determining who is
+interested in running.  If we attempt to prove this goal, the system will
+determine if it can be satisfied, and if so, what values of `?x` satisfy the
+goal.  Here, the results will be John and June, since we declared that both of
+them like running.
+
+For more examples, see the following databases of clauses:
+
+- [Family tree](examples/prolog/family.prolog)
+- [Graph traversal](examples/prolog/graph.prolog)
+- [Linked lists](examples/prolog/pair.prolog)
+
+These databases can be loaded into the provided [Prolog
+interpreter](../prolog.html) for experimentation.
+
+### Implementation
+
+Programming in this model requires some adjustment coming from a procedural
+programming background; logic programming appears very mysterious at first.  The
+implementation, however, is simple, and relies on three basic concepts:
+
+1. [A uniform database of facts and rules](#database);
+2. [Unification of logic variables](#unification);
+3. [Automatic backtracking](#backtracking).
+
+Below, we will see how these three concepts are implemented.
+
+### Use
+
+This module provides a library that enables the use of logic programming in
+arbitrary Python programs.  For some examples of this, see the following:
+
+- A simple interactive [Prolog interpreter](../prolog.html)
+- [Finding members of lists](examples/logic/find_elements.html)
+- [Who likes whom](examples/logic/likes.html)
+
+### About
+
+Written by [Daniel Connelly](http://dhconnelly.com).
+This implementation is inspired by chapter 11 of "Paradigms of Artificial
+Intelligence Programming" by Peter Norvig.
+"""
 
 import logging
 
-## Unification of logic variables
+# <a id="database"></a>
+## Uniform database
+
+# TODO
+
+def store(db, clause):
+    db.setdefault(clause.head.pred, []).append(clause)
+
+def retrieve(db, pred):
+    return db.setdefault(pred, [])
+
+def define_procedure(db, name, proc):
+    db[name] = proc
+
+
+## Logic data types
 
 # TODO description
-
-def unify(x, y, bindings):
-    """Unify x and y, if possible.  Returns updated bindings or None."""
-    logging.debug('Unify %s and %s (bindings=%s)' % (x, y, bindings))
-
-    if bindings == False:
-        return False
-
-    # Make a copy of bindings so we can backtrack if necessary.
-    bindings = dict(bindings)
-
-    # When x and y are equal (the same Var or Atom), there's nothing to do.
-    if x == y:
-        return bindings
-
-    # Unify Vars and anything
-    if isinstance(x, Var):
-        # If x (or y) is already bound to something, dereference and try again.
-        if x in bindings:
-            return unify(bindings[x], y, bindings)
-        if y in bindings:
-            return unify(x, bindings[y], bindings)
-
-        # Otherwise, bind x to y.
-        bindings[x] = y
-        return bindings
-    if isinstance(y, Var):
-        return unify(y, x, bindings)
-
-    # Unify Relations with Relations
-    if isinstance(x, Relation) and isinstance(y, Relation):
-        # Two relations must have the same predicate and arity to unify.
-        if x.pred != y.pred:
-            return False
-        if len(x.args) != len(y.args):
-            return False
-
-        # Unify corresponding terms in the relations.
-        for i, xi in enumerate(x.args):
-            yi = y.args[i]
-            bindings = unify(xi, yi, bindings)
-            if bindings == False:
-                return False
-
-        return bindings
-
-    # Unify Clauses with Clauses
-    if isinstance(x, Clause) and isinstance(y, Clause):
-        # Clause bodies must have the same length to unify.
-        if len(x.body) != len(y.body):
-            return False
-
-        # Unify head term and body terms.
-        bindings = unify(x.head, y.head, bindings)
-        if bindings == False:
-            return False
-        for i, xi in enumerate(x.body):
-            yi = y.body[i]
-            bindings = unify(xi, yi, bindings)
-            if bindings == False:
-                return False
-        return bindings
-
-    # Nothing else can unify.
-    return False
-
 
 class Atom(object):
     """Represents any literal (symbol, number, string)."""
@@ -226,6 +268,81 @@ class Clause(object):
             vars.extend(v for v in rel.get_vars() if v not in vars)
         return vars
 
+# <a id="unification"></a>
+## Unification of logic variables
+
+# TODO description
+
+def unify(x, y, bindings):
+    """Unify x and y, if possible.  Returns updated bindings or None."""
+    logging.debug('Unify %s and %s (bindings=%s)' % (x, y, bindings))
+
+    if bindings == False:
+        return False
+
+    # Make a copy of bindings so we can backtrack if necessary.
+    bindings = dict(bindings)
+
+    # When x and y are equal (the same Var or Atom), there's nothing to do.
+    if x == y:
+        return bindings
+
+    # Unify Vars and anything
+    if isinstance(x, Var):
+        # If x (or y) is already bound to something, dereference and try again.
+        if x in bindings:
+            return unify(bindings[x], y, bindings)
+        if y in bindings:
+            return unify(x, bindings[y], bindings)
+
+        # Otherwise, bind x to y.
+        bindings[x] = y
+        return bindings
+    if isinstance(y, Var):
+        return unify(y, x, bindings)
+
+    # Unify Relations with Relations
+    if isinstance(x, Relation) and isinstance(y, Relation):
+        # Two relations must have the same predicate and arity to unify.
+        if x.pred != y.pred:
+            return False
+        if len(x.args) != len(y.args):
+            return False
+
+        # Unify corresponding terms in the relations.
+        for i, xi in enumerate(x.args):
+            yi = y.args[i]
+            bindings = unify(xi, yi, bindings)
+            if bindings == False:
+                return False
+
+        return bindings
+
+    # Unify Clauses with Clauses
+    if isinstance(x, Clause) and isinstance(y, Clause):
+        # Clause bodies must have the same length to unify.
+        if len(x.body) != len(y.body):
+            return False
+
+        # Unify head term and body terms.
+        bindings = unify(x.head, y.head, bindings)
+        if bindings == False:
+            return False
+        for i, xi in enumerate(x.body):
+            yi = y.body[i]
+            bindings = unify(xi, yi, bindings)
+            if bindings == False:
+                return False
+        return bindings
+
+    # Nothing else can unify.
+    return False
+
+
+# <a id="backtracking"></a>
+## Automatic Backtracking
+
+# TODO
 
 def prove_all(goals, bindings, db):
     """Prove all the goals with the given bindings and rule database."""
@@ -295,12 +412,6 @@ def prove(goal, bindings, db, remaining=None):
 
     logging.debug('Failed to prove %s' % goal)
     return False
-
-
-## Helper functions for external interface
-
-def store(db, clause):
-    db.setdefault(clause.head.pred, []).append(clause)
     
 
 def display_bindings(vars, bindings, db, remaining):
@@ -313,6 +424,8 @@ def display_bindings(vars, bindings, db, remaining):
         return False
     return prove_all(remaining, bindings, db)
 
+
+## Helper functions for external interface
 
 def prolog_prove(goals, db):
     """Prove each goal in goals using the rules and facts in db."""

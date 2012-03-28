@@ -9,8 +9,10 @@ modules = [
     'paip/examples/eliza',
     'paip/examples/search',
     'paip/examples/logic',
+    './'
     ]
 outdir = 'docs'
+prolog_examples = 'paip/examples/prolog'
 
 
 def module_sources(module):
@@ -26,6 +28,8 @@ def main():
     for module in modules:
         sources.extend(module_sources(module))
     pycco.process(sources, outdir=outdir)
+    shutil.rmtree(os.path.join(outdir, prolog_examples), True)
+    shutil.copytree(prolog_examples, os.path.join(outdir, prolog_examples))
         
 
 if __name__ == '__main__':
