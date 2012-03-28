@@ -1,3 +1,5 @@
+# defining lists in prolog
+
 <- first(?x, pair(?x, ?more))
 <- rest(?more, pair(?x, ?more))
 

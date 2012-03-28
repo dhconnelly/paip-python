@@ -19,7 +19,7 @@ from paip import logic
 # RPAREN = ")"
 # COMMA = ","
 
-# command: query | defn
+# command: EOF | query | defn
 # query: QUERY_BEGIN relation
 # defn: DEFN_BEGIN relation (WHEN relation_list)?
 # relation_list = relation [COMMA relation]*
@@ -59,6 +59,8 @@ class Parser(object):
 
     def command(self):
         tt, tok = self.la(1)
+        if tt == EOF:
+            return
         if tt == QUERY_BEGIN:
             return self.query()
         elif tt == DEFN_BEGIN:
@@ -230,11 +232,19 @@ class Lexer(object):
         while self.is_ident() or self.is_number():
             ident += self.eat()
         return IDENT, ident
+
+    def comment(self):
+        self.match('#')
+        while self.ch != '\n':
+            self.eat()
     
     def next(self):
         while self.pos < len(self.line):
             if self.is_ws():
                 self.eat()
+                continue
+            if self.ch == '#':
+                self.comment()
                 continue
             if self.ch == '<':
                 return self.DEFN_BEGIN()
@@ -286,7 +296,9 @@ def read_db(db_file):
     db = {}
     for line in db_file:
         if line == '\n': continue
-        logic.store(db, parse(line))
+        q = parse(line)
+        if q:
+            logic.store(db, q)
     return db
 
 
@@ -338,8 +350,6 @@ def main():
         elif isinstance(q, logic.Clause):
             logic.store(db, q)
             print_db(db)
-        else:
-            print 'Bad command!'
 
     print 'Goodbye.'
 
