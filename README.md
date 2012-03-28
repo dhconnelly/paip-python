@@ -28,8 +28,10 @@ You can follow the progress of the project on [Trello][].
 - You need [Python 2.7][]
 - [Download][] the paip-python code.
 - Type `python run_examples.py` and follow the prompts to run the examples.
+- To use the Prolog interpreter, run `python prolog.py`.  There are some
+  example databases in `paip/examples/prolog` which can be loaded with the
+  option `--db`, e.g. `python prolog.py --db paip/examples/prolog/graph.prolog`.
 
-To run the Prolog interpreter, run `python prolog.py`.
 
 ## Documentation
 

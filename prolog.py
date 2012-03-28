@@ -286,10 +286,16 @@ def parse(line):
 
 def print_db(db):
     print 'Database:'
+    longest = -1
+    for pred in db:
+        if len(pred) > longest:
+            longest = len(pred)
     for pred, items in db.items():
         if not isinstance(items, list):
             continue
-        print '%s:\t%s' % (pred, '\n\t'.join(map(str, items)))
+        print '%s:' % pred
+        for item in items:
+            print '\t', item
 
 
 def read_db(db_file):
