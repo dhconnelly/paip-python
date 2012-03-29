@@ -19,7 +19,10 @@ is called the *predicate*.
 
 To store relations in our system for use in proving goals, we use *clauses*.  A
 clause consists of a *head* relation and some *body* relations.  For example, in
-the clause `compatible(John, June) :- common_interests(John, June), lazy(June)`,
+the clause
+
+    compatible(John, June) :- common_interests(John, June), lazy(June)
+
 we are specifying that John and June are compatible if they have common
 interests and June is lazy.  The head of this clause is `compatible(John, June)`
 and the body consists of the two relations `common_interests(John, June)` and
@@ -98,8 +101,6 @@ This implementation is inspired by chapter 11 of "Paradigms of Artificial
 Intelligence Programming" by Peter Norvig.
 """
 
-import logging
-
 # ----------------------------------------------------------------------------
 ## Table of contents
 
@@ -107,7 +108,7 @@ import logging
 # 2. [Uniform database](#database)
 # 3. [Unification](#unification)
 # 4. [Goal proving](#proving)
-# 5. [External interface](#interface)
+
 
 # ----------------------------------------------------------------------------
 # <a id="types"></a>
@@ -450,28 +451,64 @@ def unify(x, y, bindings):
 ## Proving goals
 ### with automatic backtracking
 
-# TODO
+# As mentioned previously, "proving" a goal will determine whether we can
+# satisfy a goal relation using the clauses in our database.  If so, we want to
+# see the variable bindings that satisfy the goal (if the goal involves any
+# variables).
+#
+# Given a goal relation, our general algorithm for proving a goal is as follows:
+#
+# 1.   Retrieve all clauses from the database whose head relations have the same
+#      predicate as the goal relation.  Each such clause might help us to prove
+#      the goal relation--we just need to ensure that the head relation matches
+#      the goal relation.
+#
+#
+#      For example, if we want to prove `likes(You, Me)`, we will retrieve all
+#      clauses from the database whose head's predicate is `likes`:
+#
+#          likes(Bob, Sue)
+#          likes(You, ?x) :- likes(?x, StirFry), likes(?x, Swimming)
+#          likes(Sue, ?x) :- hates(?x, Everything)
+#          likes(?x, Me) :- likes(?x, Programmers)
+#
+# 2.   For each retrieved clause, try to unify the head with the goal.  If they
+#      unify, then we can prove the goal by proving the body of the retrieved
+#      clause.
+#
+#      In the retrieved clauses from #1, only the clauses
+#
+#          likes(You, ?x) :- likes(?x, StirFry), likes(?x, Swimming)
+#          likes(?x, Me) :- likes(?x, Programmers)
+#
+#      have a head relation that unifies successfully with `likes(You, Me)`,
+#      with bindings of `?x` -> `Me` for the first clause and `?x` -> `You` for
+#      the second clause.
+#
+# 3.   For each clause whose head unifies with the goal, recurse to prove each
+#      body relation of the clause.  If proving fails for any body relation, we
+#      move on to the next retrieved candidate clause.
+#
+#      So, continuing our example, if we can prove that `likes(Me, StirFry)` and 
+#      `likes(Me, Swimming)`, then we will have proved `likes(You, Me)`.  If we
+#      fail to prove either of these, we will move on to the next retrieved
+#      clause, and try to prove `likes(?x, Programmers)`.
+#
+# We will keep track of the goals we're proving with a stack, implemented as a
+# Python list.  In this way we can keep track of all the goals we must prove
+# even when we recurse while proving.
 
 # ----------------------------------------------------------------------------
 
-def prove_all(goals, bindings, db):
-    """Prove all the goals with the given bindings and rule database."""
-    if bindings == False:
-        return False
-    if not goals:
-        return bindings
-    logging.debug('Proving goals: %s (bindings=%s)' % (goals, bindings))
-    return prove(goals[0], bindings, db, goals[1:])
-
-
 def prove(goal, bindings, db, remaining=None):
     """
-    Try to prove goal using the given bindings and clause database.
+    Prove goal and all remaining goals using the given bindings and database.
 
-    If successful, returns the extended bindings that satisfy goal.
+    If successful, returns the extended bindings that satisfy all the goals.
     Otherwise, returns False.
     """
 
+    # False bindings means we failed somewhere earlier, so re-fail.
     if bindings == False:
         return False
     
@@ -485,10 +522,12 @@ def prove(goal, bindings, db, remaining=None):
     
     if not isinstance(query, list):
         # If the retrieved data from the database isn't a list of clauses,
-        # it must be a primitive.
+        # it must be a Python function--call it and return the results.
         return query(goal.args, bindings, db, remaining)
 
     logging.debug('Candidate clauses: %s' % query)
+
+    # Try to use the retrieved clauses to prove the goal.
     for clause in query:
         logging.debug('Trying candidate clause %s for goal %s' % (clause, goal))
         
@@ -510,36 +549,52 @@ def prove(goal, bindings, db, remaining=None):
             continue
 
         # We need to prove the subgoals of the candidate clause before
-        # using it to prove goal.
+        # using it to prove goal.  Then prove the remaining goals as well.
         extended = prove_all(renamed.body + remaining, unified, db)
         
-        # If we can't prove all the subgoals of this clause, move on.
+        # If we can't prove all the subgoals, or the bindings that result from
+        # proving the subgoals make it so that the remaining goals can't be
+        # proved, move on.
         if extended == False:
             continue
 
-        # Return the bindings that satisfied the goal.
+        # Otherwise return the bindings that satisfied the goals.
         return extended
 
     logging.debug('Failed to prove %s' % goal)
     return False
     
-
-def display_bindings(vars, bindings, db, remaining):
-    """Primitive procedure for displaying bindings to the user."""
-    if not vars:
-        print 'Yes.'
-    for var in vars:
-        print var, ':', var.lookup(bindings)
-    if raw_input('Continue? ').strip().lower() in ('yes', 'y'):
+def prove_all(goals, bindings, db):
+    """Prove all the goals with the given bindings and rule database."""
+    if bindings == False:
         return False
-    return prove_all(remaining, bindings, db)
-
+    if not goals:
+        return bindings
+    logging.debug('Proving goals: %s (bindings=%s)' % (goals, bindings))
+    return prove(goals[0], bindings, db, goals[1:])
 
 # ----------------------------------------------------------------------------
-# <a id="interface"></id>
-## External interface
 
-# TODO
+# There may be more than one set of bindings that satisfy a goal, and the user
+# may not be interested in the first solution we find.  The number of solutions
+# is potentially unbounded, so we need some way to find solutions incrementally.
+#
+# The third important idea in our system is *automatic backtracking*, and is the
+# solution to the this problem. As outlined in step 3 above, if we fail to prove
+# a goal using a particular retrieved clause, we will move on and try the next
+# one.  The default behavior when a solution is found is to return the bindings
+# to the user; we need a mechanism to force the system to fail before it returns
+# if the user doesn't like the bindings that were found.
+#
+# We accomplish this task with a built-in function called `display_bindings`.
+# This function is stored in the database so that it looks like a clause, and
+# before we ask the system to prove a goal we add the goal "display_bindings"
+# to the list of goals to prove.  When the system tries to prove it, the
+# retrieved value from the database will be the function `display_bindings`
+# instead of a list of clauses.  Our `prove` function will detect that this
+# is not a list of clauses, call `display_bindings` with the current state of
+# the system, and return the return value of that function call.  We will let
+# `display_bindings` decide how to handle finding more solutions.
 
 # ----------------------------------------------------------------------------
 
@@ -552,3 +607,29 @@ def prolog_prove(goals, db):
         db['display_bindings'] = display_bindings
         prove_all(goals + [Relation('display_bindings', vars)], {}, db)
     print 'No.'
+
+def display_bindings(vars, bindings, db, remaining):
+    """
+    Displays bindings to the user and determines if more solutions are needed.
+
+    If the user wants to see another solution, returns False, causing the
+    proving process to fail and try another path.  Otherwise, continues proving
+    the remaining goals.
+    """
+    if not vars:
+        print 'Yes.'
+    for var in vars:
+        print var, ':', var.lookup(bindings)
+    if raw_input('Continue? ').strip().lower() in ('yes', 'y'):
+        return False
+    return prove_all(remaining, bindings, db)
+
+# ----------------------------------------------------------------------------
+## Conclusion
+
+# That's all there is to it.  See the examples mentioned earlier for some
+# interesting applications of logic programming.
+
+import logging
+
+__author__ = 'Daniel Connelly (dhconnelly@gmail.com)'
