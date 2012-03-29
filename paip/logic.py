@@ -341,7 +341,40 @@ def define_procedure(db, name, proc):
 # <a id="unification"></a>
 ## Unification of logic variables
 
-# TODO description
+# The second important concept in our system is *unification*.  Unification is a
+# process that determines when two objects are equivalent, either by determining
+# that they are exactly equal or by finding *bindings* for the undetermined
+# variables in the objects such that the resulting objects, with their variables
+# replaced by the bindings, can be considered equaivalent.
+
+# A few small examples:
+# 
+# - Unification of `likes(Sarah, Joe)` and `likes(?y, Joe)` will succeed if
+#   either
+#
+#     - ?y is unbound, in which case it can be bound to Sarah, or
+#     - ?y is already bound (perhaps transitively) to Sarah.
+#
+# - Unification of `?y` and `?z` will succeed if
+#
+#     - ?y is unbound, in which case it can be bound to ?z; or
+#     - ?z is unbound, in which case it can be bound to ?y; or
+#     - ?y and ?z are both already bound to each other, or to the same value
+#       (perhaps transitively).
+# 
+# - Unfication of `likes(Sarah, Joe)` and `?x` will succeed only if ?x is
+#   already bound to `likes(Sarah, Joe)` or is unbound.
+# 
+# - Unification of `likes(Sarah, Joe)` and `Bob` will always fail--these are not
+#   equal, and no bindings of variables will result in equivalence.
+#
+# - Unification of `likes(Sarah, Joe)` and `hates(Sarah, Joe)` will always fail;
+#   these relations have different predicates, and so they can never be
+#   considered equivalent.
+#
+# Unification is very similar to pattern-matching; in fact, the algorithms for
+# pattern matching and unification in Peter Norvig's *PAIP* are nearly
+# identical, a testament to the utility of Lisp's uniform syntax.
 
 # ----------------------------------------------------------------------------
 
@@ -349,6 +382,7 @@ def unify(x, y, bindings):
     """Unify x and y, if possible.  Returns updated bindings or None."""
     logging.debug('Unify %s and %s (bindings=%s)' % (x, y, bindings))
 
+    # False bindings means we failed in a previous step.  Re-fail.
     if bindings == False:
         return False
 
@@ -359,7 +393,7 @@ def unify(x, y, bindings):
     if x == y:
         return bindings
 
-    # Unify Vars and anything
+    #### Unification of Vars with anything else
     if isinstance(x, Var):
         # If x (or y) is already bound to something, dereference and try again.
         if x in bindings:
@@ -373,7 +407,7 @@ def unify(x, y, bindings):
     if isinstance(y, Var):
         return unify(y, x, bindings)
 
-    # Unify Relations with Relations
+    #### Unification of Relations with Relations
     if isinstance(x, Relation) and isinstance(y, Relation):
         # Two relations must have the same predicate and arity to unify.
         if x.pred != y.pred:
@@ -390,7 +424,7 @@ def unify(x, y, bindings):
 
         return bindings
 
-    # Unify Clauses with Clauses
+    #### Unification of Clauses with Clauses
     if isinstance(x, Clause) and isinstance(y, Clause):
         # Clause bodies must have the same length to unify.
         if len(x.body) != len(y.body):
@@ -407,7 +441,7 @@ def unify(x, y, bindings):
                 return False
         return bindings
 
-    # Nothing else can unify.
+    #### Nothing else can unify.
     return False
 
 
