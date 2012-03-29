@@ -9,19 +9,23 @@ paradigm, the programmer specifies data and the algorithms that should be
 executed on those data to reach a solution.  In the logic programming paradigm,
 the programmer specifies relationships that hold between the data in the form of
 facts and rules.  The programmer then specifies a goal, and the computer works
-out the implementation details.
+out the implementation details of achieving that goal.
 
 ### Specifying relationships
 
-We specify relationships, or relations, using *clauses*.  A clause consists of a
-*head* relation and some *body* relations.  For example, in the clause
-`compatible(John, June) :- common_interests(John, June), lazy(June)`, we are
-specifying that John and June are compatible if they have common interests and
-June is lazy.  The head of this clause is `compatible(John, June)` and the body
-consists of the two relations `common_interests(John, June)` and `lazy(June)`.
-We call clauses of this form *rules*, since they specify when a relation is
-true.  To specify a relation that is unconditionally true, we use a clause with
-no body, called a *fact*: `girl(June)`.
+A relation specifies a relationship that holds between some objects.  We denote
+relations with the form `pred(obj1, obj2, ...)`, where the name of the relation
+is called the *predicate*.
+
+To store relations in our system for use in proving goals, we use *clauses*.  A
+clause consists of a *head* relation and some *body* relations.  For example, in
+the clause `compatible(John, June) :- common_interests(John, June), lazy(June)`,
+we are specifying that John and June are compatible if they have common
+interests and June is lazy.  The head of this clause is `compatible(John, June)`
+and the body consists of the two relations `common_interests(John, June)` and
+`lazy(June)`. We call clauses of this form *rules*, since they specify when a
+relation is true.  To specify a relation that is unconditionally true, we use a
+clause with no body, called a *fact*: `girl(June)`.
 
 We can use *logic variables* to describe more abstract relations.  Consider the
 following clauses:
@@ -40,11 +44,11 @@ and the last rule specifies the people with whom John is compatible.
 
 Once we have some clauses, we can specify a goal, and the system will attempt to
 satisfy that goal.  In logic programming parlance, we call this *proving* a
-goal.
+goal.  The goal is stated in the form of a relation.
 
-Sometimes our goal is a yes or no answer.  The system will use the specified
-clauses to determine whether the given goal can be satisfied.  For example,
-using the five clauses defined above, we might specify the goal
+Sometimes our goal requires a yes or no answer.  The system will use the
+existing clauses to determine whether the given goal can be satisfied.  For
+example, using the five clauses defined above, we might specify the goal
 `compatible(John, June)`.  If we try to prove this goal, the result will simply
 be "Yes."  If we try to prove the goal `male(June)`, the result will be "No.",
 as the system is unable to prove that June is male from the specified clauses.
@@ -54,7 +58,8 @@ goal `likes(?x, running)`.  Here, we are interested in determining who is
 interested in running.  If we attempt to prove this goal, the system will
 determine if it can be satisfied, and if so, what values of `?x` satisfy the
 goal.  Here, the results will be John and June, since we declared that both of
-them like running.
+them like running.  These results that, when substituted for the variables,
+satisfy the goal are called the *bindings* of those variables.
 
 For more examples, see the following databases of clauses:
 
@@ -98,24 +103,57 @@ import logging
 # <a id="database"></a>
 ## Uniform database
 
-# TODO
+# The first important idea in our implementation of a logic programming
+# system is that of a uniform database.  We store all facts and rules in a
+# single data structure, organized so that we can quickly retrieve all the
+# clauses that might help prove a goal.  Since our goals are relations,
+# while proving a goal we will want to retrieve clauses whose head relations
+# match the goal relation.  Thus we will index the database on the predicates
+# of the contained clauses' heads.
+
+# The implementation of the database is a single Python dictionary.  Keys are
+# the predicates of relations, and values are lists of clauses with identical
+# head predicates.
 
 def store(db, clause):
+    """Store the clause in the database, indexed on the head's predicate."""
     db.setdefault(clause.head.pred, []).append(clause)
 
 def retrieve(db, pred):
+    """Retrieve all clauses with matching head's predicate."""
     return db.setdefault(pred, [])
 
+# It will be useful to store Python functions in the database so that we can
+# induce side-effects by proving "relations".
+
 def define_procedure(db, name, proc):
+    """Store a Python function in the database with the given name."""
     db[name] = proc
 
 
-## Logic data types
+## Data type definitions
 
-# TODO description
+# Next we define the types of data represented in our system.  These include:
+# 
+# - *atoms*, which represent literal data such as numbers and strings;
+# - *variables*, which represent undetermined atoms and relations;
+# - *relations*, which define relationships between atoms, variables, and
+#   other relations;
+# - *clauses*, which represent facts and rules stored in the database.
 
+# We want each instance of these types to support a few common operations that
+# will be used throughout the system.
+#
+# - `get_vars`: list all of the variables contained in this instance. For
+#   example, if we call `get_vars` on the relation `member(?x, pair(y, ?z))`,
+#   we should get back the list `[?x, ?z]`.
+# - `rename_vars`: replace variables in this instance using a dictionary that
+#   maps old variables to replacement variables.
+
+# ----------------------------------------------------------------------------
 class Atom(object):
-    """Represents any literal (symbol, number, string)."""
+
+    """Represents any literal (symbol, number, string, etc)."""
     
     def __init__(self, atom):
         self.atom = atom
@@ -126,21 +164,23 @@ class Atom(object):
     def __eq__(self, other):
         return isinstance(other, Atom) and other.atom == self.atom
 
-    def rename_vars(self, replacements):
-        return self
-
-    def get_vars(self):
-        return []
+    # These don't need to do anything for Atoms, since they don't contain Vars.
+    def rename_vars(self, replacements): return self
+    def get_vars(self): return []
 
 
+# ----------------------------------------------------------------------------
 class Var(object):
+
     """Represents a logic variable."""
 
     counter = 0 # for generating unused variables
-
     @staticmethod
     def get_unused_var():
         """Get a new, unused Var."""
+        # While proving goals we will sometimes want to create unused, temporary
+        # variables, so we do so by keeping a count of how many have been
+        # created and use it to name new ones.
         v = Var('var%d' % Var.counter)
         Var.counter += 1
         return v
@@ -157,16 +197,26 @@ class Var(object):
     def __hash__(self):
         return hash(self.var)
 
+    # As mentioned above in the section on "Queries", variables will be bound
+    # to other values.  These bindings will be tracked through dictionaries.
+
     def lookup(self, bindings):
-        """Find the term that self is bound to in bindings."""
-        binding = bindings.get(self)
+        """
+        Find the term that self is bound to in bindings.
+
+        Tries to find a non-Var binding to return by searching transitively
+        through the bindings dictionary.
+        """
         
+        binding = bindings.get(self)
+
         # While looking up the binding for self, we must detect:
         # 
         # 1. That we are looking up the binding of a Var (otherwise meaningless)
         # 2. That we stop before reaching None, in the case that there is no
         #    terminal Atom in a transitive binding
         # 3. That we don't go in a circle (eg, x->y and y->x)
+
         encountered = [self, binding]
         while (isinstance(binding, Var)
                and binding in bindings
@@ -181,13 +231,17 @@ class Var(object):
         return binding
     
     def rename_vars(self, replacements):
+        """Rename self with its value in replacements if it appears as a key."""
         return replacements.get(self, self)
 
     def get_vars(self):
+        """Return a list containing this var."""
         return [self]
 
 
+# ----------------------------------------------------------------------------
 class Relation(object):
+
     """A relationship (specified by a predicate) that holds between terms."""
     
     def __init__(self, pred, args):
@@ -224,8 +278,10 @@ class Relation(object):
         return vars
 
 
+# ----------------------------------------------------------------------------
 class Clause(object):
-    """A general clause with a head relation and some body relations."""
+    
+    """A clause with a head relation and some body relations."""
     
     def __init__(self, head, body=None):
         self.head = head
@@ -267,6 +323,7 @@ class Clause(object):
         for rel in self.body:
             vars.extend(v for v in rel.get_vars() if v not in vars)
         return vars
+
 
 # <a id="unification"></a>
 ## Unification of logic variables
