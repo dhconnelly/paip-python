@@ -40,7 +40,7 @@ The last two rules use logic variables.  The second-to-last rule specifies when
 two people have similar hobbies (that is, there is something they both like),
 and the last rule specifies the people with whom John is compatible.
 
-### Queries
+### Goals
 
 Once we have some clauses, we can specify a goal, and the system will attempt to
 satisfy that goal.  In logic programming parlance, we call this *proving* a
@@ -76,11 +76,11 @@ Programming in this model requires some adjustment coming from a procedural
 programming background; logic programming appears very mysterious at first.  The
 implementation, however, is simple, and relies on three basic concepts:
 
-1. [A uniform database of facts and rules](#database);
-2. [Unification of logic variables](#unification);
-3. [Automatic backtracking](#backtracking).
+1. A uniform database of facts and rules;
+2. Unification of logic variables;
+3. Automatic backtracking.
 
-Below, we will see how these three concepts are implemented.
+We will see how these three concepts are implemented below.
 
 ### Use
 
@@ -100,40 +100,20 @@ Intelligence Programming" by Peter Norvig.
 
 import logging
 
-# <a id="database"></a>
-## Uniform database
+# ----------------------------------------------------------------------------
+## Table of contents
 
-# The first important idea in our implementation of a logic programming
-# system is that of a uniform database.  We store all facts and rules in a
-# single data structure, organized so that we can quickly retrieve all the
-# clauses that might help prove a goal.  Since our goals are relations,
-# while proving a goal we will want to retrieve clauses whose head relations
-# match the goal relation.  Thus we will index the database on the predicates
-# of the contained clauses' heads.
+# 1. [Data type definitions](#types)
+# 2. [Uniform database](#database)
+# 3. [Unification](#unification)
+# 4. [Goal proving](#proving)
+# 5. [External interface](#interface)
 
-# The implementation of the database is a single Python dictionary.  Keys are
-# the predicates of relations, and values are lists of clauses with identical
-# head predicates.
-
-def store(db, clause):
-    """Store the clause in the database, indexed on the head's predicate."""
-    db.setdefault(clause.head.pred, []).append(clause)
-
-def retrieve(db, pred):
-    """Retrieve all clauses with matching head's predicate."""
-    return db.setdefault(pred, [])
-
-# It will be useful to store Python functions in the database so that we can
-# induce side-effects by proving "relations".
-
-def define_procedure(db, name, proc):
-    """Store a Python function in the database with the given name."""
-    db[name] = proc
-
-
+# ----------------------------------------------------------------------------
+# <a id="types"></a>
 ## Data type definitions
 
-# Next we define the types of data represented in our system.  These include:
+# First, we define the types of data represented in our system.  These include:
 # 
 # - *atoms*, which represent literal data such as numbers and strings;
 # - *variables*, which represent undetermined atoms and relations;
@@ -151,6 +131,7 @@ def define_procedure(db, name, proc):
 #   maps old variables to replacement variables.
 
 # ----------------------------------------------------------------------------
+
 class Atom(object):
 
     """Represents any literal (symbol, number, string, etc)."""
@@ -169,7 +150,6 @@ class Atom(object):
     def get_vars(self): return []
 
 
-# ----------------------------------------------------------------------------
 class Var(object):
 
     """Represents a logic variable."""
@@ -197,7 +177,7 @@ class Var(object):
     def __hash__(self):
         return hash(self.var)
 
-    # As mentioned above in the section on "Queries", variables will be bound
+    # As mentioned above in the section on "Goals", variables will be bound
     # to other values.  These bindings will be tracked through dictionaries.
 
     def lookup(self, bindings):
@@ -239,7 +219,6 @@ class Var(object):
         return [self]
 
 
-# ----------------------------------------------------------------------------
 class Relation(object):
 
     """A relationship (specified by a predicate) that holds between terms."""
@@ -278,9 +257,8 @@ class Relation(object):
         return vars
 
 
-# ----------------------------------------------------------------------------
 class Clause(object):
-    
+
     """A clause with a head relation and some body relations."""
     
     def __init__(self, head, body=None):
@@ -325,10 +303,47 @@ class Clause(object):
         return vars
 
 
+# ----------------------------------------------------------------------------
+# <a id="database"></a>
+## Uniform database
+
+# The first important idea in our implementation of a logic programming
+# system is that of a uniform database.  We store all facts and rules in a
+# single data structure, organized so that we can quickly retrieve all the
+# clauses that might help prove a goal.  Since our goals are relations,
+# while proving a goal we will want to retrieve clauses whose head relations
+# match the goal relation.  Thus we will index the database on the predicates
+# of the contained clauses' heads.
+
+# The implementation of the database is a single Python dictionary.  Keys are
+# the predicates of relations, and values are lists of clauses with identical
+# head predicates.
+
+# ----------------------------------------------------------------------------
+
+def store(db, clause):
+    """Store the clause in the database, indexed on the head's predicate."""
+    db.setdefault(clause.head.pred, []).append(clause)
+
+def retrieve(db, pred):
+    """Retrieve all clauses with matching head's predicate."""
+    return db.setdefault(pred, [])
+
+# It will be useful to store Python functions in the database so that we can
+# induce side-effects by proving "relations".
+
+def define_procedure(db, name, proc):
+    """Store a Python function in the database with the given name."""
+    db[name] = proc
+
+
+# ----------------------------------------------------------------------------
 # <a id="unification"></a>
 ## Unification of logic variables
 
 # TODO description
+
+# ----------------------------------------------------------------------------
 
 def unify(x, y, bindings):
     """Unify x and y, if possible.  Returns updated bindings or None."""
@@ -396,10 +411,14 @@ def unify(x, y, bindings):
     return False
 
 
-# <a id="backtracking"></a>
-## Automatic Backtracking
+# ----------------------------------------------------------------------------
+# <a id="proving"></a>
+## Proving goals
+### with automatic backtracking
 
 # TODO
+
+# ----------------------------------------------------------------------------
 
 def prove_all(goals, bindings, db):
     """Prove all the goals with the given bindings and rule database."""
@@ -482,7 +501,13 @@ def display_bindings(vars, bindings, db, remaining):
     return prove_all(remaining, bindings, db)
 
 
-## Helper functions for external interface
+# ----------------------------------------------------------------------------
+# <a id="interface"></id>
+## External interface
+
+# TODO
+
+# ----------------------------------------------------------------------------
 
 def prolog_prove(goals, db):
     """Prove each goal in goals using the rules and facts in db."""
