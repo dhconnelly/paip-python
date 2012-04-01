@@ -22,7 +22,7 @@ output pattern, and printing the results to the user.
 For examples of using this scheme, see the following programs:
 
 - [Eliza](examples/eliza/eliza.html)
-- Automated phone system
+- [Automated technical support system](examples/eliza/support.html)
 
 This implementation is inspired by Chapter 5 of "Paradigms of Artificial
 Intelligence Programming" by Peter Norvig.
@@ -33,14 +33,14 @@ import string
 
 ## Talking to the computer
 
-def interact(rules, default_responses):
+def interact(prompt, rules, default_responses):
     """Have a conversation with a user."""
     # Read a line, process it, and print the results until no input remains.
     while True:
         try:
             # Remove the punctuation from the input and convert to upper-case
             # to simplify matching.
-            input = remove_punct(raw_input('ELIZA> ').upper())
+            input = remove_punct(raw_input(prompt).upper())
             if not input:
                 continue
         except:
@@ -228,6 +228,8 @@ def switch_viewpoint(words):
 
 def remove_punct(string):
     """Remove common punctuation marks."""
+    if string.endswith('?'):
+        string = string[:-1]
     return (string.replace(',', '')
             .replace('.', '')
             .replace(';', '')

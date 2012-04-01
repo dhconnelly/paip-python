@@ -207,7 +207,7 @@ def main():
         pattern = eliza.remove_punct(str(pattern.upper())) # kill unicode
         transforms = [str(t).upper() for t in transforms]
         rules_list.append((pattern, transforms))
-    eliza.interact(rules_list, default_responses)
+    eliza.interact('ELIZA> ', rules_list, map(str.upper, default_responses))
 
 if __name__ == '__main__':
     main(sys.argv[1:])
