@@ -8,7 +8,7 @@ space until the goal is reached.
 For some example applications, see the following programs:
 
 - [Pathfinding](examples/search/pathfinding.html)
-- GPS by searching
+- [GPS by searching](examples/search/gps.html)
 
 """
 
