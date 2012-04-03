@@ -36,6 +36,7 @@ from paip.examples.gps import school
 from paip.examples.eliza import eliza
 from paip.examples.eliza import support
 from paip.examples.search import pathfinding
+from paip.examples.search import gps
 from paip.examples.logic import likes
 from paip.examples.logic import find_elements
 from paip.examples.logic import find_list
@@ -47,7 +48,7 @@ from paip.examples.logic import transitive
 examples = {
     'gps': [blocks, monkeys, school],
     'eliza': [eliza, support],
-    'search': [pathfinding],
+    'search': [pathfinding, gps],
     'logic': [likes, find_elements, find_list,
               find_length, find_list_length_4, find_lists_lengths, transitive]
 }
