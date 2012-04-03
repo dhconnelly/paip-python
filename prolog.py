@@ -310,7 +310,30 @@ def read_db(db_file):
 
 ## Running
 
-argparser = argparse.ArgumentParser(description='A Prolog implementation.')
+help='''This interpreter provides basic functionality only--the subset of Prolog known
+as "Pure Prolog".  That is, only clauses are supported--no lists, user-defined
+procedures, or arithmetic evaluation.
+
+The REPL allows both rule/fact definition as well as goal proving.  The syntax
+is as follows:
+
+Defining rules and facts:
+
+    <- this(is, ?a) :- simple(?rule), for(?demonstration, only)
+    <- coprime(14, 15)
+
+Proving goals:
+
+    ?- coprime(?x, 9)
+
+For some example rule databases, see `paip/examples/prolog`.  They can be loaded
+with the `--db` option.
+'''
+
+argparser = argparse.ArgumentParser(description='A Prolog implementation.',
+                                    formatter_class=argparse.RawDescriptionHelpFormatter,
+                                    epilog=help)
+
 argparser.add_argument('--logging',
                        action='store_true',
                        help='Enable logging',
@@ -322,7 +345,7 @@ argparser.add_argument('--db',
 
 
 def main():
-    print 'Welcome to PyLogic.'
+    print 'Welcome to PyLogic.  Type "help" for help.'
     
     args = argparser.parse_args()
     db = read_db(args.db_file) if args.db_file else {}
@@ -339,6 +362,9 @@ def main():
             continue
         if line == 'quit':
             break
+        if line == 'help':
+            print help
+            continue
         try:
             q = parse(line)
         except ParseError as e:
