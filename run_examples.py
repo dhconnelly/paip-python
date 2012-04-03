@@ -1,59 +1,49 @@
+import argparse
 import logging
 import os
 import sys
 
-# Uncomment to enable logging:
-#logging.basicConfig(level=logging.DEBUG)
 
-def get_choice(prompt, options):
-    print prompt
-    print 'Options:', ', '.join(options)
+parser = argparse.ArgumentParser(description='Run example AI programs.')
+parser.add_argument('--log', action='store_true', help='Turn on logging')
+
+
+def main():
+    print 'Please choose an example to run:'
+    modules = []
+    for i, name in enumerate(discover_modules('paip/examples')):
+        __import__(name)
+        module = sys.modules[name]
+        modules.append(module)
+        print '%d\t%s' % (i, module.__name__)
     while True:
         try:
             choice = raw_input('>> ')
+            if not choice:
+                continue
+            module = modules[int(choice)]
+            print module.__doc__
+            return modules[int(choice)].main()
         except EOFError:
-            print '\nGoodbye.'
-            sys.exit(0)
-        if not choice:
-            continue
-        if choice not in options:
-            print 'That is not a valid choice. Please try again.'
-            continue
-        return choice
+            print 'Goodbye.'
+            return
+        except:
+            print 'That is not a valid option.  Please try again.'
+        
 
-def module_name(module):
-    name = module.__name__
-    begin = name.rfind('.')
-    if begin > 0:
-        name = name[begin+1:]
-    return name
+def discover_modules(root):
+    modules = []
+    for root, dirs, files in os.walk(root):
+        for f in (f for f in files if f.endswith('.py') and '__init__' not in f):
+            path = os.path.join(root, f)[:-3]
+            if root.startswith('.'):
+                path = path[2:]
+            modules.append(path.replace(os.sep, '.'))
+    return modules
 
-# Load the examples and run
 
-from paip.examples.gps import blocks
-from paip.examples.gps import monkeys
-from paip.examples.gps import school
-from paip.examples.eliza import eliza
-from paip.examples.eliza import support
-from paip.examples.search import pathfinding
-from paip.examples.search import gps
-from paip.examples.logic import likes
-from paip.examples.logic import find_elements
-from paip.examples.logic import find_list
-from paip.examples.logic import find_length
-from paip.examples.logic import find_list_length_4
-from paip.examples.logic import find_lists_lengths
-from paip.examples.logic import transitive
-
-examples = {
-    'gps': [blocks, monkeys, school],
-    'eliza': [eliza, support],
-    'search': [pathfinding, gps],
-    'logic': [likes, find_elements, find_list,
-              find_length, find_list_length_4, find_lists_lengths, transitive]
-}
-
-category = get_choice('Which category?', examples.keys())
-programs = {module_name(m): m for m in examples[category]}
-choice = get_choice('Which program?', programs.keys())
-programs[choice].main()
+if __name__ == '__main__':
+    args = vars(parser.parse_args())
+    if args['log']:
+        logging.basicConfig(level=logging.DEBUG)
+    main()
