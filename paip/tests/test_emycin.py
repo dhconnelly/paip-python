@@ -123,17 +123,17 @@ class QuestionsTests(unittest.TestCase):
                           ('red', 0.4),
                           ('green', -0.3)], parse_reply(reply))
 
-    def check_reply_valid(self):
-        p = Parameter('age', valid_type=int)
-        self.assertTrue(check_reply('18', 0.3))
+    def test_check_reply_valid(self):
+        store_param(Parameter('age', valid_type=int))
+        self.assertTrue(check_reply('age', '18', 0.3))
 
-    def check_reply_invalid_param(self):
-        p = Parameter('age', valid_type=int)
-        self.assertFalse(check_reply('bar', 0.3))
+    def test_check_reply_invalid_param(self):
+        store_param(Parameter('age', valid_type=int))
+        self.assertFalse(check_reply('age', 'bar', 0.3))
 
-    def check_reply_invalid_cf(self):
-        p = Parameter('age', valid_type=int)
-        self.assertFalse(check_reply('18', -3.4))
+    def test_check_reply_invalid_cf(self):
+        store_param(Parameter('age', valid_type=int))
+        self.assertFalse(check_reply('age', '18', -3.4))
 
 
 class ParameterTests(unittest.TestCase):

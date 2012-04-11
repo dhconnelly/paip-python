@@ -105,13 +105,13 @@ def parse_reply(reply):
 
 def check_reply(param, val, cf):
     """Determine whether (val, cf) is a legal reply for param."""
-    return param.valid(val) and is_cf(cf)
+    return get_param(param).valid(val) and is_cf(cf)
 
 
 def ask_vals(db, param, inst):
     """Prompt the user and get a list of (val, cf) pairs for (param, inst)."""
     while True:
-        prompt = param.prompt or ('What is the %s of the %s?' % (param, inst))
+        prompt = get_param(param).prompt or 'What is the %s of the %s?' % (param, inst)
         reply = raw_input(prompt)
         if reply == '?':
             # TODO: print possible values
@@ -137,7 +137,7 @@ def ask_vals(db, param, inst):
 # -----------------------------------------------------------------------------
 ## Parameters
 
-### Parameters are defined once and reused, so we cache them.
+### Parameters are defined once and referred to by name, so we cache them.
 PARAMS = {}
 
 
