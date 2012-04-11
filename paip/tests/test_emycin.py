@@ -108,11 +108,7 @@ class DBTests(unittest.TestCase):
         self.assertAlmostEqual(CF.false, cf)
 
 
-class ParseReplyTests(unittest.TestCase):
-    def test_parse_reply_none(self):
-        reply = ''
-        self.assertEqual(None, parse_reply(reply))
-
+class QuestionsTests(unittest.TestCase):
     def test_parse_definite(self):
         reply = 'blue'
         self.assertEqual([(reply, CF.true)], parse_reply(reply))
@@ -127,3 +123,28 @@ class ParseReplyTests(unittest.TestCase):
                           ('red', 0.4),
                           ('green', -0.3)], parse_reply(reply))
 
+    def check_reply_valid(self):
+        p = Parameter('age', valid_type=int)
+        self.assertTrue(check_reply('18', 0.3))
+
+    def check_reply_invalid_param(self):
+        p = Parameter('age', valid_type=int)
+        self.assertFalse(check_reply('bar', 0.3))
+
+    def check_reply_invalid_cf(self):
+        p = Parameter('age', valid_type=int)
+        self.assertFalse(check_reply('18', -3.4))
+
+
+class ParameterTests(unittest.TestCase):
+    def test_valid_any(self):
+        p = Parameter('anything')
+        self.assertTrue(p.valid('bar'))
+
+    def test_valid_not(self):
+        p = Parameter('age', valid_type=int)
+        self.assertFalse(p.valid('bar'))
+
+    def test_valid(self):
+        p = Parameter('age', valid_type=int)
+        self.assertTrue(p.valid('27'))

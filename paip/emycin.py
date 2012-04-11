@@ -1,4 +1,4 @@
-
+# -----------------------------------------------------------------------------
 ## Certainty factors
 
 class CF(object):
@@ -40,7 +40,8 @@ def cf_false(x):
     return is_cf(x) and x < (CF.cutoff - 1)
 
 
-## Database
+# -----------------------------------------------------------------------------
+## Database of objects and attributes for a problem
 
 def get_vals(db, param, inst):
     """Retrieve the list of (val, cf) tuples for the (param, inst) pair."""
@@ -78,6 +79,7 @@ def add_asked(db, param, inst):
     db.setdefault['asked'].append((param, inst))
 
 
+# -----------------------------------------------------------------------------
 ## Asking questions
 
 HELP_STRING = """Type one of the following:
@@ -93,10 +95,6 @@ def parse_reply(reply):
     """Parse a user's reply into a list of tuples (value, cf)."""
     vals = [comp.strip().split(' ') for comp in reply.split(',')]
 
-    # empty -> None
-    if not reply:
-        return None
-    
     # word -> [(word, CF.true)]
     if len(vals) == 1 and len(vals[0]) == 1:
         return [(vals[0][0], CF.true)]
@@ -105,11 +103,16 @@ def parse_reply(reply):
     return [(val, float(cf)) for val, cf in vals]
 
 
+def check_reply(param, val, cf):
+    """Determine whether (val, cf) is a legal reply for param."""
+    return param.valid(val) and is_cf(cf)
+
+
 def ask_vals(db, param, inst):
-    """Prompt the user and get a list of values for (param, inst)."""
+    """Prompt the user and get a list of (val, cf) pairs for (param, inst)."""
     while True:
-        # TODO: custom prompts
-        reply = raw_input('What is the %s of the %s?' % (param, inst))
+        prompt = param.prompt or ('What is the %s of the %s?' % (param, inst))
+        reply = raw_input(prompt)
         if reply == '?':
             # TODO: print possible values
             pass
@@ -121,5 +124,47 @@ def ask_vals(db, param, inst):
             pass
         elif reply == 'help':
             print HELP_STRING
+        elif not reply:
+            continue
         else:
-            return parse_reply(reply) # TODO: check reply
+            answers = parse_reply(reply)
+            if not all(check_reply(param, val, cf) for val, cf in answers):
+                print 'Invalid value.  Type ? to see legal ones.'
+                continue
+            return answers
+                    
+
+# -----------------------------------------------------------------------------
+## Parameters
+
+class Parameter(object):
+
+    """An attribute of an object."""
+    
+    def __init__(self, name, prompt=None, valid_type=object):
+        """
+        Create a new parameter with the given name.
+
+        Optional parameters:
+        - prompt: a custom prompt to print to the user to read a value.
+        - valid_type: a Python class that will be used to determine when a reply
+          from the user is of the correct type.  See `valid` for more details.
+          
+        """
+        self.name = name
+        self.prompt = prompt
+        self.valid_type=valid_type
+
+    def valid(self, val):
+        """
+        Determine whether val is of the required type for this parameter.
+
+        Tries to create an instance of self.valid_type from val; if this fails,
+        returns False.  Otherwise True.
+        """
+        if self.valid_type is not object:
+            try:
+                self.valid_type(val)
+            except:
+                return False
+        return True
