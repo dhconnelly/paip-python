@@ -47,3 +47,47 @@ def update_cf(db, param, inst, val, cf):
     if (val, old_cf) in vals:
         vals.remove((val, old_cf))
     vals.append((val, new_cf))
+
+def asked(db, param, inst):
+    return (param, inst) in db.setdefault('asked', [])
+
+def add_asked(db, param, inst):
+    db.setdefault['asked'].append((param, inst))
+
+def current_rule(db):
+    return db.get('current_rule')
+
+def set_current_rule(db, rule):
+    db['current_rule'] = rule
+
+
+## Instances and parameters
+
+def name(inst):
+    return inst[0] if inst else None
+
+
+## Asking questions
+
+HELP_STRING = """Type one of the following:
+?     - to see possible answers for this parameter
+rule  - to show the current rule
+why   - to see why this question is asked
+help  - to see this list
+xxx   - (for some specific xxx) if there is a definite answer
+xxx .5, yyy .4, ... - if there are several answers with different certainty factors
+"""
+
+def parse_reply(reply):
+    vals = [comp.strip().split(' ') for comp in reply.split(',')]
+
+    # empty -> None
+    if not reply:
+        return None
+    
+    # word -> [(word, CF.true)]
+    if len(vals) == 1 and len(vals[0]) == 1:
+        return [(vals[0][0], CF.true)]
+        
+    # (word cf, word cf, ...) -> [(word, cf), (word, cf), ...]
+    return [(val, float(cf)) for val, cf in vals]
