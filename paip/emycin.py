@@ -137,6 +137,20 @@ def ask_vals(db, param, inst):
 # -----------------------------------------------------------------------------
 ## Parameters
 
+### Parameters are defined once and reused, so we cache them.
+PARAMS = {}
+
+
+def get_param(name):
+    """Get (or create) the parameter with the given name."""
+    return PARAMS.setdefault(name, Parameter(name))
+
+
+def store_param(param):
+    """Cache a parameter."""
+    PARAMS[param.name] = param
+    
+
 class Parameter(object):
 
     """An attribute of an object."""

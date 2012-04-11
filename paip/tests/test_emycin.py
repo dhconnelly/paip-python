@@ -148,3 +148,13 @@ class ParameterTests(unittest.TestCase):
     def test_valid(self):
         p = Parameter('age', valid_type=int)
         self.assertTrue(p.valid('27'))
+
+    def test_get_param(self):
+        p = get_param('age')
+        p.prompt = 'Hello?'
+        self.assertIs(p, get_param('age'))
+
+    def test_store_param(self):
+        p = Parameter('age', valid_type=int)
+        store_param(p)
+        self.assertIs(p, get_param('age'))
