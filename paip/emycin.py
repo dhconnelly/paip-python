@@ -41,42 +41,59 @@ def cf_false(x):
 
 
 # -----------------------------------------------------------------------------
-## Database of objects and attributes for a problem
+## Per-problem database
 
-def get_vals(db, param, inst):
+# We want to track certain data relevant only to the problem we are currently
+# solving, so we use a shared database.  We track:
+# 
+# - (val, cf) possibilities for relevant (param, inst) combinations
+# - (param, inst) combinations for which we have already queried the user
+# - instances of contexts encountered during this problem
+# - the "current" instance
+# - the "current" rule
+
+
+### General database access
+
+DB = {}
+
+def put_db(key, val):
+    """Add an entry to the database."""
+    DB[key] = val
+
+def get_db(key):
+    """Retrieve an entry from the database."""
+    return DB[key]
+
+
+### Storage and retrieval of param values and CFs
+
+def get_vals(param, inst):
     """Retrieve the list of (val, cf) tuples for the (param, inst) pair."""
-    return db.setdefault((param, inst), [])
+    return DB.setdefault((param, inst), [])
 
-def get_cf(db, param, inst, val):
+def get_cf(param, inst, val):
     """
     Retrieve the certainty factor for the pair (param, inst) corresponding to
     the value val.
     """
-    vals = get_vals(db, param, inst)
+    vals = get_vals(param, inst)
     for val1, cf in vals:
         if val == val1:
             return cf
     return CF.unknown
 
-def update_cf(db, param, inst, val, cf):
+def update_cf(param, inst, val, cf):
     """
     Combine cf with the existing certainty factor for val in the list of values
     for (param, inst).
     """
-    old_cf = get_cf(db, param, inst, val)
+    old_cf = get_cf(param, inst, val)
     new_cf = cf_or(old_cf, cf)
-    vals = db.setdefault((param, inst), [])
+    vals = DB.setdefault((param, inst), [])
     if (val, old_cf) in vals:
         vals.remove((val, old_cf))
     vals.append((val, new_cf))
-
-def asked(db, param, inst):
-    """Have we already asked the user for values for (param, inst)?"""
-    return (param, inst) in db.setdefault('asked', [])
-
-def add_asked(db, param, inst):
-    """Remember that we have already asked the user for (param, inst) values."""
-    db.setdefault['asked'].append((param, inst))
 
 
 # -----------------------------------------------------------------------------
@@ -88,8 +105,16 @@ rule  - to show the current rule
 why   - to see why this question is asked
 help  - to see this list
 xxx   - (for some specific xxx) if there is a definite answer
-xxx .5, yyy .4, ... - if there are several answers with different certainty factors
+xxx .5, yyy .4, ... b- if there are several answers with different CFs
 """
+
+def asked(param, inst):
+    """Have we already asked the user for values for (param, inst)?"""
+    return (param, inst) in DB.setdefault('asked', [])
+
+def add_asked(param, inst):
+    """Remember that we have already asked the user for (param, inst) values."""
+    DB.setdefault['asked'].append((param, inst))
 
 def parse_reply(reply):
     """Parse a user's reply into a list of tuples (value, cf)."""
@@ -102,13 +127,11 @@ def parse_reply(reply):
     # (word cf, word cf, ...) -> [(word, cf), (word, cf), ...]
     return [(val, float(cf)) for val, cf in vals]
 
-
 def check_reply(param, val, cf):
     """Determine whether (val, cf) is a legal reply for param."""
     return get_param(param).valid(val) and is_cf(cf)
 
-
-def ask_vals(db, param, inst):
+def ask_vals(param, inst):
     """Prompt the user and get a list of (val, cf) pairs for (param, inst)."""
     while True:
         prompt = get_param(param).prompt or 'What is the %s of the %s?' % (param, inst)
@@ -137,23 +160,15 @@ def ask_vals(db, param, inst):
 # -----------------------------------------------------------------------------
 ## Parameters
 
-### Parameters are defined once and referred to by name, so we cache them.
-PARAMS = {}
-
-
-def get_param(name):
-    """Get (or create) the parameter with the given name."""
-    return PARAMS.setdefault(name, Parameter(name))
-
-
-def store_param(param):
-    """Cache a parameter."""
-    PARAMS[param.name] = param
-    
-
 class Parameter(object):
 
-    """An attribute of an object."""
+    """
+    An attribute type of an object.
+
+    For example, PATIENT instances might have attributes NAME, AGE, SEX.  One
+    Parameter instance exists for each of these attributes, not their values for
+    a specific instance of PATIENT.
+    """
     
     def __init__(self, name, prompt=None, valid_type=object):
         """
@@ -182,3 +197,17 @@ class Parameter(object):
             except:
                 return False
         return True
+
+
+# Parameters are defined only once during an entire run of the system and
+# referred to by name, so we cache them globally.
+
+PARAMS = {}
+
+def get_param(name):
+    """Get (or create) the parameter with the given name."""
+    return PARAMS.setdefault(name, Parameter(name))
+
+def store_param(param):
+    """Cache a parameter."""
+    PARAMS[param.name] = param

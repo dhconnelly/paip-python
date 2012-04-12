@@ -62,49 +62,47 @@ class CFTests(unittest.TestCase):
 
 class DBTests(unittest.TestCase):
     def setUp(self):
-        self.db = {
-            ('age', 'patient'): [(25, 0.7), (24, 0.2)],
-            ('age', 'patient_wife'): [(24, CF.true)],
-            ('smokes', 'patient'): [(False, CF.false)],
-            ('precip', 'weather'): [('raining', -0.4),
-                                    ('snowing', CF.false),
-                                    ('none', 0.6)],
-        }
+        put_db(('age', 'patient'), [(25, 0.7), (24, 0.2)])
+        put_db(('age', 'patient_wife'), [(24, CF.true)])
+        put_db(('smokes', 'patient'), [(False, CF.false)])
+        put_db(('precip', 'weather'), [('raining', -0.4),
+                                       ('snowing', CF.false),
+                                       ('none', 0.6)])
 
     def test_get_vals(self):
-        vals = get_vals(self.db, 'age', 'patient_wife')
+        vals = get_vals('age', 'patient_wife')
         self.assertEqual([(24, CF.true)], vals)
 
     def test_get_vals_empty(self):
-        vals = get_vals(self.db, 'smokes', 'patient_wife')
+        vals = get_vals('smokes', 'patient_wife')
         self.assertEqual([], vals)
 
     def test_get_cf(self):
-        cf = get_cf(self.db, 'precip', 'weather', 'none')
+        cf = get_cf('precip', 'weather', 'none')
         self.assertEqual(0.6, cf)
 
     def test_get_cf_no_key(self):
-        cf = get_cf(self.db, 'precip', 'tomorrow', 'snowing')
+        cf = get_cf('precip', 'tomorrow', 'snowing')
         self.assertEqual(CF.unknown, cf)
 
     def test_get_cf_no_val(self):
-        cf = get_cf(self.db, 'precip', 'weather', 'sleeting')
+        cf = get_cf('precip', 'weather', 'sleeting')
         self.assertEqual(CF.unknown, cf)
                          
 
     def test_update_cf(self):
-        update_cf(self.db, 'precip', 'weather', 'raining', 0.1)
-        cf = get_cf(self.db, 'precip', 'weather', 'raining')
+        update_cf('precip', 'weather', 'raining', 0.1)
+        cf = get_cf('precip', 'weather', 'raining')
         self.assertAlmostEqual(-1.0/3.0, cf)
 
     def test_update_cf_no_key(self):
-        update_cf(self.db, 'precip', 'tomorrow', 'rain', CF.true)
-        cf = get_cf(self.db, 'precip', 'tomorrow', 'rain')
+        update_cf('precip', 'tomorrow', 'rain', CF.true)
+        cf = get_cf('precip', 'tomorrow', 'rain')
         self.assertAlmostEqual(CF.true, cf)
 
     def test_update_cf_no_val(self):
-        update_cf(self.db, 'precip', 'weather', 'sleeting', CF.false)
-        cf = get_cf(self.db, 'precip', 'weather', 'sleeting')
+        update_cf('precip', 'weather', 'sleeting', CF.false)
+        cf = get_cf('precip', 'weather', 'sleeting')
         self.assertAlmostEqual(CF.false, cf)
 
 
