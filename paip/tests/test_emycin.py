@@ -156,3 +156,20 @@ class ParameterTests(unittest.TestCase):
         p = Parameter('age', valid_type=int)
         store_param(p)
         self.assertIs(p, get_param('age'))
+
+
+class ContextTests(unittest.TestCase):
+    def test_init(self):
+        ctx = Context('foo', None, None)
+        self.assertEqual(0, ctx.number)
+        self.assertIs(None, ctx.get_instance())
+        self.assertIs(None, current_instance())
+        
+    def test_instantiate(self):
+        ctx = Context('foo', None, None)
+        inst = ctx.instantiate()
+        name, num = inst
+        self.assertEqual('foo', name)
+        self.assertEqual(1, num)
+        self.assertIs(inst, ctx.get_instance())
+        self.assertIs(inst, current_instance())

@@ -63,7 +63,7 @@ def put_db(key, val):
 
 def get_db(key):
     """Retrieve an entry from the database."""
-    return DB[key]
+    return DB.get(key)
 
 
 ### Storage and retrieval of param values and CFs
@@ -211,3 +211,49 @@ def get_param(name):
 def store_param(param):
     """Cache a parameter."""
     PARAMS[param.name] = param
+
+
+# -----------------------------------------------------------------------------
+## Contexts
+
+class Context(object):
+
+    """
+    A type of object that we can reason about.
+
+    For instance, in a medical expert system, PATIENT might be a context.
+    
+    Context instances are cached globally in the problem-specific database and
+    represented by tuples of the form (name, num) where name is Context's name
+    attribute and num is a system-assigned ID for the instance.  When the
+    problem-specific database is cleared the instance cache is emptied.
+
+    """
+
+    def __init__(self, name, initial_data, goals, number=0):
+        self.name = name
+        self.number = number
+        self.initial_data = initial_data
+        self.goals = goals
+
+    def instantiate(self):
+        """Create a new instance of this context."""
+        self.number += 1
+        instance = (self.name, self.number)
+        put_db(self.name, instance)
+        put_db('current_instance', instance)
+        return instance
+        
+    def get_instance(self):
+        """Retrieve the most recent instance of this context."""
+        return get_db(self.name)
+
+
+# We store the "current" instance (the one being reasoned about at any point in
+# time) and the most recent instance of a context in the problem-specific
+# database.
+
+def current_instance():
+    """Retrieve the instance about which reasoning is taking place."""
+    return get_db('current_instance')
+
