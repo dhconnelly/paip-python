@@ -115,7 +115,7 @@ def asked(param, inst):
 def add_asked(param, inst):
     """Remember that we have already asked the user for (param, inst) values."""
     DB.setdefault['asked'].append((param, inst))
-
+    
 def parse_reply(reply):
     """Parse a user's reply into a list of tuples (value, cf)."""
     vals = [comp.strip().split(' ') for comp in reply.split(',')]
@@ -170,7 +170,7 @@ class Parameter(object):
     a specific instance of PATIENT.
     """
     
-    def __init__(self, name, prompt=None, valid_type=object):
+    def __init__(self, name, prompt=None, valid_type=object, ask_first=False):
         """
         Create a new parameter with the given name.
 
@@ -183,6 +183,7 @@ class Parameter(object):
         self.name = name
         self.prompt = prompt
         self.valid_type=valid_type
+        self.ask_first = ask_first
 
     def valid(self, val):
         """
@@ -257,3 +258,26 @@ def current_instance():
     """Retrieve the instance about which reasoning is taking place."""
     return get_db('current_instance')
 
+
+# -----------------------------------------------------------------------------
+# Rules
+
+class Rule(object):
+    def __init__(self, num, premises, conclusions, cf):
+        self.num = num
+        self.premises = premises
+        self.conclusions = conclusions
+        self.cf = cf
+
+
+# We keep track of all the rules with a global database.
+
+RULES = {}
+
+# index the rule under each parameter in the conclusion
+def put_rule(rule):
+    for param, inst, op, val in rule.conclusions:
+        RULES.setdefault(param, []).append(rule)
+
+def get_rules(param):
+    return RULES.setdefault(param, [])

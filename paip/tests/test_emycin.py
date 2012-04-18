@@ -173,3 +173,16 @@ class ContextTests(unittest.TestCase):
         self.assertEqual(1, num)
         self.assertIs(inst, ctx.get_instance())
         self.assertIs(inst, current_instance())
+
+
+class RuleTests(unittest.TestCase):
+    def test_put_rule(self):
+        cond1 = ('age', 'patient', None, 23)
+        cond2 = ('active', 'patient', None, True)
+        cond3 = ('healthy', 'patient', None, True)
+        cond4 = ('obese', 'patient', None, False)
+        r = Rule(1, (cond1, cond2), (cond3, cond4), 0.5)
+        put_rule(r)
+        
+        self.assertTrue(r in RULES['obese'])
+        self.assertTrue(r in RULES['healthy'])
