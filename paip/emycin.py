@@ -89,10 +89,9 @@ def eval_condition(condition, values):
     """
     Determines the certainty factor of the condition (param, inst, op, val)
     using a list of values already associated with the param parameter of inst.
-    values is of the form [(val1, cf1), (val2, cf2), ...].
     """
     param, inst, op, val = condition
-    return sum(cf for known_val, cf in values if op(known_val, val))
+    return sum(cf for known_val, cf in values.items() if op(known_val, val))
 
 
 # -----------------------------------------------------------------------------
