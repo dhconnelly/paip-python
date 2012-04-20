@@ -138,14 +138,20 @@ class Rule(object):
         ...] associated with that pair.  param is the name of a Parameter object
         and inst is an Instance created by a Context object.
         """
-        cf = CF.true
+        total_cf = CF.true
         for premise in self.premises:
             param, inst, op, val = premise
             vals = get_vals(values, param, inst)
-            cf = cf_and(cf, eval_condition(premise, vals))
-            if not cf_true(cf):
+            cf = eval_condition(premise, vals)
+            
+            # reject early if possible
+            if cf_false(cf):
                 return CF.false
-        return cf
+            
+            total_cf = cf_and(total_cf, cf)
+            if not cf_true(total_cf):
+                return CF.false
+        return total_cf
 
     def apply(self, values):
         """Combines the conclusions of this rule with known values."""
