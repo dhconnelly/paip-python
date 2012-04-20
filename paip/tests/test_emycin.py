@@ -145,3 +145,43 @@ class RuleTests(unittest.TestCase):
         ]
         r = Rule(123, premises, None, 0)
         self.assertAlmostEqual(CF.false, r.applicable(self.values))
+
+    def test_apply_not_applicable(self):
+        premises = [
+            ('age', ('patient', 0), lambda x, y: x > y, 20),
+            ('health', ('patient', 0), lambda x, y: x == y, 'poor'),
+            ('temp', ('weather', 347), lambda x, y: x > y, 80)
+        ]
+        conclusions = [
+            ('dehydrated', ('patient', 0), lambda x, y: x == y, False),
+            ('happy', ('patient', 0), lambda x, y: x == y, True),
+        ]
+        
+        r = Rule(123, premises, conclusions, 0.9)
+        r.apply(self.values)
+        
+        cf = r.cf * r.applicable(self.values)
+        exp1, act1 = 0.7, get_cf(self.values, 'happy', ('patient', 0), True)
+        exp2, act2 = CF.unknown, get_cf(self.values, 'dehydrated', ('patient', 0), False)
+        self.assertAlmostEqual(exp1, act1)
+        self.assertAlmostEqual(exp2, act2)
+
+    def test_apply(self):
+        premises = [
+            ('age', ('patient', 0), lambda x, y: x < y, 25),
+            ('health', ('patient', 0), lambda x, y: x == y, 'good'),
+            ('temp', ('weather', 347), lambda x, y: x > y, 80)
+        ]
+        conclusions = [
+            ('dehydrated', ('patient', 0), lambda x, y: x == y, False),
+            ('happy', ('patient', 0), lambda x, y: x == y, True),
+        ]
+        
+        r = Rule(123, premises, conclusions, 0.9)
+        r.apply(self.values)
+        
+        cf = r.cf * r.applicable(self.values)
+        exp1, act1 = cf_or(cf, 0.7), get_cf(self.values, 'happy', ('patient', 0), True)
+        exp2, act2 = cf, get_cf(self.values, 'dehydrated', ('patient', 0), False)
+        self.assertAlmostEqual(exp1, act1)
+        self.assertAlmostEqual(exp2, act2)

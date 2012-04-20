@@ -146,3 +146,14 @@ class Rule(object):
             if not cf_true(cf):
                 return CF.false
         return cf
+
+    def apply(self, values):
+        """Combines the conclusions of this rule with known values."""
+        cf = self.cf * self.applicable(values)
+        if not cf_true(cf):
+            return False
+        for conclusion in self.conclusions:
+            param, inst, op, val = conclusion
+            update_cf(values, param, inst, val, cf)
+        return True
+    
