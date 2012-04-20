@@ -100,7 +100,8 @@ class RuleTests(unittest.TestCase):
             ('temp', ('weather', 347), lambda x, y: x > y, 80)
         ]
         r = Rule(123, premises, None, 0)
-        self.assertTrue(r.applicable(self.values))
+        expected = cf_and(0.9, cf_and(0.4, 0.8))
+        self.assertAlmostEqual(expected, r.applicable(self.values))
         
     def test_applicable_false(self):
         premises = [
@@ -109,4 +110,4 @@ class RuleTests(unittest.TestCase):
             ('temp', ('weather', 347), lambda x, y: x > y, 80)
         ]
         r = Rule(123, premises, None, 0)
-        self.assertFalse(r.applicable(self.values))
+        self.assertAlmostEqual(CF.false, r.applicable(self.values))

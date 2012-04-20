@@ -113,11 +113,12 @@ class Rule(object):
 
     def applicable(self, values):
         """
-        Determines if this rule is applicable by evaluating the truth of each of
-        its premise conditions against known values of parameters.  values is a
-        dict that maps a (param, inst) pair to a list of known values [(val1,
-        cf1), (val2, cf2), ...] associated with that pair.  param is the name of
-        a Parameter object and inst is an Instance created by a Context object.
+        Determines the applicability of this rule (represented by a certainty
+        factor) by evaluating the truth of each of its premise conditions
+        against known values of parameters.  values is a dict that maps a
+        (param, inst) pair to a list of known values [(val1, cf1), (val2, cf2),
+        ...] associated with that pair.  param is the name of a Parameter object
+        and inst is an Instance created by a Context object.
         """
         cf = CF.true
         for premise in self.premises:
@@ -126,5 +127,5 @@ class Rule(object):
             if vals:
                 cf = cf_and(cf, eval_condition(premise, vals))
             if not cf_true(cf):
-                return False
-        return True
+                return CF.false
+        return cf
