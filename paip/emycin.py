@@ -57,3 +57,20 @@ class Context(object):
         self.count += 1
         return inst
 
+
+# -----------------------------------------------------------------------------
+# Parameters
+
+class Parameter(object):
+    
+    """A property type of a context instance."""
+    
+    def __init__(self, name, ctx=None, valid_type=lambda x: True, ask_first=False):
+        self.name = name
+        self.ctx = ctx
+        self.valid_type = valid_type
+        self.ask_first = ask_first
+    
+    def valid(self, thing):
+        return self.valid_type(thing)
+

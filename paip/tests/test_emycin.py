@@ -68,3 +68,11 @@ class ContextTests(unittest.TestCase):
         self.assertEqual(1, ctx.count)
         self.assertEqual(('patient', 0), inst)
 
+
+class ParameterTests(unittest.TestCase):
+    def test_validate(self):
+        age = Parameter('age', valid_type=lambda x: isinstance(x, int))
+        self.assertTrue(age.valid(25))
+        self.assertFalse(age.valid('foo'))
+
+
