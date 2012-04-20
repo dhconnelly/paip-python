@@ -116,6 +116,11 @@ def update_cf(values, param, inst, val, cf):
 # -----------------------------------------------------------------------------
 # Rules
 
+def use_rules(values, rules):
+    """Apply all of the rules to derive new facts; returns True if a rule succeeded."""
+    return any([rule.apply(values) for rule in rules])
+
+
 class Rule(object):
     
     """
@@ -154,7 +159,10 @@ class Rule(object):
         return total_cf
 
     def apply(self, values):
-        """Combines the conclusions of this rule with known values."""
+        """
+        Combines the conclusions of this rule with known values.
+        Returns True if this rule applied successfully and False otherwise.
+        """
         cf = self.cf * self.applicable(values)
         if not cf_true(cf):
             return False
@@ -162,4 +170,3 @@ class Rule(object):
             param, inst, op, val = conclusion
             update_cf(values, param, inst, val, cf)
         return True
-    
