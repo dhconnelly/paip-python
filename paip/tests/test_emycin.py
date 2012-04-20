@@ -60,3 +60,11 @@ class CFTests(unittest.TestCase):
             self.assertEqual(b, cf_false(a))
 
 
+class ContextTests(unittest.TestCase):
+    def test_instantiate(self):
+        ctx = Context('patient')
+        self.assertEqual(0, ctx.count)
+        inst = ctx.instantiate()
+        self.assertEqual(1, ctx.count)
+        self.assertEqual(('patient', 0), inst)
+

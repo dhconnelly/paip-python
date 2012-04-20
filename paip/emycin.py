@@ -1,3 +1,6 @@
+# -----------------------------------------------------------------------------
+# Certainty factors
+
 class CF(object):
     """Important certainty factor values."""
     true = 1.0
@@ -35,3 +38,22 @@ def cf_true(x):
 def cf_false(x):
     """Do we consider x false?"""
     return is_cf(x) and x < (CF.cutoff - 1)
+
+
+# -----------------------------------------------------------------------------
+# Contexts
+
+class Context(object):
+    
+    """A type of thing that can be reasoned about."""
+    
+    def __init__(self, name):
+        self.count = 0 # track instances with numerical IDs
+        self.name = name
+    
+    def instantiate(self):
+        """Create and return a unique instance of the form (ctx_name, id)."""
+        inst = (self.name, self.count)
+        self.count += 1
+        return inst
+
