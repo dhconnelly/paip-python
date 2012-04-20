@@ -96,6 +96,25 @@ def eval_condition(condition, values):
 
 
 # -----------------------------------------------------------------------------
+# Values
+
+def get_vals(values, param, inst):
+    """Retrieve the dict of val->CF mappings for (param, inst)."""
+    return values.setdefault((param, inst), {})
+
+def get_cf(values, param, inst, val):
+    """Retrieve the certainty that the value of the parameter param in inst is val."""
+    vals = get_vals(values, param, inst)
+    return vals.setdefault(val, CF.unknown)
+
+def update_cf(values, param, inst, val, cf):
+    """Combine the CF that (param, inst) is val with cf."""
+    existing = get_cf(values, param, inst, val)
+    updated = cf_or(existing, cf)
+    get_vals(values, param, inst)[val] = updated
+    
+
+# -----------------------------------------------------------------------------
 # Rules
 
 class Rule(object):
@@ -123,9 +142,8 @@ class Rule(object):
         cf = CF.true
         for premise in self.premises:
             param, inst, op, val = premise
-            vals = values.get((param, inst))
-            if vals:
-                cf = cf_and(cf, eval_condition(premise, vals))
+            vals = get_vals(values, param, inst)
+            cf = cf_and(cf, eval_condition(premise, vals))
             if not cf_true(cf):
                 return CF.false
         return cf

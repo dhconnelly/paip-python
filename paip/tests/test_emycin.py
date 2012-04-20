@@ -83,6 +83,39 @@ class ConditionTests(unittest.TestCase):
         self.assertAlmostEqual(0.9, eval_condition(condition, values))
 
 
+class ValuesTests(unittest.TestCase):
+    def setUp(self):
+        self.values = {
+            ('age', ('patient', 0)): dict([(22, 0.3), (27, -0.1), (24, 0.6)]),
+            ('health', ('patient', 0)): dict([('good', 0.8), ('moderate', -0.4)]),
+            ('temp', ('weather', 347)): dict([(79, 0.3), (81, 0.4)]),
+            ('temp', ('weather', 348)): dict([(79, 0.4), (80, -0.4)]),
+            ('temp', ('weather', 349)): dict([(82, 0.6), (83, 0.05)]),
+            ('happy', ('patient', 0)): dict([(True, 0.7)]),
+        }
+    
+    def test_get_vals_empty(self):
+        self.assertEqual(0, len(get_vals(self.values, 'happy', ('patient', 1)).keys()))
+    
+    def test_get_vals(self):
+        self.assertEqual(3, len(get_vals(self.values, 'age', ('patient', 0)).keys()))
+        
+    def test_get_cf_none(self):
+        self.assertEqual(CF.unknown, get_cf(self.values, 'age', ('patient', 0), 30))
+    
+    def test_get_cf(self):
+        self.assertAlmostEqual(0.4, get_cf(self.values, 'temp', ('weather', 347), 81))
+    
+    def test_update_cf_none(self):
+        update_cf(self.values, 'temp', ('weather', 347), 85, 0.3)
+        self.assertAlmostEqual(0.3, get_cf(self.values, 'temp', ('weather', 347), 85))
+    
+    def test_update_cf(self):
+        update_cf(self.values, 'temp', ('weather', 347), 81, 0.3)
+        exp = cf_or(0.3, 0.4)
+        self.assertAlmostEqual(exp, get_cf(self.values, 'temp', ('weather', 347), 81))
+        
+
 class RuleTests(unittest.TestCase):
     def setUp(self):
         self.values = {
@@ -91,6 +124,7 @@ class RuleTests(unittest.TestCase):
             ('temp', ('weather', 347)): [(79, 0.3), (81, 0.4)],
             ('temp', ('weather', 348)): [(79, 0.4), (80, -0.4)],
             ('temp', ('weather', 349)): [(82, 0.6), (83, 0.05)],
+            ('happy', ('patient', 0)): [(True, 0.7)],
         }
         
     def test_applicable_true(self):
