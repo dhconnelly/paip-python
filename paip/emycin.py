@@ -74,3 +74,22 @@ class Parameter(object):
     def valid(self, thing):
         return self.valid_type(thing)
 
+
+# -----------------------------------------------------------------------------
+# Conditions
+    
+# A condition is a statement of the form (param inst op val), read as "the value
+# of inst's param parameter satisfies the relation op(v, val)", where param is
+# the name of a Parameter object, inst is a Context instance, op is a function
+# that compares two parameter values to determine if the condition is true, and
+# val is the parameter value.  A condition's truth is represented by a certainty
+# factor.
+
+def eval_condition(condition, values):
+    """
+    Determines the certainty factor of the condition (param, inst, op, val)
+    using a list of values already associated with the param parameter of inst.
+    values is of the form [(val1, cf1), (val2, cf2), ...].
+    """
+    param, inst, op, val = condition
+    return sum(cf for known_val, cf in values if op(known_val, val))

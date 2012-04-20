@@ -76,3 +76,8 @@ class ParameterTests(unittest.TestCase):
         self.assertFalse(age.valid('foo'))
 
 
+class ConditionTests(unittest.TestCase):
+    def test_eval_condition(self):
+        condition = ('age', 'patient', lambda x, y: x < y, 25)
+        values = [(22, 0.3), (27, -0.1), (24, 0.6)]
+        self.assertAlmostEqual(0.9, eval_condition(condition, values))
