@@ -48,11 +48,11 @@ class Context(object):
     """A type of thing that can be reasoned about."""
     
     def __init__(self, name):
-        self.count = 0 # track instances with numerical IDs
+        self.count = 0 # track Instances with numerical IDs
         self.name = name
     
     def instantiate(self):
-        """Create and return a unique instance of the form (ctx_name, id)."""
+        """Create and return a unique Instance of the form (ctx_name, id)."""
         inst = (self.name, self.count)
         self.count += 1
         return inst
@@ -80,10 +80,10 @@ class Parameter(object):
     
 # A condition is a statement of the form (param inst op val), read as "the value
 # of inst's param parameter satisfies the relation op(v, val)", where param is
-# the name of a Parameter object, inst is a Context instance, op is a function
-# that compares two parameter values to determine if the condition is true, and
-# val is the parameter value.  A condition's truth is represented by a certainty
-# factor.
+# the name of a Parameter object, inst is an Instance created by a Context
+# object, op is a function that compares two parameter values to determine if
+# the condition is true, and val is the parameter value.  A condition's truth is
+# represented by a certainty factor.
 
 def eval_condition(condition, values):
     """
@@ -93,3 +93,38 @@ def eval_condition(condition, values):
     """
     param, inst, op, val = condition
     return sum(cf for known_val, cf in values if op(known_val, val))
+
+
+# -----------------------------------------------------------------------------
+# Rules
+
+class Rule(object):
+    
+    """
+    A rule used for deriving new facts.  Has premise and conclusion conditions
+    and an associated certainty of the derived conclusions.
+    """
+    
+    def __init__(self, num, premises, conclusions, cf):
+        self.num = num
+        self.premises = premises
+        self.conclusions = conclusions
+        self.cf = cf
+
+    def applicable(self, values):
+        """
+        Determines if this rule is applicable by evaluating the truth of each of
+        its premise conditions against known values of parameters.  values is a
+        dict that maps a (param, inst) pair to a list of known values [(val1,
+        cf1), (val2, cf2), ...] associated with that pair.  param is the name of
+        a Parameter object and inst is an Instance created by a Context object.
+        """
+        cf = CF.true
+        for premise in self.premises:
+            param, inst, op, val = premise
+            vals = values.get((param, inst))
+            if vals:
+                cf = cf_and(cf, eval_condition(premise, vals))
+            if not cf_true(cf):
+                return False
+        return True

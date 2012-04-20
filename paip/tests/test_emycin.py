@@ -81,3 +81,32 @@ class ConditionTests(unittest.TestCase):
         condition = ('age', 'patient', lambda x, y: x < y, 25)
         values = [(22, 0.3), (27, -0.1), (24, 0.6)]
         self.assertAlmostEqual(0.9, eval_condition(condition, values))
+
+
+class RuleTests(unittest.TestCase):
+    def setUp(self):
+        self.values = {
+            ('age', ('patient', 0)): [(22, 0.3), (27, -0.1), (24, 0.6)],
+            ('health', ('patient', 0)): [('good', 0.8), ('moderate', -0.4)],
+            ('temp', ('weather', 347)): [(79, 0.3), (81, 0.4)],
+            ('temp', ('weather', 348)): [(79, 0.4), (80, -0.4)],
+            ('temp', ('weather', 349)): [(82, 0.6), (83, 0.05)],
+        }
+        
+    def test_applicable_true(self):
+        premises = [
+            ('age', ('patient', 0), lambda x, y: x < y, 25),
+            ('health', ('patient', 0), lambda x, y: x == y, 'good'),
+            ('temp', ('weather', 347), lambda x, y: x > y, 80)
+        ]
+        r = Rule(123, premises, None, 0)
+        self.assertTrue(r.applicable(self.values))
+        
+    def test_applicable_false(self):
+        premises = [
+            ('age', ('patient', 0), lambda x, y: x > y, 20),
+            ('health', ('patient', 0), lambda x, y: x == y, 'poor'),
+            ('temp', ('weather', 347), lambda x, y: x > y, 80)
+        ]
+        r = Rule(123, premises, None, 0)
+        self.assertFalse(r.applicable(self.values))
