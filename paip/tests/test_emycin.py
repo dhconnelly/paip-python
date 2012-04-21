@@ -76,9 +76,9 @@ class ContextTests(unittest.TestCase):
 
 class ParameterTests(unittest.TestCase):
     def test_validate(self):
-        age = Parameter('age', valid_type=lambda x: isinstance(x, int))
-        self.assertTrue(age.valid(25))
-        self.assertFalse(age.valid('foo'))
+        age = Parameter('age', parse=lambda x: int(x))
+        self.assertEqual(25, age.from_string('25'))
+        self.assertRaises(ValueError, age.from_string, 'foo')
 
 
 class ConditionTests(unittest.TestCase):
@@ -301,6 +301,7 @@ class UseRulesTests(unittest.TestCase):
 class ShellTests(unittest.TestCase):
     def setUp(self):
         sh = Shell()
+        self.shell = sh
         
         # define contexts and parameters
         
@@ -337,21 +338,26 @@ class ShellTests(unittest.TestCase):
         conclusions3 = [('health', 'patient', eq, 'poor')]
         sh.define_rule(Rule(789, premises3, conclusions3, 0.85))
         
-        self.shell = sh
-    
+        # make instances
+        self.patient = self.shell.instantiate('patient')
+        self.weather = self.shell.instantiate('weather')
+        
+        # fill in initial data
+        update_cf(self.shell.known_values, 'age', self.patient, 45, 0.7)
+        self.shell.known.add(('age', self.patient))
+        update_cf(self.shell.known_values, 'temp', self.weather, 89, 0.6)
+        self.shell.known.add(('temp', self.weather))
+        
     def test_find_out_ask_first_then_use_rules(self):
-        patient = self.shell.instantiate('patient')
-        weather = self.shell.instantiate('weather')
-        update_cf(self.shell.known_values, 'age', patient, 45, 0.7)
-        update_cf(self.shell.known_values, 'temp', weather, 89, 0.6)
-        
         self.shell.get_param('health').ask_first = True
-        
-        self.assertTrue(('health', patient) not in self.shell.known_values)
-        self.assertTrue(('health', patient) not in self.shell.asked)
-        self.shell.find_out('health', patient)
-        self.assertTrue(('health', patient) in self.shell.asked)
-        self.assertTrue(('health', patient) in self.shell.known_values)
+        def empty_read(prompt):
+            return
+        self.shell.read = empty_read
+        self.assertTrue(('health', self.patient) not in self.shell.known_values)
+        self.assertTrue(('health', self.patient) not in self.shell.asked)
+        self.shell.find_out('health', self.patient)
+        self.assertTrue(('health', self.patient) in self.shell.asked)
+        self.assertTrue(('health', self.patient) in self.shell.known_values)
     
     def test_find_out_ask_first_success(self):
         # TODO
@@ -362,15 +368,9 @@ class ShellTests(unittest.TestCase):
         pass
     
     def test_find_out_rules_first(self):
-        patient = self.shell.instantiate('patient')
-        weather = self.shell.instantiate('weather')
-        update_cf(self.shell.known_values, 'age', patient, 45, 0.7)
-        update_cf(self.shell.known_values, 'temp', weather, 89, 0.6)
-        
         self.shell.get_param('health').ask_first = False
-        
-        self.assertTrue(('health', patient) not in self.shell.known_values)
-        self.assertTrue(('health', patient) not in self.shell.asked)
-        self.shell.find_out('health', patient)
-        self.assertTrue(('health', patient) not in self.shell.asked)
-        self.assertTrue(('health', patient) in self.shell.known_values)
+        self.assertTrue(('health', self.patient) not in self.shell.known_values)
+        self.assertTrue(('health', self.patient) not in self.shell.asked)
+        self.shell.find_out('health', self.patient)
+        self.assertTrue(('health', self.patient) not in self.shell.asked)
+        self.assertTrue(('health', self.patient) in self.shell.known_values)

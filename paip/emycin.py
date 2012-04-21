@@ -67,14 +67,14 @@ class Parameter(object):
     
     """A property type of a context instance."""
     
-    def __init__(self, name, ctx=None, valid_type=lambda x: True, ask_first=False):
+    def __init__(self, name, ctx=None, parse=lambda x: x, ask_first=False):
         self.name = name
         self.ctx = ctx
-        self.valid_type = valid_type
+        self.parse = parse
         self.ask_first = ask_first
     
-    def valid(self, thing):
-        return self.valid_type(thing)
+    def from_string(self, string):
+        return self.parse(string)
 
 
 # -----------------------------------------------------------------------------
@@ -100,6 +100,14 @@ def eval_condition(condition, values, find_out=None):
         find_out(param, inst)
     return sum(cf for known_val, cf in values.items() if op(known_val, val))
 
+def parse_cond(cond, instances):
+    """
+    Given a condition (param, ctx, op, val), return (param, inst, op, val),
+    where inst is the current instance of the context ctx.
+    """
+    param, ctx, op, val = cond
+    return param, instances[ctx], op, val
+
 
 # -----------------------------------------------------------------------------
 # Values
@@ -123,10 +131,9 @@ def update_cf(values, param, inst, val, cf):
 # -----------------------------------------------------------------------------
 # Rules
 
-def use_rules(values, instances, rules, find_out=None):
+def use_rules(values, instances, rules, find_out=None, track_rules=None):
     """Apply all of the rules to derive new facts; returns True if a rule succeeded."""
-    return any([rule.apply(values, instances, find_out) for rule in rules])
-
+    return any([rule.apply(values, instances, find_out, track_rules) for rule in rules])
 
 class Rule(object):
     
@@ -137,9 +144,16 @@ class Rule(object):
     
     def __init__(self, num, premises, conclusions, cf):
         self.num = num
-        self.premises = premises
-        self.conclusions = conclusions
         self.cf = cf
+        # conditions are stored with context names, not specific instances
+        self.raw_premises = premises 
+        self.raw_conclusions = conclusions
+    
+    def premises(self, instances):
+        return [parse_cond(premise, instances) for premise in self.raw_premises]
+    
+    def conclusions(self, instances):
+        return [parse_cond(concl, instances) for concl in self.raw_conclusions]
 
     def applicable(self, values, instances, find_out=None):
         """
@@ -157,18 +171,16 @@ class Rule(object):
         
         """
         # reject early if possible
-        for premise in self.premises:
-            param, ctx, op, val = premise
-            inst = instances[ctx]
+        for premise in self.premises(instances):
+            param, inst, op, val = premise
             vals = get_vals(values, param, inst)
             cf = eval_condition(premise, vals) # don't pass find_out, just use rules
             if cf_false(cf):
                 return CF.false
                         
         total_cf = CF.true
-        for premise in self.premises:
-            param, ctx, op, val = premise
-            inst = instances[ctx]
+        for premise in self.premises(instances):
+            param, inst, op, val = premise
             vals = get_vals(values, param, inst)
             cf = eval_condition(premise, vals, find_out)
             total_cf = cf_and(total_cf, cf)
@@ -176,17 +188,19 @@ class Rule(object):
                 return CF.false
         return total_cf
 
-    def apply(self, values, instances, find_out=None):
+    def apply(self, values, instances, find_out=None, track=None):
         """
         Combines the conclusions of this rule with known values.
         Returns True if this rule applied successfully and False otherwise.
         """
+        # track current rule
+        if track:
+            track(self)
         cf = self.cf * self.applicable(values, instances, find_out)
         if not cf_true(cf):
             return False
-        for conclusion in self.conclusions:
-            param, ctx, op, val = conclusion
-            inst = instances[ctx]
+        for conclusion in self.conclusions(instances):
+            param, inst, op, val = conclusion
             update_cf(values, param, inst, val, cf)
         return True
 
@@ -209,9 +223,10 @@ class Shell(object):
         self.known_values = {} # dict mapping (param, inst) to a list of (val, cf) pairs
         self.current_inst = None # the instance under consideration
         self.instances = {} # dict mapping ctx_name -> most recent instance of ctx
+        self.current_rule = None # track the current rule for introspection
     
     def define_rule(self, rule):
-        for param, inst, op, val in rule.conclusions:
+        for param, ctx, op, val in rule.raw_conclusions:
             self.rules.setdefault(param, []).append(rule)
     
     def get_rules(self, param):
@@ -236,16 +251,22 @@ class Shell(object):
         if (param, inst) in self.asked:
             return
         self.asked.add((param, inst))
-        # TODO: the rest
+        resp = self.read('what is the %s of %s?' % (param, inst))
+        # TODO
+    
+    def _set_current_rule(self, rule):
+        self.current_rule = rule
     
     def find_out(self, param, inst=None):
         """Use rules and user input to determine possible values for (param, inst)."""
         inst = inst or self.current_inst
+        
         if (param, inst) in self.known:
             return True
         def rules():
             return use_rules(self.known_values, self.instances,
-                             self.get_rules(param), self.find_out)
+                             self.get_rules(param), self.find_out,
+                             self._set_current_rule)
         if self.get_param(param).ask_first:
             success = self.ask_values(param, inst) or rules()
         else:
