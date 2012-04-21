@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 # -----------------------------------------------------------------------------
 # Certainty factors
 
@@ -121,9 +123,9 @@ def update_cf(values, param, inst, val, cf):
 # -----------------------------------------------------------------------------
 # Rules
 
-def use_rules(values, rules, find_out=None):
+def use_rules(values, instances, rules, find_out=None):
     """Apply all of the rules to derive new facts; returns True if a rule succeeded."""
-    return any([rule.apply(values, find_out) for rule in rules])
+    return any([rule.apply(values, instances, find_out) for rule in rules])
 
 
 class Rule(object):
@@ -139,18 +141,25 @@ class Rule(object):
         self.conclusions = conclusions
         self.cf = cf
 
-    def applicable(self, values, find_out=None):
+    def applicable(self, values, instances, find_out=None):
         """
         Determines the applicability of this rule (represented by a certainty
         factor) by evaluating the truth of each of its premise conditions
-        against known values of parameters.  values is a dict that maps a
-        (param, inst) pair to a list of known values [(val1, cf1), (val2, cf2),
-        ...] associated with that pair.  param is the name of a Parameter object
-        and inst is an Instance created by a Context object.
+        against known values of parameters.
+        
+        Arguments:
+        - values: a dict that maps a (param, inst) pair to a list of known
+              values [(val1, cf1), (val2, cf2), ...] associated with that pair.
+              param is the name of a Parameter object and inst is the name of
+              a Context.
+        - instances: a dict that maps a Context name to its current instance.
+        - find_out: see eval_condition
+        
         """
         # reject early if possible
         for premise in self.premises:
-            param, inst, op, val = premise
+            param, ctx, op, val = premise
+            inst = instances[ctx]
             vals = get_vals(values, param, inst)
             cf = eval_condition(premise, vals) # don't pass find_out, just use rules
             if cf_false(cf):
@@ -158,7 +167,8 @@ class Rule(object):
                         
         total_cf = CF.true
         for premise in self.premises:
-            param, inst, op, val = premise
+            param, ctx, op, val = premise
+            inst = instances[ctx]
             vals = get_vals(values, param, inst)
             cf = eval_condition(premise, vals, find_out)
             total_cf = cf_and(total_cf, cf)
@@ -166,17 +176,16 @@ class Rule(object):
                 return CF.false
         return total_cf
 
-    def apply(self, values, find_out=None):
+    def apply(self, values, instances, find_out=None):
         """
         Combines the conclusions of this rule with known values.
         Returns True if this rule applied successfully and False otherwise.
         """
-        cf = self.cf * self.applicable(values, find_out)
+        cf = self.cf * self.applicable(values, instances, find_out)
         if not cf_true(cf):
             return False
         for conclusion in self.conclusions:
-            param, inst, op, val = conclusion
+            param, ctx, op, val = conclusion
+            inst = instances[ctx]
             update_cf(values, param, inst, val, cf)
         return True
-
-

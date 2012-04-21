@@ -1,6 +1,11 @@
 import unittest
 from paip.emycin import *
 
+
+def eq(x, y):
+    return x == y
+
+
 class CFTests(unittest.TestCase):
     def test_cf_or(self):
         cases = [
@@ -118,49 +123,57 @@ class ValuesTests(unittest.TestCase):
 
 class RuleTests(unittest.TestCase):
     def setUp(self):
+        patient = ('patient', 0)
+        weather1 = ('weather', 347)
+        weather2 = ('weather', 348)
+        weather3 = ('weather', 349)
         self.values = {
-            ('age', ('patient', 0)): dict([(22, 0.3), (27, -0.1), (24, 0.6)]),
-            ('health', ('patient', 0)): dict([('good', 0.8), ('moderate', -0.4)]),
-            ('temp', ('weather', 347)): dict([(79, 0.3), (81, 0.4)]),
-            ('temp', ('weather', 348)): dict([(79, 0.4), (80, -0.4)]),
-            ('temp', ('weather', 349)): dict([(82, 0.6), (83, 0.05)]),
-            ('happy', ('patient', 0)): dict([(True, 0.7)]),
+            ('age', patient): dict([(22, 0.3), (27, -0.1), (24, 0.6)]),
+            ('health', patient): dict([('good', 0.8), ('moderate', -0.4)]),
+            ('temp', weather1): dict([(79, 0.3), (81, 0.4)]),
+            ('temp', weather2): dict([(79, 0.4), (80, -0.4)]),
+            ('temp', weather3): dict([(82, 0.6), (83, 0.05)]),
+            ('happy', patient): dict([(True, 0.7)]),
+        }
+        self.instances = {
+            'patient': patient,
+            'weather': weather1
         }
         
     def test_applicable_true(self):
         premises = [
-            ('age', ('patient', 0), lambda x, y: x < y, 25),
-            ('health', ('patient', 0), lambda x, y: x == y, 'good'),
-            ('temp', ('weather', 347), lambda x, y: x > y, 80)
+            ('age', 'patient', lambda x, y: x < y, 25),
+            ('health', 'patient', eq, 'good'),
+            ('temp', 'weather', lambda x, y: x > y, 80)
         ]
         r = Rule(123, premises, None, 0)
         expected = cf_and(0.9, cf_and(0.4, 0.8))
-        self.assertAlmostEqual(expected, r.applicable(self.values))
+        self.assertAlmostEqual(expected, r.applicable(self.values, self.instances))
         
     def test_applicable_false(self):
         premises = [
-            ('age', ('patient', 0), lambda x, y: x > y, 20),
-            ('health', ('patient', 0), lambda x, y: x == y, 'poor'),
-            ('temp', ('weather', 347), lambda x, y: x > y, 80)
+            ('age', 'patient', lambda x, y: x > y, 20),
+            ('health', 'patient', eq, 'poor'),
+            ('temp', 'weather', lambda x, y: x > y, 80)
         ]
         r = Rule(123, premises, None, 0)
-        self.assertAlmostEqual(CF.false, r.applicable(self.values))
+        self.assertAlmostEqual(CF.false, r.applicable(self.values, self.instances))
 
     def test_apply_not_applicable(self):
         premises = [
-            ('age', ('patient', 0), lambda x, y: x > y, 20),
-            ('health', ('patient', 0), lambda x, y: x == y, 'poor'),
-            ('temp', ('weather', 347), lambda x, y: x > y, 80)
+            ('age', 'patient', lambda x, y: x > y, 20),
+            ('health', 'patient', eq, 'poor'),
+            ('temp', 'weather', lambda x, y: x > y, 80)
         ]
         conclusions = [
-            ('dehydrated', ('patient', 0), lambda x, y: x == y, False),
-            ('happy', ('patient', 0), lambda x, y: x == y, True),
+            ('dehydrated', 'patient', eq, False),
+            ('happy', 'patient', eq, True),
         ]
         
         r = Rule(123, premises, conclusions, 0.9)
-        r.apply(self.values)
+        r.apply(self.values, self.instances)
         
-        cf = r.cf * r.applicable(self.values)
+        cf = r.cf * r.applicable(self.values, self.instances)
         exp1, act1 = 0.7, get_cf(self.values, 'happy', ('patient', 0), True)
         exp2, act2 = CF.unknown, get_cf(self.values, 'dehydrated', ('patient', 0), False)
         self.assertAlmostEqual(exp1, act1)
@@ -168,19 +181,19 @@ class RuleTests(unittest.TestCase):
 
     def test_apply(self):
         premises = [
-            ('age', ('patient', 0), lambda x, y: x < y, 25),
-            ('health', ('patient', 0), lambda x, y: x == y, 'good'),
-            ('temp', ('weather', 347), lambda x, y: x > y, 80)
+            ('age', 'patient', lambda x, y: x < y, 25),
+            ('health', 'patient', eq, 'good'),
+            ('temp', 'weather', lambda x, y: x > y, 80)
         ]
         conclusions = [
-            ('dehydrated', ('patient', 0), lambda x, y: x == y, False),
-            ('happy', ('patient', 0), lambda x, y: x == y, True),
+            ('dehydrated', 'patient', eq, False),
+            ('happy', 'patient', eq, True),
         ]
         
         r = Rule(123, premises, conclusions, 0.9)
-        r.apply(self.values)
+        r.apply(self.values, self.instances)
         
-        cf = r.cf * r.applicable(self.values)
+        cf = r.cf * r.applicable(self.values, self.instances)
         exp1, act1 = cf_or(cf, 0.7), get_cf(self.values, 'happy', ('patient', 0), True)
         exp2, act2 = cf, get_cf(self.values, 'dehydrated', ('patient', 0), False)
         self.assertAlmostEqual(exp1, act1)
@@ -189,37 +202,45 @@ class RuleTests(unittest.TestCase):
 
 class UseRulesTests(unittest.TestCase):
     def setUp(self):
+        patient = ('patient', 0)
+        weather1 = ('weather', 347)
+        weather2 = ('weather', 348)
+        weather3 = ('weather', 349)
         self.values = {
-            ('age', ('patient', 0)): dict([(22, 0.3), (27, -0.1), (24, 0.6)]),
-            ('health', ('patient', 0)): dict([('good', 0.8), ('moderate', -0.4)]),
-            ('temp', ('weather', 347)): dict([(79, 0.3), (81, 0.4)]),
-            ('temp', ('weather', 348)): dict([(79, 0.4), (80, -0.4)]),
-            ('temp', ('weather', 349)): dict([(82, 0.6), (83, 0.05)]),
-            ('happy', ('patient', 0)): dict([(True, 0.7)]),
+            ('age', patient): dict([(22, 0.3), (27, -0.1), (24, 0.6)]),
+            ('health', patient): dict([('good', 0.8), ('moderate', -0.4)]),
+            ('temp', weather1): dict([(79, 0.3), (81, 0.4)]),
+            ('temp', weather2): dict([(79, 0.4), (80, -0.4)]),
+            ('temp', weather3): dict([(82, 0.6), (83, 0.05)]),
+            ('happy', patient): dict([(True, 0.7)]),
+        }
+        self.instances = {
+            'patient': patient,
+            'weather': weather3
         }
     
     def test_use_rules_fail(self):
         # should not be applied
         premises1 = [
-            ('age', ('patient', 0), lambda x, y: x > y, 20),
-            ('health', ('patient', 0), lambda x, y: x == y, 'poor'),
-            ('temp', ('weather', 347), lambda x, y: x > y, 80)
+            ('age', 'patient', lambda x, y: x > y, 20),
+            ('health', 'patient', eq, 'poor'),
+            ('temp', 'weather', lambda x, y: x > y, 80)
         ]
         conclusions1 = [
-            ('happy', ('patient', 0), lambda x, y: x == y, True),
+            ('happy', 'patient', eq, True),
         ]
         rule1 = Rule(123, premises1, conclusions1, 0.9)
         
         # should not be applied
         premises2 = [
-            ('temp', ('weather', 349), lambda x, y: x == y, 81)
+            ('temp', 'weather', eq, 81)
         ]
         conclusions2 = [
-            ('foo', ('bar', 0), lambda x, y: True, 'baz')
+            ('foo', 'bar', lambda x, y: True, 'baz')
         ]
         rule2 = Rule(456, premises2, conclusions2, 0.7)
         
-        self.assertFalse(use_rules(self.values, [rule1, rule2]))
+        self.assertFalse(use_rules(self.values, self.instances, [rule1, rule2]))
         
         exp1 = 0.7
         self.assertAlmostEqual(exp1,
@@ -231,40 +252,40 @@ class UseRulesTests(unittest.TestCase):
     def test_use_rules(self):
         # should be applied
         premises1 = [
-            ('age', ('patient', 0), lambda x, y: x < y, 25),
-            ('health', ('patient', 0), lambda x, y: x == y, 'good'),
-            ('temp', ('weather', 347), lambda x, y: x > y, 80)
+            ('age', 'patient', lambda x, y: x < y, 25),
+            ('health', 'patient', eq, 'good'),
+            ('temp', 'weather', lambda x, y: x > y, 80)
         ]
         conclusions1 = [
-            ('dehydrated', ('patient', 0), lambda x, y: x == y, False),
+            ('dehydrated', 'patient', eq, False),
         ]
         rule1 = Rule(123, premises1, conclusions1, 0.9)
 
         # should NOT be applied
         premises2 = [
-            ('age', ('patient', 0), lambda x, y: x > y, 20),
-            ('health', ('patient', 0), lambda x, y: x == y, 'poor'),
-            ('temp', ('weather', 347), lambda x, y: x > y, 80)
+            ('age', 'patient', lambda x, y: x > y, 20),
+            ('health', 'patient', eq, 'poor'),
+            ('temp', 'weather', lambda x, y: x > y, 80)
         ]
         conclusions2 = [
-            ('dehydrated', ('patient', 0), lambda x, y: x == y, True),
+            ('dehydrated', 'patient', eq, True),
         ]
         rule2 = Rule(456, premises2, conclusions2, 0.7)
         
         # should be applied
         premises3 = [
-            ('age', ('patient', 0), lambda x, y: x < y, 25),
-            ('health', ('patient', 0), lambda x, y: x == y, 'good'),
-            ('temp', ('weather', 347), lambda x, y: x > y, 80)
+            ('age', 'patient', lambda x, y: x < y, 25),
+            ('health', 'patient', eq, 'good'),
+            ('temp', 'weather', lambda x, y: x > y, 80)
         ]
         conclusions3 = [
-            ('health', ('patient', 0), lambda x, y: x == y, 'poor')
+            ('health', 'patient', eq, 'poor')
         ]
         rule3 = Rule(789, premises3, conclusions3, 0.85)
         
-        self.assertTrue(use_rules(self.values, [rule1, rule2, rule3]))
+        self.assertTrue(use_rules(self.values, self.instances, [rule1, rule2, rule3]))
 
-        exp1 = rule1.cf * rule1.applicable(self.values)
+        exp1 = rule1.cf * rule1.applicable(self.values, self.instances)
         self.assertAlmostEqual(exp1,
                                get_cf(self.values, 'dehydrated', ('patient', 0), False))
         
@@ -272,6 +293,6 @@ class UseRulesTests(unittest.TestCase):
         self.assertAlmostEqual(exp2,
                                get_cf(self.values, 'dehydrated', ('patient', 0), True))
 
-        exp3 = rule3.cf * rule3.applicable(self.values)
+        exp3 = rule3.cf * rule3.applicable(self.values, self.instances)
         self.assertAlmostEqual(exp3,
                                get_cf(self.values, 'health', ('patient', 0), 'poor'))
