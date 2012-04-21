@@ -370,14 +370,57 @@ class ShellTests(unittest.TestCase):
         sh.define_rule(Rule(789, premises3, conclusions3, 0.85))
         
         # make instances
-        self.patient = self.shell.instantiate('patient')
         self.weather = self.shell.instantiate('weather')
+        self.patient = self.shell.instantiate('patient')
         
         # fill in initial data
         update_cf(self.shell.known_values, 'age', self.patient, 45, 0.7)
         self.shell.known.add(('age', self.patient))
         update_cf(self.shell.known_values, 'temp', self.weather, 89, 0.6)
         self.shell.known.add(('temp', self.weather))
+        
+    def test_find_out_ask_first_then_use_rules_current_instance(self):
+        self.shell.get_param('health').ask_first = True
+        self.shell.read = lambda prompt: 'unknown'
+        self.assertTrue(('health', self.patient) not in self.shell.known_values)
+        self.assertTrue(('health', self.patient) not in self.shell.asked)
+        self.shell.find_out('health')
+        self.assertTrue(('health', self.patient) in self.shell.asked)
+        self.assertTrue(('health', self.patient) in self.shell.known_values)
+    
+    def test_find_out_ask_first_success_current_instance(self):
+        self.shell.get_param('health').ask_first = True
+        self.shell.read = lambda prompt: 'good'
+        self.assertTrue(('health', self.patient) not in self.shell.known_values)
+        self.assertTrue(('health', self.patient) not in self.shell.asked)
+        self.shell.find_out('health')
+        self.assertTrue(('health', self.patient) in self.shell.asked)
+        self.assertTrue(('health', self.patient) in self.shell.known_values)
+        
+        cf = get_cf(self.shell.known_values, 'health', self.patient, 'good')
+        self.assertAlmostEqual(CF.true, cf)
+    
+    def test_find_out_rules_first_then_ask_current_instance(self):
+        self.shell.get_param('awesome').ask_first = False
+        self.shell.read = lambda prompt: 'True 0.7, False -0.4'
+        self.assertTrue(('awesome', self.patient) not in self.shell.known_values)
+        self.assertTrue(('awesome', self.patient) not in self.shell.asked)
+        self.shell.find_out('awesome')
+        self.assertTrue(('awesome', self.patient) in self.shell.asked)
+        self.assertTrue(('awesome', self.patient) in self.shell.known_values)
+        
+        cf1 = get_cf(self.shell.known_values, 'awesome', self.patient, True)
+        self.assertAlmostEqual(0.7, cf1)
+        cf2 = get_cf(self.shell.known_values, 'awesome', self.patient, False)
+        self.assertAlmostEqual(-0.4, cf2)
+    
+    def test_find_out_rules_first_current_instance(self):
+        self.shell.get_param('health').ask_first = False
+        self.assertTrue(('health', self.patient) not in self.shell.known_values)
+        self.assertTrue(('health', self.patient) not in self.shell.asked)
+        self.shell.find_out('health')
+        self.assertTrue(('health', self.patient) not in self.shell.asked)
+        self.assertTrue(('health', self.patient) in self.shell.known_values)
         
     def test_find_out_ask_first_then_use_rules(self):
         self.shell.get_param('health').ask_first = True
