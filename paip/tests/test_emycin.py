@@ -298,6 +298,30 @@ class UseRulesTests(unittest.TestCase):
                                get_cf(self.values, 'health', ('patient', 0), 'poor'))
 
 
+class ParseReplyTests(unittest.TestCase):
+    def setUp(self):
+        self.param = Parameter('age', parse=int)
+    
+    def test_parse_value(self):
+        vals = parse_reply(self.param, '25')
+        self.assertEqual(1, len(vals))
+        val, cf = vals[0]
+        self.assertEqual(25, val)
+        self.assertAlmostEqual(CF.true, cf)
+    
+    def test_parse_list(self):
+        vals = parse_reply(self.param, '25 0.4, 23 -0.2, 24 0.1')
+        self.assertEqual(3, len(vals))
+        val1, cf1 = vals[0]
+        val2, cf2 = vals[1]
+        val3, cf3 = vals[2]
+        self.assertEqual(25, val1)
+        self.assertEqual(23, val2)
+        self.assertEqual(24, val3)
+        self.assertAlmostEqual(0.4, cf1)
+        self.assertAlmostEqual(-0.2, cf2)
+        self.assertAlmostEqual(0.1, cf3)
+
 class ShellTests(unittest.TestCase):
     def setUp(self):
         sh = Shell()
@@ -309,6 +333,13 @@ class ShellTests(unittest.TestCase):
         sh.define_param(Parameter('age', 'patient', int))
         sh.define_param(Parameter('health', 'patient', str))
         sh.define_param(Parameter('dehydrated', 'patient', str))
+        def parse_bool(x):
+            if x == 'True':
+                return True
+            if x == 'False':
+                return False
+            raise ValueError('%s is not True or False' % x)
+        sh.define_param(Parameter('awesome', 'patient', parse_bool))
 
         sh.define_context(Context('weather'))
         sh.define_param(Parameter('temp', 'weather', int))
@@ -350,9 +381,7 @@ class ShellTests(unittest.TestCase):
         
     def test_find_out_ask_first_then_use_rules(self):
         self.shell.get_param('health').ask_first = True
-        def empty_read(prompt):
-            return
-        self.shell.read = empty_read
+        self.shell.read = lambda prompt: 'unknown'
         self.assertTrue(('health', self.patient) not in self.shell.known_values)
         self.assertTrue(('health', self.patient) not in self.shell.asked)
         self.shell.find_out('health', self.patient)
@@ -360,12 +389,30 @@ class ShellTests(unittest.TestCase):
         self.assertTrue(('health', self.patient) in self.shell.known_values)
     
     def test_find_out_ask_first_success(self):
-        # TODO
-        pass
+        self.shell.get_param('health').ask_first = True
+        self.shell.read = lambda prompt: 'good'
+        self.assertTrue(('health', self.patient) not in self.shell.known_values)
+        self.assertTrue(('health', self.patient) not in self.shell.asked)
+        self.shell.find_out('health', self.patient)
+        self.assertTrue(('health', self.patient) in self.shell.asked)
+        self.assertTrue(('health', self.patient) in self.shell.known_values)
+        
+        cf = get_cf(self.shell.known_values, 'health', self.patient, 'good')
+        self.assertAlmostEqual(CF.true, cf)
     
     def test_find_out_rules_first_then_ask(self):
-        # TODO
-        pass
+        self.shell.get_param('awesome').ask_first = False
+        self.shell.read = lambda prompt: 'True 0.7, False -0.4'
+        self.assertTrue(('awesome', self.patient) not in self.shell.known_values)
+        self.assertTrue(('awesome', self.patient) not in self.shell.asked)
+        self.shell.find_out('awesome', self.patient)
+        self.assertTrue(('awesome', self.patient) in self.shell.asked)
+        self.assertTrue(('awesome', self.patient) in self.shell.known_values)
+        
+        cf1 = get_cf(self.shell.known_values, 'awesome', self.patient, True)
+        self.assertAlmostEqual(0.7, cf1)
+        cf2 = get_cf(self.shell.known_values, 'awesome', self.patient, False)
+        self.assertAlmostEqual(-0.4, cf2)
     
     def test_find_out_rules_first(self):
         self.shell.get_param('health').ask_first = False

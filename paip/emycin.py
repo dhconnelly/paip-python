@@ -207,6 +207,20 @@ class Rule(object):
 
 # -----------------------------------------------------------------------------
 # Shell
+    
+def parse_reply(param, reply):
+    """
+    Returns a list of (value, cf) pairs for the Parameter param from a text
+    reply.  Expected a single value (with an implicit CF of true) or a list of
+    value/cf pairs val1 cf1, val2 cf2, ....
+    """
+    if reply.find(',') >= 0:
+        vals = []
+        for pair in reply.split(','):
+            val, cf = pair.strip().split(' ')
+            vals.append((param.from_string(val), float(cf)))
+        return vals
+    return [(param.from_string(reply), CF.true)]
 
 class Shell(object):
     
@@ -251,8 +265,30 @@ class Shell(object):
         if (param, inst) in self.asked:
             return
         self.asked.add((param, inst))
-        resp = self.read('what is the %s of %s?' % (param, inst))
-        # TODO
+        while True:
+            # TODO define prompts per Parameter
+            resp = self.read('what is the %s of %s?' % (param, inst))
+            if resp == 'unknown':
+                return False
+            elif resp == 'help':
+                # TODO
+                pass
+            elif resp == 'why':
+                # TODO
+                pass
+            elif resp == 'rule':
+                # TODO
+                pass
+            elif resp == '?':
+                # TODO
+                pass
+            else:
+                try:
+                    for val, cf in parse_reply(self.get_param(param), resp):
+                        update_cf(self.known_values, param, inst, val, cf)
+                    return True
+                except:
+                    self.write('Invalid response. Type ? to see legal ones.')
     
     def _set_current_rule(self, rule):
         self.current_rule = rule
