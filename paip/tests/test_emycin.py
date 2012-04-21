@@ -296,3 +296,81 @@ class UseRulesTests(unittest.TestCase):
         exp3 = rule3.cf * rule3.applicable(self.values, self.instances)
         self.assertAlmostEqual(exp3,
                                get_cf(self.values, 'health', ('patient', 0), 'poor'))
+
+
+class ShellTests(unittest.TestCase):
+    def setUp(self):
+        sh = Shell()
+        
+        # define contexts and parameters
+        
+        sh.define_context(Context('patient'))
+        sh.define_param(Parameter('age', 'patient', int))
+        sh.define_param(Parameter('health', 'patient', str))
+        sh.define_param(Parameter('dehydrated', 'patient', str))
+
+        sh.define_context(Context('weather'))
+        sh.define_param(Parameter('temp', 'weather', int))
+        
+        # define rules
+        
+        premises1 = [
+            ('age', 'patient', lambda x, y: x < y, 25),
+            ('health', 'patient', eq, 'good'),
+            ('temp', 'weather', lambda x, y: x > y, 80)
+        ]
+        conclusions1 = [('dehydrated', 'patient', eq, False)]
+        sh.define_rule(Rule(123, premises1, conclusions1, 0.9))
+
+        premises2 = [
+            ('age', 'patient', lambda x, y: x > y, 20),
+            ('health', 'patient', eq, 'poor'),
+            ('temp', 'weather', lambda x, y: x > y, 80)
+        ]
+        conclusions2 = [('dehydrated', 'patient', eq, True)]
+        sh.define_rule(Rule(456, premises2, conclusions2, 0.7))
+        
+        premises3 = [
+            ('age', 'patient', lambda x, y: x > y, 40),
+            ('temp', 'weather', lambda x, y: x > y, 85)
+        ]
+        conclusions3 = [('health', 'patient', eq, 'poor')]
+        sh.define_rule(Rule(789, premises3, conclusions3, 0.85))
+        
+        self.shell = sh
+    
+    def test_find_out_ask_first_then_use_rules(self):
+        patient = self.shell.instantiate('patient')
+        weather = self.shell.instantiate('weather')
+        update_cf(self.shell.known_values, 'age', patient, 45, 0.7)
+        update_cf(self.shell.known_values, 'temp', weather, 89, 0.6)
+        
+        self.shell.get_param('health').ask_first = True
+        
+        self.assertTrue(('health', patient) not in self.shell.known_values)
+        self.assertTrue(('health', patient) not in self.shell.asked)
+        self.shell.find_out('health', patient)
+        self.assertTrue(('health', patient) in self.shell.asked)
+        self.assertTrue(('health', patient) in self.shell.known_values)
+    
+    def test_find_out_ask_first_success(self):
+        # TODO
+        pass
+    
+    def test_find_out_rules_first_then_ask(self):
+        # TODO
+        pass
+    
+    def test_find_out_rules_first(self):
+        patient = self.shell.instantiate('patient')
+        weather = self.shell.instantiate('weather')
+        update_cf(self.shell.known_values, 'age', patient, 45, 0.7)
+        update_cf(self.shell.known_values, 'temp', weather, 89, 0.6)
+        
+        self.shell.get_param('health').ask_first = False
+        
+        self.assertTrue(('health', patient) not in self.shell.known_values)
+        self.assertTrue(('health', patient) not in self.shell.asked)
+        self.shell.find_out('health', patient)
+        self.assertTrue(('health', patient) not in self.shell.asked)
+        self.assertTrue(('health', patient) in self.shell.known_values)

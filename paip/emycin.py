@@ -189,3 +189,67 @@ class Rule(object):
             inst = instances[ctx]
             update_cf(values, param, inst, val, cf)
         return True
+
+
+# -----------------------------------------------------------------------------
+# Shell
+
+class Shell(object):
+    
+    """An expert system shell."""
+    
+    def __init__(self, read=raw_input, write=print):
+        self.read = read
+        self.write = write
+        self.rules = {} # index rules under each param in the conclusions
+        self.contexts = {} # indexed by name
+        self.params = {} # indexed by name
+        self.known = set() # (param, inst) pairs that have already been determined
+        self.asked = set() # (param, inst) pairs that have already been asked
+        self.known_values = {} # dict mapping (param, inst) to a list of (val, cf) pairs
+        self.current_inst = None # the instance under consideration
+        self.instances = {} # dict mapping ctx_name -> most recent instance of ctx
+    
+    def define_rule(self, rule):
+        for param, inst, op, val in rule.conclusions:
+            self.rules.setdefault(param, []).append(rule)
+    
+    def get_rules(self, param):
+        return self.rules.setdefault(param, [])
+    
+    def define_context(self, ctx):
+        self.contexts[ctx.name] = ctx
+        
+    def instantiate(self, ctx_name):
+        inst = self.contexts[ctx_name].instantiate()
+        self.current_inst = inst
+        self.instances[ctx_name] = inst
+        return inst
+    
+    def define_param(self, param):
+        self.params[param.name] = param
+    
+    def get_param(self, name):
+        return self.params.setdefault(name, Parameter(name))
+    
+    def ask_values(self, param, inst):
+        if (param, inst) in self.asked:
+            return
+        self.asked.add((param, inst))
+        # TODO: the rest
+    
+    def find_out(self, param, inst=None):
+        """Use rules and user input to determine possible values for (param, inst)."""
+        inst = inst or self.current_inst
+        if (param, inst) in self.known:
+            return True
+        def rules():
+            return use_rules(self.known_values, self.instances,
+                             self.get_rules(param), self.find_out)
+        if self.get_param(param).ask_first:
+            success = self.ask_values(param, inst) or rules()
+        else:
+            success = rules() or self.ask_values(param, inst)
+        if success:
+            self.known.add((param, inst))
+        return success
