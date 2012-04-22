@@ -1,3 +1,4 @@
+import logging
 from paip.emycin import Parameter, Context, Rule, Shell
 
 def eq(x, y):
@@ -68,7 +69,7 @@ def define_rules(sh):
     sh.define_rule(Rule(75,
                         [('gram', 'organism', eq, 'neg'),
                          ('morphology', 'organism', eq, 'rod'),
-                         ('compromised-host', 'patient', eq, 'yes')],
+                         ('compromised-host', 'patient', eq, True)],
                         [('identity', 'organism', eq, 'pseudomonas')],
                         0.6))
     sh.define_rule(Rule(107,
@@ -84,10 +85,16 @@ def define_rules(sh):
                         [('identity', 'organism', eq, 'streptococcus')],
                         0.7))
 
+def report_findings(findings):
+    for inst, result in findings.items():
+        print 'Findings for %s-%d:' % (inst[0], inst[1])
+        for param, vals in result.items():
+            possibilities = ['%s: %f' % (val[0], val[1]) for val in vals.items()]
+            print '%s: %s' % (param, ', '.join(possibilities))
+        
 def main():
     sh = Shell()
     define_contexts(sh)
     define_params(sh)
     define_rules(sh)
-    sh.execute(['patient', 'culture', 'organism'])
-
+    report_findings(sh.execute(['patient', 'culture', 'organism']))
