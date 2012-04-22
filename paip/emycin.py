@@ -247,6 +247,18 @@ def parse_reply(param, reply):
         return vals
     return [(param.from_string(reply), CF.true)]
 
+HELP = """
+Type one of the following:
+?     - to see possible answers for this parameter
+rule  - to show the current rule
+why   - to see why this question is asked
+help  - to show this message
+<val> - a single definite answer to the question
+<val1> <cf1> [, <val2> <cf2>]*
+      - if there are multiple answers with associated certainty factors.
+
+"""
+
 class Shell(object):
     
     """An expert system shell."""
@@ -306,8 +318,7 @@ class Shell(object):
             if resp == 'unknown':
                 return False
             elif resp == 'help':
-                # TODO
-                pass
+                print(HELP)
             elif resp == 'why':
                 # TODO
                 pass
