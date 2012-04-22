@@ -315,6 +315,8 @@ class Shell(object):
         while True:
             # TODO define prompts per Parameter
             resp = self.read('what is the %s of %s? ' % (param, inst))
+            if not resp:
+                continue
             if resp == 'unknown':
                 return False
             elif resp == 'help':
@@ -323,8 +325,7 @@ class Shell(object):
                 # TODO
                 pass
             elif resp == 'rule':
-                # TODO
-                pass
+                print(self.current_rule)
             elif resp == '?':
                 # TODO
                 pass
