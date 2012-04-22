@@ -76,7 +76,7 @@ class ContextTests(unittest.TestCase):
 
 class ParameterTests(unittest.TestCase):
     def test_validate(self):
-        age = Parameter('age', parse=lambda x: int(x))
+        age = Parameter('age', cls=lambda x: int(x))
         self.assertEqual(25, age.from_string('25'))
         self.assertRaises(ValueError, age.from_string, 'foo')
 
@@ -300,7 +300,7 @@ class UseRulesTests(unittest.TestCase):
 
 class ParseReplyTests(unittest.TestCase):
     def setUp(self):
-        self.param = Parameter('age', parse=int)
+        self.param = Parameter('age', cls=int)
     
     def test_parse_value(self):
         vals = parse_reply(self.param, '25')
@@ -330,19 +330,19 @@ class ShellTests(unittest.TestCase):
         # define contexts and parameters
         
         sh.define_context(Context('patient'))
-        sh.define_param(Parameter('age', 'patient', int))
-        sh.define_param(Parameter('health', 'patient', str))
-        sh.define_param(Parameter('dehydrated', 'patient', str))
-        def parse_bool(x):
+        sh.define_param(Parameter('age', 'patient', cls=int))
+        sh.define_param(Parameter('health', 'patient', enum=['good', 'ok', 'poor']))
+        sh.define_param(Parameter('dehydrated', 'patient', cls=str))
+        def boolean(x):
             if x == 'True':
                 return True
             if x == 'False':
                 return False
             raise ValueError('%s is not True or False' % x)
-        sh.define_param(Parameter('awesome', 'patient', parse_bool))
+        sh.define_param(Parameter('awesome', 'patient', cls=boolean))
 
         sh.define_context(Context('weather'))
-        sh.define_param(Parameter('temp', 'weather', int))
+        sh.define_param(Parameter('temp', 'weather', cls=int))
         
         # define rules
         

@@ -70,14 +70,23 @@ class Parameter(object):
     
     """A property type of a context instance."""
     
-    def __init__(self, name, ctx=None, parse=lambda x: x, ask_first=False):
+    def __init__(self, name, ctx=None, enum=None, cls=None, ask_first=False):
         self.name = name
         self.ctx = ctx
-        self.parse = parse
+        self.cls = cls
         self.ask_first = ask_first
+        self.enum = enum
+        
+    def type_string(self):
+        return self.cls.__name__ if self.cls else '(%s)' % ', '.join(list(self.enum))
     
-    def from_string(self, string):
-        return self.parse(string)
+    def from_string(self, val):
+        if self.cls:
+            return self.cls(val)
+        if self.enum and val in self.enum:
+            return val
+        raise ValueError('val must be one of %s for the parameter %s' %
+                         (', '.join(list(self.enum)), self.name))
 
 
 # -----------------------------------------------------------------------------
@@ -249,13 +258,14 @@ def parse_reply(param, reply):
 
 HELP = """
 Type one of the following:
-?     - to see possible answers for this parameter
-rule  - to show the current rule
-why   - to see why this question is asked
-help  - to show this message
-<val> - a single definite answer to the question
-<val1> <cf1> [, <val2> <cf2>]*
-      - if there are multiple answers with associated certainty factors.
+?       - to see possible answers for this parameter
+rule    - to show the current rule
+why     - to see why this question is asked
+help    - to show this message
+unknown - if the answer to this question is not known
+<val>   - a single definite answer to the question
+<val1> <cf1> [, <val2> <cf2>, ...]
+        - if there are multiple answers with associated certainty factors.
 
 """
 
@@ -327,8 +337,7 @@ class Shell(object):
             elif resp == 'rule':
                 print(self.current_rule)
             elif resp == '?':
-                # TODO
-                pass
+                print('%s must be of type %s' % (param, self.get_param(param).type_string()))
             else:
                 try:
                     for val, cf in parse_reply(self.get_param(param), resp):

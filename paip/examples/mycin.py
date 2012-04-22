@@ -11,7 +11,7 @@ def enum(*values):
         raise ValueError('val must be in %s' % str(values))
     return parse
 
-def parse_bool(string):
+def boolean(string):
     if string == 'True':
         return True
     if string == 'False':
@@ -20,25 +20,27 @@ def parse_bool(string):
 
 def define_params(sh):
     # Patient params
-    sh.define_param(Parameter('name', 'patient', str, True))
-    sh.define_param(Parameter('sex', 'patient', enum('M', 'F'), True))
-    sh.define_param(Parameter('age', 'patient', int, True))
-    sh.define_param(Parameter('burn', 'patient', enum('no', 'mild', 'serious'), True))
-    sh.define_param(Parameter('compromised-host', 'patient', parse_bool))
+    sh.define_param(Parameter('name', 'patient', cls=str, ask_first=True))
+    sh.define_param(Parameter('sex', 'patient', enum=['M', 'F'], ask_first=True))
+    sh.define_param(Parameter('age', 'patient', cls=int, ask_first=True))
+    sh.define_param(Parameter('burn', 'patient',
+                              enum=['no', 'mild', 'serious'], ask_first=True))
+    sh.define_param(Parameter('compromised-host', 'patient', cls=boolean))
     
     # Culture params
-    sh.define_param(Parameter('site', 'culture', enum('blood'), True))
-    sh.define_param(Parameter('days-old', 'culture', int, True))
+    sh.define_param(Parameter('site', 'culture', enum=['blood'], ask_first=True))
+    sh.define_param(Parameter('days-old', 'culture', cls=int, ask_first=True))
     
     # Organism params
     organisms = ['pseudomonas', 'klebsiella', 'enterobacteriaceae',
                  'staphylococcus', 'bacteroides', 'streptococcus']
-    sh.define_param(Parameter('identity', 'organism', enum(*organisms), True))
-    sh.define_param(Parameter('gram', 'organism', enum('acid-fast', 'pos', 'neg'), True))
-    sh.define_param(Parameter('morphology', 'organism', enum('rod', 'coccus')))
-    sh.define_param(Parameter('aerobicity', 'organism', enum('aerobic', 'anaerobic')))
+    sh.define_param(Parameter('identity', 'organism', enum=organisms, ask_first=True))
+    sh.define_param(Parameter('gram', 'organism',
+                              enum=['acid-fast', 'pos', 'neg'], ask_first=True))
+    sh.define_param(Parameter('morphology', 'organism', enum=['rod', 'coccus']))
+    sh.define_param(Parameter('aerobicity', 'organism', enum=['aerobic', 'anaerobic']))
     sh.define_param(Parameter('growth-conformation', 'organism',
-                              enum('chains', 'pairs', 'clumps')))
+                              enum=['chains', 'pairs', 'clumps']))
 
 def define_contexts(sh):
     sh.define_context(Context('patient', ['name', 'sex', 'age']))
