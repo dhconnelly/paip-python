@@ -260,8 +260,7 @@ def parse_reply(param, reply):
         return vals
     return [(param.from_string(reply), CF.true)]
 
-HELP = """
-Type one of the following:
+HELP = """Type one of the following:
 ?       - to see possible answers for this parameter
 rule    - to show the current rule
 why     - to see why this question is asked
@@ -270,7 +269,6 @@ unknown - if the answer to this question is not known
 <val>   - a single definite answer to the question
 <val1> <cf1> [, <val2> <cf2>, ...]
         - if there are multiple answers with associated certainty factors.
-
 """
 
 class Shell(object):
@@ -351,8 +349,7 @@ class Shell(object):
         logging.debug('Getting user input for %s of %s' % (param, inst))
         self.asked.add((param, inst))
         while True:
-            # TODO define prompts per Parameter
-            resp = self.read('what is the %s of %s? ' % (param, inst))
+            resp = self.read('What is the %s of %s-%d? ' % (param, inst[0], inst[1]))
             if not resp:
                 continue
             if resp == 'unknown':
@@ -405,6 +402,7 @@ class Shell(object):
         before attempting to gather the goal data.
         """
         logging.info('Beginning data-gathering for %s' % ', '.join(contexts))
+        self.write('Beginning execution. For help answering questions, type "help".')
         self.clear()
         results = {}
         for name in contexts:

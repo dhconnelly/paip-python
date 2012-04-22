@@ -83,7 +83,7 @@ def define_rules(sh):
     sh.define_rule(Rule(165,
                         [('gram', 'organism', eq, 'pos'),
                          ('morphology', 'organism', eq, 'coccus'),
-                         ('growth-formation', 'organism', eq, 'chains')],
+                         ('growth-conformation', 'organism', eq, 'chains')],
                         [('identity', 'organism', eq, 'streptococcus')],
                         0.7))
 
