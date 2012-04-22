@@ -177,6 +177,10 @@ class Rule(object):
         concls = map(print_condition, self.raw_conclusions)
         templ = 'RULE %d\nIF\n\t%s\nTHEN %f\n\t%s'
         return templ % (self.num, '\n\t'.join(prems), self.cf, '\n\t'.join(concls))
+    
+    def clone(self):
+        return Rule(self.num, list(self.raw_premises),
+                    list(self.raw_conclusions), self.cf)
         
     def premises(self, instances):
         return [parse_cond(premise, instances) for premise in self.raw_premises]
@@ -319,6 +323,27 @@ class Shell(object):
     
     def print_why(self, param):
         self.write('Why is the value of %s being asked for?' % param)
+        if self.current_rule in ('initial', 'goal'):
+            self.write('%s is one of the %s parameters.' % (param, self.current_rule))
+            return
+        
+        known, unknown = [], []
+        for premise in self.current_rule.premises(self.instances):
+            vals = get_vals(self.known_values, premise[0], premise[1])
+            if cf_true(eval_condition(premise, vals)):
+                known.append(premise)
+            else:
+                unknown.append(premise)
+        
+        if known:
+            self.write('It is known that:')
+            for condition in known:
+                self.write(print_condition(condition))
+            self.write('Therefore,')
+        
+        rule = self.current_rule.clone()
+        rule.raw_premises = unknown
+        self.write(rule)
     
     def ask_values(self, param, inst):
         if (param, inst) in self.asked:
