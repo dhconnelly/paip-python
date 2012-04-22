@@ -1,4 +1,5 @@
 from __future__ import print_function
+import logging
 
 # -----------------------------------------------------------------------------
 # Certainty factors
@@ -89,6 +90,12 @@ class Parameter(object):
 # the condition is true, and val is the parameter value.  A condition's truth is
 # represented by a certainty factor.
 
+def print_condition(condition):
+    param, inst, op, val = condition
+    name = inst if isinstance(inst, str) else inst[0]
+    opname = op.__name__
+    return '%s %s %s %s' % (param, name, opname, val)
+
 def eval_condition(condition, values, find_out=None):
     """
     Determines the certainty factor of the condition (param, inst, op, val)
@@ -97,10 +104,15 @@ def eval_condition(condition, values, find_out=None):
     If find_out is specified, it should be a function with the signature
     find_out(values, param, inst) and should find more values for (param, inst).
     """
+    logging.debug('Evaluating condition [%s] (find_out %s)' %
+                  (print_condition(condition), 'ENABLED' if find_out else 'DISABLED'))
     param, inst, op, val = condition
     if find_out:
         find_out(param, inst)
-    return sum(cf for known_val, cf in values.items() if op(known_val, val))
+    total = sum(cf for known_val, cf in values.items() if op(known_val, val))
+    logging.debug('Condition [%s] has a certainty factor of %f' %
+                  (print_condition(condition), total))
+    return total
 
 def parse_cond(cond, instances):
     """
@@ -151,6 +163,12 @@ class Rule(object):
         self.raw_premises = premises 
         self.raw_conclusions = conclusions
     
+    def __str__(self):
+        prems = map(print_condition, self.raw_premises)
+        concls = map(print_condition, self.raw_conclusions)
+        templ = 'RULE %d\nIF\n\t%s\nTHEN %f\n\t%s'
+        return templ % (self.num, '\n\t'.join(prems), self.cf, '\n\t'.join(concls))
+        
     def premises(self, instances):
         return [parse_cond(premise, instances) for premise in self.raw_premises]
     
@@ -180,6 +198,7 @@ class Rule(object):
             if cf_false(cf):
                 return CF.false
                         
+        logging.debug('Determining applicability of rule (\n%s\n)' % self)
         total_cf = CF.true
         for premise in self.premises(instances):
             param, inst, op, val = premise
@@ -195,14 +214,18 @@ class Rule(object):
         Combines the conclusions of this rule with known values.
         Returns True if this rule applied successfully and False otherwise.
         """
-        # track current rule
         if track:
             track(self)
+        logging.debug('Attempting to apply rule (\n%s\n)' % self)
         cf = self.cf * self.applicable(values, instances, find_out)
         if not cf_true(cf):
+            logging.debug('Rule (\n%s\n) is not applicable (%f certainty)' % (self, cf))
             return False
+        logging.info('Applying rule (\n%s\n) with certainty %f' % (self, cf))
         for conclusion in self.conclusions(instances):
             param, inst, op, val = conclusion
+            logging.info('Concluding [%s] with certainty %f' %
+                         (print_condition(conclusion), cf))
             update_cf(values, param, inst, val, cf)
         return True
 
@@ -275,6 +298,7 @@ class Shell(object):
     def ask_values(self, param, inst):
         if (param, inst) in self.asked:
             return
+        logging.debug('Getting user input for %s of %s' % (param, inst))
         self.asked.add((param, inst))
         while True:
             # TODO define prompts per Parameter
@@ -307,13 +331,16 @@ class Shell(object):
     def find_out(self, param, inst=None):
         """Use rules and user input to determine possible values for (param, inst)."""
         inst = inst or self.current_inst
-        
+
         if (param, inst) in self.known:
             return True
         def rules():
             return use_rules(self.known_values, self.instances,
                              self.get_rules(param), self.find_out,
                              self._set_current_rule)
+
+        logging.debug('Finding out %s of %s' % (param, inst))
+
         if self.get_param(param).ask_first:
             success = self.ask_values(param, inst) or rules()
         else:
@@ -328,14 +355,28 @@ class Shell(object):
         The system attempts to gather the initial data specified for the context
         before attempting to gather the goal data.
         """
+        logging.info('Beginning data-gathering for %s' % ', '.join(contexts))
         self.clear()
+        results = {}
         for name in contexts:
             ctx = self.contexts[name]
             self.instantiate(name)
+            
+            # gather initial data
             self._set_current_rule('initial')
             for param in ctx.initial_data:
                 self.find_out(param)
+            
+            # find goal data
             self._set_current_rule('goal')
             for param in ctx.goals:
                 self.find_out(param)
-            print(self.known_values)
+            
+            # record findings
+            if ctx.goals:
+                result = {}
+                for param in ctx.goals:
+                    result[param] = get_vals(self.known_values, param, self.current_inst)
+                results[self.current_inst] = result
+            
+        return results
