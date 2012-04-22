@@ -21,15 +21,21 @@ def main():
             choice = raw_input('>> ')
             if not choice:
                 continue
-            module = modules[int(choice)]
-            print module.__doc__
-            return modules[int(choice)].main()
+            ind = int(choice)
+        except ValueError:
+            print 'That is not a valid option.  Please try again.'
+            continue
         except EOFError:
             print 'Goodbye.'
             return
-        except:
+        try:
+            module = modules[ind]
+        except IndexError:
             print 'That is not a valid option.  Please try again.'
-        
+        else:
+            print module.__doc__
+            return module.main()
+
 
 def discover_modules(root):
     modules = []
