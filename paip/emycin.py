@@ -49,9 +49,11 @@ class Context(object):
     
     """A type of thing that can be reasoned about."""
     
-    def __init__(self, name):
+    def __init__(self, name, initial_data=None, goals=None):
         self.count = 0 # track Instances with numerical IDs
         self.name = name
+        self.initial_data = initial_data or [] # params to find out before reasoning
+        self.goals = goals or [] # params to find out during reasoning
     
     def instantiate(self):
         """Create and return a unique Instance of the form (ctx_name, id)."""
@@ -239,6 +241,15 @@ class Shell(object):
         self.instances = {} # dict mapping ctx_name -> most recent instance of ctx
         self.current_rule = None # track the current rule for introspection
     
+    def clear(self):
+        """Clear per-problem state."""
+        self.known.clear()
+        self.asked.clear()
+        self.known_values.clear()
+        self.current_inst = None
+        self.current_rule = None
+        self.instances.clear()
+    
     def define_rule(self, rule):
         for param, ctx, op, val in rule.raw_conclusions:
             self.rules.setdefault(param, []).append(rule)
@@ -267,7 +278,7 @@ class Shell(object):
         self.asked.add((param, inst))
         while True:
             # TODO define prompts per Parameter
-            resp = self.read('what is the %s of %s?' % (param, inst))
+            resp = self.read('what is the %s of %s? ' % (param, inst))
             if resp == 'unknown':
                 return False
             elif resp == 'help':
@@ -310,3 +321,21 @@ class Shell(object):
         if success:
             self.known.add((param, inst))
         return success
+    
+    def execute(self, contexts):
+        """
+        Gather the goal data for each named context and report the findings.
+        The system attempts to gather the initial data specified for the context
+        before attempting to gather the goal data.
+        """
+        self.clear()
+        for name in contexts:
+            ctx = self.contexts[name]
+            self.instantiate(name)
+            self._set_current_rule('initial')
+            for param in ctx.initial_data:
+                self.find_out(param)
+            self._set_current_rule('goal')
+            for param in ctx.goals:
+                self.find_out(param)
+            print(self.known_values)
