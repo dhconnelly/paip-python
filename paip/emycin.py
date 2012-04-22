@@ -317,6 +317,9 @@ class Shell(object):
     def get_param(self, name):
         return self.params.setdefault(name, Parameter(name))
     
+    def print_why(self, param):
+        self.write('Why is the value of %s being asked for?' % param)
+    
     def ask_values(self, param, inst):
         if (param, inst) in self.asked:
             return
@@ -330,14 +333,14 @@ class Shell(object):
             if resp == 'unknown':
                 return False
             elif resp == 'help':
-                print(HELP)
+                self.write(HELP)
             elif resp == 'why':
-                # TODO
-                pass
+                self.print_why(param)
             elif resp == 'rule':
-                print(self.current_rule)
+                self.write(self.current_rule)
             elif resp == '?':
-                print('%s must be of type %s' % (param, self.get_param(param).type_string()))
+                self.write('%s must be of type %s' %
+                           (param, self.get_param(param).type_string()))
             else:
                 try:
                     for val, cf in parse_reply(self.get_param(param), resp):
