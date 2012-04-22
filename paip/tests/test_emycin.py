@@ -146,7 +146,7 @@ class RuleTests(unittest.TestCase):
             ('health', 'patient', eq, 'good'),
             ('temp', 'weather', lambda x, y: x > y, 80)
         ]
-        r = Rule(123, premises, None, 0)
+        r = Rule(123, premises, [], 0)
         expected = cf_and(0.9, cf_and(0.4, 0.8))
         self.assertAlmostEqual(expected, r.applicable(self.values, self.instances))
         
@@ -156,7 +156,7 @@ class RuleTests(unittest.TestCase):
             ('health', 'patient', eq, 'poor'),
             ('temp', 'weather', lambda x, y: x > y, 80)
         ]
-        r = Rule(123, premises, None, 0)
+        r = Rule(123, premises, [], 0)
         self.assertAlmostEqual(CF.false, r.applicable(self.values, self.instances))
 
     def test_apply_not_applicable(self):
