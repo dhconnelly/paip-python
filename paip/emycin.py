@@ -16,8 +16,6 @@ inspired by chapter 16 of "Paradigms of Artificial Intelligence Programming" by
 Peter Norvig.
 """
 
-import logging
-
 # -----------------------------------------------------------------------------
 ## Table of contents
 
@@ -295,16 +293,24 @@ class Rule(object):
         """Return the conclusion conditions of this rule."""
         return [self._bind_cond(concl, instances) for concl in self.raw_conclusions]
 
+    ### Applying rules
+    
+    # Rule application has two stages: determining whether the rule is
+    # applicable by attempting to satisfy its premises, and using the rule to
+    # deduce new values.
+    
+    # <a id="applicable"></a>
     def applicable(self, values, instances, find_out=None):
         """
-        To determine the applicability of this rule (represented by a certainty
-        factor), evaluate the truth of each of its premise conditions against
-        known values of parameters.
+        **applicable** determines the applicability of this rule (represented by
+        a certainty factor) by evaluating the truth of each of its premise
+        conditions against known values of parameters.
         
         This function is key to the backwards-chaining reasoning algorithm:
         after a candidate rule is identified by the reasoner (see
         [Shell.find_out](#find_out)), it tries to satisfy all the premises of
-        the rule.
+        the rule.  This is similar to Prolog, where a rule can only be applied
+        if all its body goals can be achieved.
         
         Arguments:
         
@@ -339,12 +345,14 @@ class Rule(object):
                 return CF.false
         return total_cf
 
+    
     # <a id="apply"></a>
     def apply(self, values, instances, find_out=None, track=None):
         """
-        To apply this rule, combine the conclusions with known values to deduce
-        new values.  Returns True if this rule applied successfully and False
-        otherwise.
+        **apply** tries to use this rule by first determining if it is
+        applicable (see [Rule.applicable](#applicable)), and if so, combining
+        the conclusions with known values to deduce new values.  Returns True if
+        this rule applied successfully and False otherwise.
         """
         
         if track:
@@ -369,8 +377,17 @@ class Rule(object):
         
         return True
 
+### Using the rules
+
 def use_rules(values, instances, rules, find_out=None, track_rules=None):
     """Apply rules to derive new facts; returns True if any rule succeeded."""
+    
+    # Note that we can't simply iterate over the rules and try applying them
+    # until one succeeds in finding new values--we have to apply them all,
+    # because any of them could decrease the certainty of a condition, and stopping
+    # early could lead to fault conclusions.  This differs from Prolog, where
+    # only new truths are deduced.
+    
     return any([rule.apply(values, instances, find_out, track_rules) for rule in rules])
 
 
@@ -382,20 +399,6 @@ def use_rules(values, instances, rules, find_out=None, track_rules=None):
 # parameters, and rules, current instances of contexts and the known values of
 # their parameters, and data for user introspection.
 
-# While using the shell, the user will be asked questions to support reasoning,
-# and they have the option of asking the system what it is doing and why.  We
-# offer some support for user interaction:
-    
-HELP = """Type one of the following:
-?       - to see possible answers for this parameter
-rule    - to show the current rule
-why     - to see why this question is asked
-help    - to show this message
-unknown - if the answer to this question is not known
-<val>   - a single definite answer to the question
-<val1> <cf1> [, <val2> <cf2>, ...]
-        - if there are multiple answers with associated certainty factors."""
-
 def write(line): print line
 
 class Shell(object):
@@ -403,6 +406,10 @@ class Shell(object):
     """An expert system shell."""
     
     def __init__(self, read=raw_input, write=write):
+        """
+        Create a new shell.  The functions read and write are used to get
+        input from the user and display information, respectively.
+        """
         self.read = read
         self.write = write
         self.rules = {} # index rules under each param in the conclusions
@@ -455,6 +462,62 @@ class Shell(object):
         """
         return self.params.setdefault(name, Parameter(name))
     
+    ### User input and introspection
+
+    # Emycin interacts with users to gather information and print results.
+    # While using the shell, the user will be asked questions to support reasoning,
+    # and they have the option of asking the system what it is doing and why.  We
+    # offer some support for user interaction:
+    
+    HELP = """Type one of the following:
+?       - to see possible answers for this parameter
+rule    - to show the current rule
+why     - to see why this question is asked
+help    - to show this message
+unknown - if the answer to this question is not known
+<val>   - a single definite answer to the question
+<val1> <cf1> [, <val2> <cf2>, ...]
+        - if there are multiple answers with associated certainty factors."""
+
+    def ask_values(self, param, inst):
+        """Get values from the user for the param parameter of inst."""
+        
+        if (param, inst) in self.asked:
+            return
+        logging.debug('Getting user input for %s of %s' % (param, inst))
+        
+        self.asked.add((param, inst))
+        while True:
+            resp = self.read('What is the %s of %s-%d? ' % (param, inst[0], inst[1]))
+            if not resp:
+                continue
+            if resp == 'unknown':
+                return False
+            elif resp == 'help':
+                self.write(Shell.HELP)
+                
+            # The `why`, `rule`, and `?` commands allow the user to ask
+            # Emycin why it is asking a question, which rule it is currently
+            # applying, and what type of answer is expected from a question.
+            # Together, these commands offer an introspection capability.
+            
+            elif resp == 'why':
+                self.print_why(param)
+            elif resp == 'rule':
+                self.write(self.current_rule)
+            elif resp == '?':
+                self.write('%s must be of type %s' %
+                           (param, self.get_param(param).type_string()))
+            
+            # Read the value and store it.
+            else:
+                try:
+                    for val, cf in parse_reply(self.get_param(param), resp):
+                        update_cf(self.known_values, param, inst, val, cf)
+                    return True
+                except:
+                    self.write('Invalid response. Type ? to see legal ones.')
+    
     def print_why(self, param):
         """
         Explain to the user why a question is being asked; that is, show the
@@ -486,47 +549,26 @@ class Shell(object):
         rule.raw_premises = unknown
         self.write(rule)
     
-    def ask_values(self, param, inst):
-        """Get values from the user for the param parameter of inst."""
-        
-        if (param, inst) in self.asked:
-            return
-        logging.debug('Getting user input for %s of %s' % (param, inst))
-        
-        self.asked.add((param, inst))
-        while True:
-            resp = self.read('What is the %s of %s-%d? ' % (param, inst[0], inst[1]))
-            if not resp:
-                continue
-            if resp == 'unknown':
-                return False
-            elif resp == 'help':
-                self.write(HELP)
-            elif resp == 'why':
-                self.print_why(param)
-            elif resp == 'rule':
-                self.write(self.current_rule)
-            elif resp == '?':
-                self.write('%s must be of type %s' %
-                           (param, self.get_param(param).type_string()))
-            else:
-                try:
-                    for val, cf in parse_reply(self.get_param(param), resp):
-                        update_cf(self.known_values, param, inst, val, cf)
-                    return True
-                except:
-                    self.write('Invalid response. Type ? to see legal ones.')
-    
     def _set_current_rule(self, rule):
         """Track the rule under consideration for user introspection."""
         self.current_rule = rule
     
+    ### Backwards-chaining
+    
+    # Our reasoner applies backwards-chaining to deduce new values for goal
+    # parameters.  Given an instance and a parameter, it tries to find a value
+    # for that parameter by finding all rules that can deduce that parameter
+    # and trying to apply them.
+    
     # <a id="find_out"></a>
     def find_out(self, param, inst=None):
-        """Use rules and user input to determine possible values for (param, inst)."""
+        """
+        Use rules and user input to determine possible values for (param, inst).
+        Returns True if a value was found, and False otherwise.
+        """
         inst = inst or self.current_inst
 
-        if (param, inst) in self.known:
+        if (param, inst) in self.known: # return early if we already know this value
             return True
         
         # To apply rules to find a value for the param parameter of inst, we
@@ -543,42 +585,53 @@ class Shell(object):
 
         logging.debug('Finding out %s of %s' % (param, inst))
 
+        # Some parameters are ask_first parameters, which means we should ask
+        # the user for their values before applying rules.
         if self.get_param(param).ask_first:
             success = self.ask_values(param, inst) or rules()
         else:
             success = rules() or self.ask_values(param, inst)
         if success:
-            self.known.add((param, inst))
+            self.known.add((param, inst)) # Remember that we already know this value
         return success
     
+    ### Execution
+
+    # After contexts, parameters, and rules have been defined, reasoning begins
+    # by specifying a list of contexts with initial_data and goal lists to the
+    # `execute` function.
+    
     # <a id="execute"></a>
-    def execute(self, contexts):
+    def execute(self, context_names):
         """
         Gather the goal data for each named context and report the findings.
         The system attempts to gather the initial data specified for the context
         before attempting to gather the goal data.
         """
         
-        logging.info('Beginning data-gathering for %s' % ', '.join(contexts))
+        logging.info('Beginning data-gathering for %s' % ', '.join(context_names))
         
         self.write('Beginning execution. For help answering questions, type "help".')
         self.clear()
         results = {}
-        for name in contexts:
+        for name in context_names:
             ctx = self.contexts[name]
             self.instantiate(name)
             
-            # gather initial data
+            # Gather initial data.  This stage is one of the features that
+            # differentiates Emycin from Prolog: the user can specify that some
+            # data should be collected before reasoning about the goals takes
+            # place.
             self._set_current_rule('initial')
             for param in ctx.initial_data:
                 self.find_out(param)
             
-            # find goal data
+            # Try to collect all of the goal data.
             self._set_current_rule('goal')
             for param in ctx.goals:
                 self.find_out(param)
             
-            # record findings
+            # Record findings.
             if ctx.goals:
                 result = {}
                 for param in ctx.goals:
@@ -601,3 +654,17 @@ def parse_reply(param, reply):
         return vals
     return [(param.from_string(reply), CF.true)]
 
+
+# -----------------------------------------------------------------------------
+## Conclusion
+
+# Emycin provides a framework for building expert systems that use backwards
+# chaining rule-based reasoning, certainty factors to represent uncertainty
+# instead of absolute truth, and introspection facilities.  However, it is just
+# a shell, and should be integrated into a larger system to present a more
+# polished interface to experts and users.
+
+# For an example of such a system (although rudimentary), see
+# [Mycin](examples/emycin/mycin.html).
+
+import logging

@@ -1,22 +1,55 @@
-import logging
-from paip.emycin import Parameter, Context, Rule, Shell
+"""
+Mycin: a medical expert system.
+
+This is a small example of an expert system that uses the
+[Emycin](../../emycin.html) shell.  It defines a few contexts, parameters, and
+rules, and presents a rudimentary user interface to collect data about an
+infection in order to determine the identity of the infecting organism.
+
+In a more polished system, we could:
+
+- define and use a domain-specific language for the expert;
+- present a more polished interface, perhaps a GUI, for user interaction;
+- offer a data serialization mechanism to save state between sessions.
+
+This implementation comes from chapter 16 of Peter Norvig's "Paradigms of
+Artificial Intelligence Programming.
+
+"""
+
+### Utility functions
 
 def eq(x, y):
+    """Function for testing value equality."""
     return x == y
 
-def enum(*values):
-    def parse(string):
-        if string in values:
-            return string
-        raise ValueError('val must be in %s' % str(values))
-    return parse
-
 def boolean(string):
+    """
+    Function for reading True or False from a string.  Raises an error if the
+    string is not True or False.
+    """
     if string == 'True':
         return True
     if string == 'False':
         return False
     raise ValueError('bool must be True or False')
+
+
+### Setting up initial data
+
+# Here we define the contexts, parameters, and rules for our system.  This is
+# the job of the expert, and in a more polished system, we would define and use
+# a domain-specific language to make this easier.
+
+def define_contexts(sh):
+    # Patient and Culture have some initial goals--parameters that should be
+    # collected before reasoning begins.  This might be useful in some domains;
+    # for example, this might be legally required in a medical system.
+    sh.define_context(Context('patient', ['name', 'sex', 'age']))
+    sh.define_context(Context('culture', ['site', 'days-old']))
+    
+    # Finding the identity of the organism is our goal.
+    sh.define_context(Context('organism', goals=['identity']))
 
 def define_params(sh):
     # Patient params
@@ -41,11 +74,6 @@ def define_params(sh):
     sh.define_param(Parameter('aerobicity', 'organism', enum=['aerobic', 'anaerobic']))
     sh.define_param(Parameter('growth-conformation', 'organism',
                               enum=['chains', 'pairs', 'clumps']))
-
-def define_contexts(sh):
-    sh.define_context(Context('patient', ['name', 'sex', 'age']))
-    sh.define_context(Context('culture', ['site', 'days-old']))
-    sh.define_context(Context('organism', goals=['identity']))
 
 def define_rules(sh):
     sh.define_rule(Rule(52,
@@ -86,6 +114,12 @@ def define_rules(sh):
                          ('growth-conformation', 'organism', eq, 'chains')],
                         [('identity', 'organism', eq, 'streptococcus')],
                         0.7))
+
+
+### Running the system
+
+import logging
+from paip.emycin import Parameter, Context, Rule, Shell
 
 def report_findings(findings):
     for inst, result in findings.items():
