@@ -1,8 +1,36 @@
-from __future__ import print_function
-import logging
+"""
+**Emycin** is an *expert system shell*, a framework for building programs that
+record the knowledge of *domain experts* and use that knowledge to help
+non-expert users solve problems.  It provides an interface that helps experts
+define data types and rules, a backwards-chaining reasoning algorithm (similar
+to Prolog, but with key differences), a mechanism for dealing with uncertainty,
+and facilities for *introspection* that permit users to learn what the system
+knows and what it is doing.
+
+For an example of Emycin in action, see [Mycin](examples/emycin/mycin.html), a
+program for automated medical diagnosis that performed as well as trained
+doctors when it was first introduced.
+
+Written by [Daniel Connelly](http://dhconnelly.com).  This implementation is
+inspired by chapter 16 of "Paradigms of Artificial Intelligence Programming" by
+Peter Norvig.
+"""
 
 # -----------------------------------------------------------------------------
-# Certainty factors
+## Table of contents
+
+# 1. [Certainty factors](#certainty)
+# 2. [Contexts](#contexts)
+# 3. [Parameters](#parameters)
+# 4. [Conditions](#conditions)
+# 5. [Values](#values)
+# 6. [Rules](#rules)
+# 7. [The Shell](#shell)
+
+
+# -----------------------------------------------------------------------------
+# <a id="certainty"></a>
+## Certainty factors
 
 class CF(object):
     """Important certainty factor values."""
@@ -44,7 +72,8 @@ def cf_false(x):
 
 
 # -----------------------------------------------------------------------------
-# Contexts
+# <a id="contexts"></a>
+## Contexts
 
 class Context(object):
     
@@ -64,7 +93,8 @@ class Context(object):
 
 
 # -----------------------------------------------------------------------------
-# Parameters
+# <a id="parameters"></a>
+## Parameters
 
 class Parameter(object):
     
@@ -90,7 +120,8 @@ class Parameter(object):
 
 
 # -----------------------------------------------------------------------------
-# Conditions
+# <a id="conditions"></a>
+## Conditions
     
 # A condition is a statement of the form (param inst op val), read as "the value
 # of inst's param parameter satisfies the relation op(v, val)", where param is
@@ -133,7 +164,8 @@ def parse_cond(cond, instances):
 
 
 # -----------------------------------------------------------------------------
-# Values
+# <a id="values"></a>
+## Values
 
 def get_vals(values, param, inst):
     """Retrieve the dict of val->CF mappings for (param, inst)."""
@@ -152,6 +184,7 @@ def update_cf(values, param, inst, val, cf):
     
 
 # -----------------------------------------------------------------------------
+# <a id="rules"></a>
 # Rules
 
 def use_rules(values, instances, rules, find_out=None, track_rules=None):
@@ -244,7 +277,8 @@ class Rule(object):
 
 
 # -----------------------------------------------------------------------------
-# Shell
+# <a id="shell"></a>
+## Shell
     
 def parse_reply(param, reply):
     """
@@ -268,14 +302,16 @@ help    - to show this message
 unknown - if the answer to this question is not known
 <val>   - a single definite answer to the question
 <val1> <cf1> [, <val2> <cf2>, ...]
-        - if there are multiple answers with associated certainty factors.
-"""
+        - if there are multiple answers with associated certainty factors."""
+
+def write(line):
+    print line
 
 class Shell(object):
     
     """An expert system shell."""
     
-    def __init__(self, read=raw_input, write=print):
+    def __init__(self, read=raw_input, write=write):
         self.read = read
         self.write = write
         self.rules = {} # index rules under each param in the conclusions
@@ -427,3 +463,9 @@ class Shell(object):
                 results[self.current_inst] = result
             
         return results
+
+
+# -----------------------------------------------------------------------------
+## Conclusion
+
+import logging
