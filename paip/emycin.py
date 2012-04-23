@@ -396,6 +396,8 @@ unknown - if the answer to this question is not known
 <val1> <cf1> [, <val2> <cf2>, ...]
         - if there are multiple answers with associated certainty factors."""
 
+def write(line): print line
+
 class Shell(object):
     
     """An expert system shell."""
@@ -584,9 +586,6 @@ class Shell(object):
                 results[self.current_inst] = result
             
         return results
-
-def write(line):
-    print line
 
 def parse_reply(param, reply):
     """
