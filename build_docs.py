@@ -9,6 +9,7 @@ modules = [
     'paip/examples/eliza',
     'paip/examples/search',
     'paip/examples/logic',
+    'paip/examples/emycin',
     './'
     ]
 outdir = 'docs'
