@@ -41,3 +41,22 @@ class BoardTests(unittest.TestCase):
     
     def test_is_legal(self):
         self.assertTrue(is_legal(42, BLACK, self.board))
+
+    def test_make_flips_none(self):
+        b1, b2 = self.board, list(self.board)
+        make_flips(42, WHITE, b2, RIGHT)
+        self.assertEqual(b1, b2)
+    
+    def test_make_flips(self):
+        b1, b2 = self.board, list(self.board)
+        make_flips(42, BLACK, b2, RIGHT)
+        b1[43:45] = [BLACK, BLACK]
+        self.assertEqual(b1, b2)
+    
+    def test_make_move(self):
+        b1, b2 = self.board, list(self.board)
+        make_move(42, BLACK, b2)
+        b1[42] = BLACK
+        b1[43:45] = [BLACK, BLACK]
+        b1[53] = BLACK
+        self.assertEqual(b1, b2)

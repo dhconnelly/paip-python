@@ -79,3 +79,21 @@ def is_legal(move, player, board):
     """Is this a legal move for the player?"""
     hasbracket = lambda direction: find_bracket(move, player, board, direction)
     return board[move] == EMPTY and any(map(hasbracket, DIRECTIONS))
+
+### Making moves
+
+def make_move(move, player, board):
+    """Update the board to reflect the move by the specified player."""
+    board[move] = player
+    for d in DIRECTIONS:
+        make_flips(move, player, board, d)
+    return board
+
+def make_flips(move, player, board, direction):
+    bracket = find_bracket(move, player, board, direction)
+    if not bracket:
+        return
+    square = move + direction
+    while square != bracket:
+        board[square] = player
+        square += direction
