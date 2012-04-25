@@ -131,3 +131,12 @@ def get_move(strategy, player, board):
         raise IllegalMoveError(player, move, copy)
     return move
 
+def score(player, board):
+    """Compute player's score (number of player's pieces minus opponent's)."""
+    mine, theirs = 0, 0
+    opp = opponent(player)
+    for sq in squares():
+        piece = board[sq]
+        if piece == player: mine += 1
+        elif piece == opp: theirs += 1
+    return mine - theirs

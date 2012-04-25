@@ -97,3 +97,7 @@ class GameTests(unittest.TestCase):
     def test_get_move(self):
         strategy = lambda player, board: 11
         self.assertEqual(11, get_move(strategy, BLACK, self.board))
+
+    def test_score(self):
+        make_move(11, BLACK, self.board)
+        self.assertEqual(8 - 56, score(BLACK, self.board))
