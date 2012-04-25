@@ -1,7 +1,7 @@
 import unittest
 from paip.othello import *
 
-class BoardTests(unittest.TestCase):
+class MoveTests(unittest.TestCase):
     def setUp(self):
         b = initial_board()
         # fig. 18.2a from PAIP p.598
@@ -60,3 +60,28 @@ class BoardTests(unittest.TestCase):
         b1[43:45] = [BLACK, BLACK]
         b1[53] = BLACK
         self.assertEqual(b1, b2)
+
+
+class GameTests(unittest.TestCase):
+    def setUp(self):
+        self.board = initial_board()
+        for sq in squares():
+            self.board[sq] = WHITE
+        self.board[11] = EMPTY
+        self.board[88] = BLACK
+    
+    def test_any_legal_move_false(self):
+        self.assertFalse(any_legal_move(WHITE, self.board))
+    
+    def test_any_legal_move(self):
+        self.assertTrue(any_legal_move(BLACK, self.board))
+    
+    def test_next_player_repeat(self):
+        self.assertEqual(BLACK, next_player(self.board, BLACK))
+    
+    def test_next_player_none(self):
+        self.board[11] = WHITE
+        self.assertEqual(None, next_player(self.board, BLACK))
+    
+    def test_next_player(self):
+        self.assertEqual(BLACK, next_player(self.board, WHITE))

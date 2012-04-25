@@ -1,5 +1,7 @@
 # -----------------------------------------------------------------------------
-## Board representation
+## The rules of the game
+
+### Board representation
 
 # We represent the board as a 100-element list, which includes each square on
 # the board as well as the outside edge.  Each consecutive sublist of ten
@@ -27,8 +29,6 @@ UP, DOWN, LEFT, RIGHT = -10, 10, -1, 1
 UP_RIGHT, DOWN_RIGHT, DOWN_LEFT, UP_LEFT = -9, 11, 9, -11
 DIRECTIONS = (UP, UP_RIGHT, RIGHT, DOWN_RIGHT, DOWN, DOWN_LEFT, LEFT, UP_LEFT)
 
-### Board and player manipulations
-
 def squares():
     """List all the valid squares on the board."""
     return [i for i in xrange(11, 89) if 1 <= (i % 10) <= 8]
@@ -42,10 +42,6 @@ def initial_board():
     board[44], board[45] = WHITE, BLACK
     board[54], board[55] = BLACK, WHITE
     return board
-
-def opponent(player):
-    """Get player's opponent piece."""
-    return BLACK if player is WHITE else WHITE
 
 def print_board(board):
     """Get a string representation of the board."""
@@ -61,6 +57,10 @@ def print_board(board):
 def is_valid(move):
     """Is move a square on the board?"""
     return isinstance(move, int) and move in squares()
+
+def opponent(player):
+    """Get player's opponent piece."""
+    return BLACK if player is WHITE else WHITE
 
 def find_bracket(square, player, board, direction):
     """
@@ -90,6 +90,7 @@ def make_move(move, player, board):
     return board
 
 def make_flips(move, player, board, direction):
+    """Flip pieces in the given direction as a result of the move by player."""
     bracket = find_bracket(move, player, board, direction)
     if not bracket:
         return
@@ -97,3 +98,18 @@ def make_flips(move, player, board, direction):
     while square != bracket:
         board[square] = player
         square += direction
+
+### Monitoring the game
+        
+def any_legal_move(player, board):
+    """Can player make any moves?"""
+    return any(is_legal(sq, player, board) for sq in squares())
+
+def next_player(board, prev_player):
+    """Which player should move next?  Returns None if no legal moves exist."""
+    opp = opponent(prev_player)
+    if any_legal_move(opp, board):
+        return opp
+    elif any_legal_move(prev_player, board):
+        return prev_player
+    return None
