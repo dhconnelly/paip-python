@@ -55,3 +55,27 @@ def print_board(board):
         begin, end = 10*row + 1, 10*row + 9
         rep += '%d %s\n' % (row, ' '.join(board[begin:end]))
     return rep
+
+### Move checking
+
+def is_valid(move):
+    """Is move a square on the board?"""
+    return isinstance(move, int) and move in squares()
+
+def find_bracket(square, player, board, direction):
+    """
+    Find a square that forms a bracket with `square` for `player` in the given
+    `direction`.  Returns None if no such square exists.
+    """
+    bracket = square + direction
+    if board[bracket] == player:
+        return None
+    opp = opponent(player)
+    while board[bracket] == opp:
+        bracket += direction
+    return None if board[bracket] in (OUTER, EMPTY) else bracket
+
+def is_legal(move, player, board):
+    """Is this a legal move for the player?"""
+    hasbracket = lambda direction: find_bracket(move, player, board, direction)
+    return board[move] == EMPTY and any(map(hasbracket, DIRECTIONS))
