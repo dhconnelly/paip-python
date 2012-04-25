@@ -22,7 +22,7 @@
 # The black and white pieces represent the two players.
 EMPTY, BLACK, WHITE, OUTER = '.', '@', 'o', '?'
 PIECES = (EMPTY, BLACK, WHITE, OUTER)
-PLAYERS = (BLACK, WHITE)
+PLAYERS = {BLACK: 'Black', WHITE: 'White'}
 
 # To refer to neighbor squares we can add a direction to a square.
 UP, DOWN, LEFT, RIGHT = -10, 10, -1, 1
@@ -101,6 +101,15 @@ def make_flips(move, player, board, direction):
 
 ### Monitoring the game
         
+class IllegalMoveError(Exception):
+    def __init__(self, player, move, board):
+        self.player = player
+        self.move = move
+        self.board = board
+    
+    def __str__(self):
+        return '%s cannot move to square %d' % (PLAYERS[self.player], self.move)
+
 def any_legal_move(player, board):
     """Can player make any moves?"""
     return any(is_legal(sq, player, board) for sq in squares())
@@ -113,3 +122,12 @@ def next_player(board, prev_player):
     elif any_legal_move(prev_player, board):
         return prev_player
     return None
+
+def get_move(strategy, player, board):
+    """Call strategy(player, board) to get a move."""
+    copy = list(board) # copy the board to prevent cheating
+    move = strategy(player, copy)
+    if not is_valid(move) or not is_legal(move, player, board):
+        raise IllegalMoveError(player, move, copy)
+    return move
+

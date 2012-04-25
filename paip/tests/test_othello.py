@@ -85,3 +85,15 @@ class GameTests(unittest.TestCase):
     
     def test_next_player(self):
         self.assertEqual(BLACK, next_player(self.board, WHITE))
+
+    def test_get_move_invalid(self):
+        strategy = lambda player, board: -23
+        self.assertRaises(IllegalMoveError, get_move, strategy, BLACK, self.board)
+    
+    def test_get_move_illegal(self):
+        strategy = lambda player, board: 11
+        self.assertRaises(IllegalMoveError, get_move, strategy, WHITE, self.board)
+    
+    def test_get_move(self):
+        strategy = lambda player, board: 11
+        self.assertEqual(11, get_move(strategy, BLACK, self.board))
