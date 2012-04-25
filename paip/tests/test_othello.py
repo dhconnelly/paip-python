@@ -1,4 +1,5 @@
 import unittest
+import random
 from paip.othello import *
 
 class MoveTests(unittest.TestCase):
@@ -101,3 +102,19 @@ class GameTests(unittest.TestCase):
     def test_score(self):
         make_move(11, BLACK, self.board)
         self.assertEqual(8 - 56, score(BLACK, self.board))
+
+    def test_play(self):
+        player_accesses = []
+        def random_strategy(player, board):
+            player_accesses.append(player)
+            legal = [sq for sq in squares() if is_legal(sq, player, board)]
+            return random.choice(legal)
+        board = play(random_strategy, random_strategy)
+
+        # check that no moves remain
+        self.assertFalse(any_legal_move(BLACK, board))
+        self.assertFalse(any_legal_move(WHITE, board))
+        
+        # check that both players had a turn
+        self.assertTrue(BLACK in player_accesses)
+        self.assertTrue(WHITE in player_accesses)

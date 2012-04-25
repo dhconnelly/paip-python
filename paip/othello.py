@@ -140,3 +140,14 @@ def score(player, board):
         if piece == player: mine += 1
         elif piece == opp: theirs += 1
     return mine - theirs
+
+def play(black_strategy, white_strategy):
+    """Play Othello with the given strategies and return the final board."""
+    board = initial_board()
+    player = BLACK
+    strategy = lambda who: black_strategy if who == BLACK else white_strategy
+    while player is not None:
+        move = get_move(strategy(player), player, board)
+        make_move(move, player, board)
+        player = next_player(board, player)
+    return board
