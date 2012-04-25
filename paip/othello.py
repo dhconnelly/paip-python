@@ -142,7 +142,7 @@ def score(player, board):
     return mine - theirs
 
 def play(black_strategy, white_strategy):
-    """Play Othello with the given strategies and return the final board."""
+    """Play a game of Othello and return the final board and score."""
     board = initial_board()
     player = BLACK
     strategy = lambda who: black_strategy if who == BLACK else white_strategy
@@ -150,4 +150,14 @@ def play(black_strategy, white_strategy):
         move = get_move(strategy(player), player, board)
         make_move(move, player, board)
         player = next_player(board, player)
-    return board
+    return board, score(BLACK, board)
+
+
+# -----------------------------------------------------------------------------
+### Play strategies
+
+import random
+
+def random_strategy(player, board):
+    legal = [sq for sq in squares() if is_legal(sq, player, board)]
+    return random.choice(legal)

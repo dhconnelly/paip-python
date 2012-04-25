@@ -109,7 +109,7 @@ class GameTests(unittest.TestCase):
             player_accesses.append(player)
             legal = [sq for sq in squares() if is_legal(sq, player, board)]
             return random.choice(legal)
-        board = play(random_strategy, random_strategy)
+        board, score = play(random_strategy, random_strategy)
 
         # check that no moves remain
         self.assertFalse(any_legal_move(BLACK, board))
