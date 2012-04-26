@@ -1,7 +1,28 @@
-# -----------------------------------------------------------------------------
-## The rules of the game
+"""
 
-### Board representation
+See the command-line program provided [here](examples/othello/othello.html)
+to play against the computer or pit two strategies against each other.
+
+Written by [Daniel Connelly](http://dhconnelly.com).  This implementation is
+inspired by chapter 18 of "Paradigms of Artificial Intelligence" by Peter
+Norvig.
+"""
+
+# -----------------------------------------------------------------------------
+## Table of contents
+
+# 1. [Board representation](#board)
+# 2. [Playing the game](#playing)
+# 3. [Strategies](#strategies)
+#     - [Random](#random)<br>
+#     - [Local maximization](#localmax)<br>
+#     - [Minimax search](#minimax)<br>
+#     - [Alpha-beta search](#alphabeta)<br>
+
+
+# -----------------------------------------------------------------------------
+# <a id="board"></a>
+## Board representation
 
 # We represent the board as a 100-element list, which includes each square on
 # the board as well as the outside edge.  Each consecutive sublist of ten
@@ -52,7 +73,12 @@ def print_board(board):
         rep += '%d %s\n' % (row, ' '.join(board[begin:end]))
     return rep
 
-### Move checking
+
+# -----------------------------------------------------------------------------
+# <a id="playing"></a>
+## Playing the game
+
+### Checking moves
 
 def is_valid(move):
     """Is move a square on the board?"""
@@ -99,8 +125,8 @@ def make_flips(move, player, board, direction):
         board[square] = player
         square += direction
 
-### Monitoring the game
-        
+### Monitoring players
+
 class IllegalMoveError(Exception):
     def __init__(self, player, move, board):
         self.player = player
@@ -110,9 +136,15 @@ class IllegalMoveError(Exception):
     def __str__(self):
         return '%s cannot move to square %d' % (PLAYERS[self.player], self.move)
 
+def legal_moves(player, board):
+    """Get a list of all legal moves for player."""
+    return [sq for sq in squares() if is_legal(sq, player, board)]
+
 def any_legal_move(player, board):
     """Can player make any moves?"""
     return any(is_legal(sq, player, board) for sq in squares())
+
+### Putting it all together
 
 def next_player(board, prev_player):
     """Which player should move next?  Returns None if no legal moves exist."""
@@ -154,7 +186,11 @@ def play(black_strategy, white_strategy):
 
 
 # -----------------------------------------------------------------------------
-### Play strategies
+# <a id="strategies"></a>
+## Play strategies
+
+# <a id="random"></a>
+### Random
 
 import random
 
@@ -162,9 +198,8 @@ def random_strategy(player, board):
     """A strategy that always chooses a random legal move."""
     return random.choice(legal_moves(player, board))
 
-def legal_moves(player, board):
-    """Get a list of all legal moves for player."""
-    return [sq for sq in squares() if is_legal(sq, player, board)]
+# <a id="localmax"></a>
+### Local maximization
 
 def maximizer(evaluate):
     """
@@ -194,8 +229,6 @@ SQUARE_WEIGHTS = [
     0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
 ]
 
-MIN_SCORE = -sum(map(abs, SQUARE_WEIGHTS)) - 1
-
 def weighted_score(player, board):
     """
     Compute the difference between the sum of the weights of player's
@@ -212,3 +245,9 @@ def weighted_score(player, board):
 
 def max_weighted_difference(player, board):
     return maximizer(weighted_score)(player, board)
+
+# <a id="minimax"></a>
+### Minimax search
+
+# <a id="alphabeta"></a>
+### Alpha-Beta search

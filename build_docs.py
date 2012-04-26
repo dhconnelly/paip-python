@@ -10,6 +10,7 @@ modules = [
     'paip/examples/search',
     'paip/examples/logic',
     'paip/examples/emycin',
+    'paip/examples/othello',
     './'
     ]
 outdir = 'docs'
