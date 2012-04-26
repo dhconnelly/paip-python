@@ -15,6 +15,7 @@ def human(player, board):
 
 def get_choice(prompt, options):
     print prompt
+    print 'Options:', options.keys()
     while True:
         choice = raw_input('> ')
         if choice in options:
@@ -24,7 +25,9 @@ def get_choice(prompt, options):
 
 def get_players():
     print 'Welcome to OTHELLO!'
-    options = {'human': human, 'computer': othello.random_strategy}
+    options = { 'human': human,
+                'random': othello.random_strategy,
+                'max-diff': othello.max_difference }
     black = get_choice('BLACK: human or computer?', options)
     white = get_choice('WHITE: human or computer?', options)
     return black, white

@@ -159,5 +159,29 @@ def play(black_strategy, white_strategy):
 import random
 
 def random_strategy(player, board):
-    legal = [sq for sq in squares() if is_legal(sq, player, board)]
-    return random.choice(legal)
+    """A strategy that always chooses a random legal move."""
+    return random.choice(legal_moves(player, board))
+
+def legal_moves(player, board):
+    """Get a list of all legal moves for player."""
+    return [sq for sq in squares() if is_legal(sq, player, board)]
+
+def maximizer(evaluate):
+    """
+    Construct a strategy that chooses the best move by maximizing
+    evaluate(player, board) over all boards resulting from legal moves.
+    """
+    def strategy(player, board):
+        best, best_score = None, -64
+        for move in legal_moves(player, board):
+            result = make_move(move, player, list(board))
+            result_score = evaluate(player, result)
+            if result_score > best_score:
+                best_score = result_score
+                best = move
+        return best
+    return strategy
+
+def max_difference(player, board):
+    """Chooses the move that maximizes the immediately resulting score."""
+    return maximizer(score)(player, board)

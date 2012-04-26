@@ -118,3 +118,26 @@ class GameTests(unittest.TestCase):
         # check that both players had a turn
         self.assertTrue(BLACK in player_accesses)
         self.assertTrue(WHITE in player_accesses)
+
+
+class StrategyTests(unittest.TestCase):
+    def setUp(self):
+        b = initial_board()
+        #       1 2 3 4 5 6 7 8
+        #     1 . . . . . . . .
+        #     2 . . . . . . . .
+        #     3 . . o @ . o . .
+        #     4 . . o o @ @ . .
+        #     5 . o o o o @ . .
+        #     6 . . . @ o . . .
+        #     7 . . . . . . . .
+        #     8 . . . . . . . .
+        b[33:37] = [WHITE, BLACK, EMPTY, WHITE]
+        b[43:47] = [WHITE, WHITE, BLACK, BLACK]
+        b[52:57] = [WHITE, WHITE, WHITE, WHITE, BLACK]
+        b[64:66] = [BLACK, WHITE]
+        self.board = b
+
+    def test_max_difference(self):
+        self.assertEqual(51, max_difference(BLACK, self.board))
+        self.assertEqual(47, max_difference(WHITE, self.board))
