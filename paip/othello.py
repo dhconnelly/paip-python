@@ -172,14 +172,9 @@ def maximizer(evaluate):
     evaluate(player, board) over all boards resulting from legal moves.
     """
     def strategy(player, board):
-        best, best_score = None, MIN_SCORE
-        for move in legal_moves(player, board):
-            result = make_move(move, player, list(board))
-            result_score = evaluate(player, result)
-            if result_score > best_score:
-                best_score = result_score
-                best = move
-        return best
+        def score_move(move):
+            return evaluate(player, make_move(move, player, list(board)))
+        return max(legal_moves(player, board), key=score_move)
     return strategy
 
 def max_difference(player, board):
