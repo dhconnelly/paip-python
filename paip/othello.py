@@ -289,3 +289,39 @@ def minimax_searcher(ply, evaluate):
 
 # <a id="alphabeta"></a>
 ### Alpha-Beta search
+
+def alphabeta(player, board, alpha, beta, ply, evaluate):
+    """
+    Find the best legal move for player, searching to depth ply.  Like minimax,
+    but uses the bounds alpha and beta to prune branches.
+    """
+    if ply == 0:
+        return evaluate(player, board), None
+
+    def value(board):
+        return -alphabeta(opponent(player), board, -beta, -alpha, ply-1, evaluate)[0]
+    
+    moves = legal_moves(player, board)
+    if not moves:
+        if not any_legal_move(opponent(player), board):
+            return final_value(player, board), None
+        return value(board), None
+    
+    best_move = moves[0]
+    for move in moves:
+        if alpha >= beta:
+            # If one of the legal moves leads to a better score than beta, then
+            # the opponent will avoid this branch, so we can quit looking.
+            break
+        val = value(make_move(move, player, list(board)))
+        if val > alpha:
+            # If one of the moves leads to a better score than the current best
+            # achievable score, then replace it with this one.
+            alpha = val
+            best_move = move
+    return alpha, best_move
+
+def alphabeta_searcher(depth, evaluate):
+    def strategy(player, board):
+        return alphabeta(player, board, MIN_VALUE, MAX_VALUE, depth, evaluate)[1]
+    return strategy

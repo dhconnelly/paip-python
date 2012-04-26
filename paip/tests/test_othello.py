@@ -224,3 +224,36 @@ class StrategyTests(unittest.TestCase):
             return score(player, board)
         self.assertEqual((MAX_VALUE, 71), minimax(WHITE, board, 20, evaluate))
         self.assertEqual(0, len(accesses))
+
+    def test_alphabeta(self):
+        board = initial_board()
+        for sq in squares():
+            board[sq] = EMPTY
+        
+        #       1 2 3 4 5 6 7 8
+        #     1 . @ o . . . . .
+        #     2 . . . . . . . .
+        #     3 . @ o o o . . .
+        #     4 . . . . . . . .
+        #     5 . @ o o o o o .
+        #     6 . . . . . . . .
+        #     7 . @ o o . . . .
+        #     8 . . . . . . . .
+        board[12:14] = [BLACK, WHITE]
+        board[32:35] = [BLACK, WHITE, WHITE, WHITE]
+        board[52:56] = [BLACK, WHITE, WHITE, WHITE, WHITE, WHITE]
+        board[72:77] = [BLACK, WHITE, WHITE]
+            
+        # 1. 14, value -4, below alpha, ignore
+        # 2. 36, value 0, above alpha, update alpha
+        # 3. 58, value 4, above alpha, update alpha
+        # 2. 75, value -2, alpha above beta, ignore and break
+        expected_values = [4, 0, -4]
+        
+        values = []
+        def evaluate(player, board):
+            val = score(player, board)
+            values.append(val)
+            return val
+        self.assertEqual((4, 58), alphabeta(BLACK, board, -1, 3, 1, evaluate))
+        self.assertEqual(expected_values, values)
