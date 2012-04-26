@@ -138,6 +138,12 @@ class StrategyTests(unittest.TestCase):
         b[64:66] = [BLACK, WHITE]
         self.board = b
 
-    def test_max_difference(self):
-        self.assertEqual(51, max_difference(BLACK, self.board))
-        self.assertEqual(47, max_difference(WHITE, self.board))
+    def test_maximizer(self):
+        self.assertEqual(51, maximizer(score)(BLACK, self.board))
+        self.assertEqual(47, maximizer(score)(WHITE, self.board))
+
+    def test_weighted_score(self):
+        score = weighted_score(BLACK, self.board)
+        expected = 5 * 3 - (6 * 3 - 5 + 2 * 15)
+        self.assertEqual(expected, score)
+        self.assertEqual(-score, weighted_score(WHITE, self.board))

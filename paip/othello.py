@@ -172,7 +172,7 @@ def maximizer(evaluate):
     evaluate(player, board) over all boards resulting from legal moves.
     """
     def strategy(player, board):
-        best, best_score = None, -64
+        best, best_score = None, MIN_SCORE
         for move in legal_moves(player, board):
             result = make_move(move, player, list(board))
             result_score = evaluate(player, result)
@@ -185,3 +185,35 @@ def maximizer(evaluate):
 def max_difference(player, board):
     """Chooses the move that maximizes the immediately resulting score."""
     return maximizer(score)(player, board)
+
+SQUARE_WEIGHTS = [
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+    0, 120, -20,  20,   5,   5,  20, -20, 120,   0,
+    0, -20, -40,  -5,  -5,  -5,  -5, -40, -20,   0,
+    0,  20,  -5,  15,   3,   3,  15,  -5,  20,   0,
+    0,   5,  -5,   3,   3,   3,   3,  -5,   5,   0,
+    0,   5,  -5,   3,   3,   3,   3,  -5,   5,   0,
+    0,  20,  -5,  15,   3,   3,  15,  -5,  20,   0,
+    0, -20, -40,  -5,  -5,  -5,  -5, -40, -20,   0,
+    0, 120, -20,  20,   5,   5,  20, -20, 120,   0,
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+]
+
+MIN_SCORE = -sum(map(abs, SQUARE_WEIGHTS)) - 1
+
+def weighted_score(player, board):
+    """
+    Compute the difference between the sum of the weights of player's
+    squares and the sum of the weights of opponent's squares.
+    """
+    opp = opponent(player)
+    total = 0
+    for sq in squares():
+        if board[sq] == player:
+            total += SQUARE_WEIGHTS[sq]
+        elif board[sq] == opp:
+            total -= SQUARE_WEIGHTS[sq]
+    return total
+
+def max_weighted_difference(player, board):
+    return maximizer(weighted_score)(player, board)

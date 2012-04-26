@@ -27,14 +27,20 @@ def get_players():
     print 'Welcome to OTHELLO!'
     options = { 'human': human,
                 'random': othello.random_strategy,
-                'max-diff': othello.max_difference }
+                'max-diff': othello.max_difference,
+                'max-weighted-diff': othello.max_weighted_difference }
     black = get_choice('BLACK: human or computer?', options)
     white = get_choice('WHITE: human or computer?', options)
     return black, white
 
 def main():
     black, white = get_players()
-    board, score = othello.play(black, white)
+    try:
+        board, score = othello.play(black, white)
+    except othello.IllegalMoveError as e:
+        print e
+        return
     print 'Final score:', score
     print '%s wins!' % ('Black' if score > 0 else 'White')
     print othello.print_board(board)
+
