@@ -28,7 +28,9 @@ def get_players():
     options = { 'human': human,
                 'random': othello.random_strategy,
                 'max-diff': othello.max_difference,
-                'max-weighted-diff': othello.max_weighted_difference }
+                'max-weighted-diff': othello.max_weighted_difference,
+                'minimax-weighted-diff':
+                    othello.minimax_searcher(3, othello.weighted_score) }
     black = get_choice('BLACK: human or computer?', options)
     white = get_choice('WHITE: human or computer?', options)
     return black, white

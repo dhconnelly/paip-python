@@ -249,5 +249,42 @@ def max_weighted_difference(player, board):
 # <a id="minimax"></a>
 ### Minimax search
 
+def minimax(player, board, ply, evaluate):
+    # evaluate tree leaves
+    if ply == 0:
+        return evaluate(player, board), None
+    
+    moves = legal_moves(player, board)
+    if not moves:
+        if any_legal_move(player, board):
+            # then this is an opponent level
+            val, move = minimax(opponent(player), board, ply-1, evaluate)
+            return -val, move
+        # endgame
+        return final_value(player, board), None
+    
+    # find the best move on the next level
+    best_move, best_val = None, None
+    for move in moves:
+        result = make_move(move, player, list(board))
+        val = -minimax(opponent(player), result, ply-1, evaluate)[0]
+        if best_move is None or val > best_val:
+            best_move = move
+            best_val = val
+    return best_val, best_move
+
+def final_value(player, board):
+    diff = score(player, board)
+    if diff < 0:
+        return -1000
+    elif diff > 0:
+        return 1000
+    return diff
+
+def minimax_searcher(ply, evaluate):
+    def strategy(player, board):
+        return minimax(player, board, ply, evaluate)[1]
+    return strategy
+
 # <a id="alphabeta"></a>
 ### Alpha-Beta search
