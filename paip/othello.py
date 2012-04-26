@@ -212,10 +212,6 @@ def maximizer(evaluate):
         return max(legal_moves(player, board), key=score_move)
     return strategy
 
-def max_difference(player, board):
-    """Chooses the move that maximizes the immediately resulting score."""
-    return maximizer(score)(player, board)
-
 SQUARE_WEIGHTS = [
     0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
     0, 120, -20,  20,   5,   5,  20, -20, 120,   0,
@@ -243,42 +239,47 @@ def weighted_score(player, board):
             total -= SQUARE_WEIGHTS[sq]
     return total
 
-def max_weighted_difference(player, board):
-    return maximizer(weighted_score)(player, board)
-
 # <a id="minimax"></a>
 ### Minimax search
 
 def minimax(player, board, ply, evaluate):
-    # evaluate tree leaves
+    """
+    Find the best legal move for player, searching to depth ply.  Returns a
+    tuple (move, min_score), where min_score is the guaranteed minimum score
+    achievable for player if the move is made.
+    """
+
+    # No move to make--just determine the value of this board to the player.
     if ply == 0:
         return evaluate(player, board), None
     
+    # Find all the legal moves so we can pick one.
     moves = legal_moves(player, board)
-    if not moves:
-        if any_legal_move(player, board):
-            # then this is an opponent level
-            val, move = minimax(opponent(player), board, ply-1, evaluate)
-            return -val, move
-        # endgame
-        return final_value(player, board), None
     
-    # find the best move on the next level
-    best_move, best_val = None, None
-    for move in moves:
-        result = make_move(move, player, list(board))
-        val = -minimax(opponent(player), result, ply-1, evaluate)[0]
-        if best_move is None or val > best_val:
-            best_move = move
-            best_val = val
-    return best_val, best_move
+    # The value of a board is the opposite of its value to our opponent.
+    def value(board):
+        return -minimax(opponent(player), board, ply-1, evaluate)[0]
+    
+    # If player has no legal moves, then either:
+    if not moves:
+        # The game is over, so the best achievable score is victory or defeat.
+        if not any_legal_move(opponent(player), board):
+            return final_value(player, board), None
+        # We have to pass to the opponent, so just find the value of this board.
+        return value(board), None
+    
+    # Choose the best move by maximizing the value of the resulting boards.
+    return max((value(make_move(m, player, list(board))), m) for m in moves)
+
+MAX_VALUE = sum(map(abs, SQUARE_WEIGHTS))
+MIN_VALUE = -MAX_VALUE
 
 def final_value(player, board):
     diff = score(player, board)
     if diff < 0:
-        return -1000
+        return MIN_VALUE
     elif diff > 0:
-        return 1000
+        return MAX_VALUE
     return diff
 
 def minimax_searcher(ply, evaluate):

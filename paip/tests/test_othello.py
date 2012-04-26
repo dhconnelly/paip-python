@@ -147,3 +147,80 @@ class StrategyTests(unittest.TestCase):
         expected = 5 * 3 - (6 * 3 - 5 + 2 * 15)
         self.assertEqual(expected, score)
         self.assertEqual(-score, weighted_score(WHITE, self.board))
+
+    def test_final_value(self):
+        self.assertEqual(MIN_VALUE, final_value(BLACK, self.board))
+        self.assertEqual(MAX_VALUE, final_value(WHITE, self.board))
+
+    def test_minimax_leaf(self):
+        val = score(BLACK, self.board)
+        self.assertEqual((val, None), minimax(BLACK, self.board, 0, score))
+        self.assertEqual((-val, None), minimax(WHITE, self.board, 0, score))
+    
+    def test_minimax_game_over(self):
+        result, outcome = play(random_strategy, random_strategy)
+        if outcome == 0:
+            val_black, val_white = 0, 0
+        else:
+            val_black = MAX_VALUE if outcome > 0 else MIN_VALUE
+            val_white = -val_black
+        self.assertEqual((val_black, None), minimax(BLACK, result, 20, score))
+        self.assertEqual((val_white, None), minimax(WHITE, result, 20, score))
+    
+    def test_minimax_pass(self):
+        # remove all black pieces so black has no moves
+        for sq in squares():
+            if self.board[sq] == BLACK:
+                self.board[sq] = EMPTY
+        # result:
+        #       1 2 3 4 5 6 7 8
+        #     1 . . . . . . . .
+        #     2 . . . . . . . .
+        #     3 . . o . . o . .
+        #     4 . . o o . . . .
+        #     5 . o o o o . . .
+        #     6 . . . . o . . .
+        #     7 . . . . . . . .
+        #     8 . . . . . . . .
+
+        # leave one move for white
+        self.board[57:59] = [BLACK, WHITE]
+        # result:
+        #       1 2 3 4 5 6 7 8
+        #     1 . . . . . . . .
+        #     2 . . . . . . . .
+        #     3 . . o . . o . .
+        #     4 . . o o . . . .
+        #     5 . o o o o . @ o
+        #     6 . . . . o . . .
+        #     7 . . . . . . . .
+        #     8 . . . . . . . .
+        
+        accesses = []
+        def evaluate(player, board):
+            accesses.append(player)
+            return score(player, board)
+        self.assertEqual(0, len(accesses))
+        self.assertEqual((MIN_VALUE, None), minimax(BLACK, self.board, 20, evaluate))
+    
+    def test_minimax(self):
+        board = initial_board()
+        for sq in squares():
+            board[sq] = EMPTY
+        
+        #       1 2 3 4 5 6 7 8
+        #     1 . . . . . . . .
+        #     2 . . . . . . . .
+        #     3 . . . . . . . .
+        #     4 . . . . . . . .
+        #     5 . . . . . . . .
+        #     6 . . . . . . . .
+        #     7 . @ @ @ o @ . .
+        #     8 . . . . . . . .
+        board[72:77] = [BLACK, BLACK, BLACK, WHITE, BLACK]
+        accesses = []
+        def evaluate(player, board):
+            accesses.append(player)
+            return score(player, board)
+        self.assertEqual((MAX_VALUE, 71), minimax(WHITE, board, 20, evaluate))
+        self.assertEqual(0, len(accesses))
