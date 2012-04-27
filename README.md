@@ -29,13 +29,13 @@ Unit tests and some example applications are provided for each of these; see the
 `paip/tests` and `paip/examples` directories or the links from the annotated
 sources.
 
-[GPS]: http://dhconnelly.com/paip-python/paip/gps.html
-[Eliza]: http://dhconnelly.com/paip-python/paip/eliza.html
-[Search]: http://dhconnelly.com/paip-python/paip/search.html
-[Logic]: http://dhconnelly.com/paip-python/paip/logic.html
-[Prolog]: http://dhconnelly.com/paip-python/prolog.html
-[Emycin]: http://dhconnelly.com/paip-python/paip/emycin.html
-[Othello]: http://dhconnelly.com/paip-python/paip/othello.html
+[GPS]: http://dhconnelly.com/paip-python/docs/paip/gps.html
+[Eliza]: http://dhconnelly.com/paip-python/docs/paip/eliza.html
+[Search]: http://dhconnelly.com/paip-python/docs/paip/search.html
+[Logic]: http://dhconnelly.com/paip-python/docs/paip/logic.html
+[Prolog]: http://dhconnelly.com/paip-python/docs/prolog.html
+[Emycin]: http://dhconnelly.com/paip-python/docs/paip/emycin.html
+[Othello]: http://dhconnelly.com/paip-python/docs/paip/othello.html
 
 
 ## Running
