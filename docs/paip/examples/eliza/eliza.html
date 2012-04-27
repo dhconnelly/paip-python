@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>eliza.py</title>
+  <link rel="stylesheet" href="../../../pycco.css">
+</head>
+<body>
+<div id="background"></div>
+<div id='container'>
+  
+  <div class='section'>
+    <div class='docs'><h1>eliza.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">paip</span> <span class="kn">import</span> <span class="n">eliza</span>
+
+<span class="n">rules</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&quot;?*x hello ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;How do you do. Please state your problem.&quot;</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x computer ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Do computers worry you?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;What do you think about machines?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Why do you mention computers?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;What do you think machines have to do with your problem?&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x name ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;I am not interested in names&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x sorry ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Please don&#39;t apologize&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Apologies are not necessary&quot;</span><span class="p">,</span>
+        <span class="s">&quot;What feelings do you have when you apologize&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x I remember ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Do you often think of ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Does thinking of ?y bring anything else to mind?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;What else do you remember?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Why do you recall ?y right now?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;What in the present situation reminds you of ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;What is the connection between me and ?y?&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x do you remember ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Did you think I would forget ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Why do you think I should recall ?y now?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;What about ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;You mentioned ?y&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x I want ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;What would it mean if you got ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Why do you want ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Suppose you got ?y soon.&quot;</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x if ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Do you really think it&#39;s likely that ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Do you wish that ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;What do you think about ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Really--if ?y?&quot;</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x I dreamt ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;How do you feel about ?y in reality?&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x dream ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;What does this dream suggest to you?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Do you dream often?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;What persons appear in your dreams?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Don&#39;t you believe that dream has to do with your problem?&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x my mother ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Who else in your family ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Tell me more about your family&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x my father ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Your father?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Does he influence you strongly?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;What else comes to mind when you think of your father?&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x I am glad ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;How have I helped you to be ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;What makes you happy just now?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Can you explain why you are suddenly ?y?&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x I am sad ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;I am sorry to hear you are depressed&quot;</span><span class="p">,</span>
+        <span class="s">&quot;I&#39;m sure it&#39;s not pleasant to be sad&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x are like ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;What resemblence do you see between ?x and ?y?&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x is like ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;In what way is it that ?x is like ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;What resemblence do you see?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Could there really be some connection?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;How?&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x alike ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;In what way?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;What similarities are there?&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?* same ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;What other connections do you see?&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x no ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Why not?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;You are being a bit negative.&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Are you saying &#39;No&#39; just to be negative?&quot;</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x I was ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Were you really?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Perhaps I already knew you were ?y.&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Why do you tell me you were ?y now?&quot;</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x was I ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;What if you were ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Do you think you were ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;What would it mean if you were ?y?&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x I am ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;In what way are you ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Do you want to be ?y?&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x am I ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Do you believe you are ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Would you want to be ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;You wish I would tell you you are ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;What would it mean if you were ?y?&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x am ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Why do you say &#39;AM?&#39;&quot;</span><span class="p">,</span>
+        <span class="s">&quot;I don&#39;t understand that&quot;</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x are you ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Why are you interested in whether I am ?y or not?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Would you prefer if I weren&#39;t ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Perhaps I am ?y in your fantasies&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x you are ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;What makes you think I am ?y?&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x because ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Is that the real reason?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;What other reasons might there be?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Does that reason seem to explain anything else?&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x were you ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Perhaps I was ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;What do you think?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;What if I had been ?y?&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x I can&#39;t ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Maybe you could ?y now&quot;</span><span class="p">,</span>
+        <span class="s">&quot;What if you could ?y?&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x I feel ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Do you often feel ?y?&quot;</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x I felt ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;What other feelings do you have?&quot;</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x I ?*y you ?*z&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Perhaps in your fantasy we ?y each other&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x why don&#39;t you ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Should you ?y yourself?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Do you believe I don&#39;t ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Perhaps I will ?y in good time&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x yes ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;You seem quite positive&quot;</span><span class="p">,</span>
+        <span class="s">&quot;You are sure?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;I understand&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x someone ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Can you be more specific?&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x everyone ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Surely not everyone&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Can you think of anyone in particular?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Who, for example?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;You are thinking of a special person&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x always ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Can you think of a specific example?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;When?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;What incident are you thinking of?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Really--always?&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x what ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Why do you ask?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Does that question interest you?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;What is it you really want to know?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;What do you think?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;What comes to your mind when you ask that?&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x perhaps ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;You do not seem quite certain&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x are ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Did you think they might not be ?y?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Possibly they are ?y&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="p">}</span>
+
+<span class="n">default_responses</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s">&quot;Very interesting&quot;</span><span class="p">,</span>
+    <span class="s">&quot;I am not sure I understand you fully&quot;</span><span class="p">,</span>
+    <span class="s">&quot;What does that suggest to you?&quot;</span><span class="p">,</span>
+    <span class="s">&quot;Please continue&quot;</span><span class="p">,</span>
+    <span class="s">&quot;Go on&quot;</span><span class="p">,</span>
+    <span class="s">&quot;Do you feel strongly about discussing such things?&quot;</span><span class="p">,</span>
+    <span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">main</span><span class="p">():</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      <p>We need the rules in a list containing elements of the following form:
+<code>(input pattern, [output pattern 1, output pattern 2, ...]</code></p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">rules_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">pattern</span><span class="p">,</span> <span class="n">transforms</span> <span class="ow">in</span> <span class="n">rules</span><span class="o">.</span><span class="n">items</span><span class="p">():</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      <p>Remove the punctuation from the pattern to simplify matching.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">pattern</span> <span class="o">=</span> <span class="n">eliza</span><span class="o">.</span><span class="n">remove_punct</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">pattern</span><span class="o">.</span><span class="n">upper</span><span class="p">()))</span> <span class="c"># kill unicode</span>
+        <span class="n">transforms</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">transforms</span><span class="p">]</span>
+        <span class="n">rules_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">pattern</span><span class="p">,</span> <span class="n">transforms</span><span class="p">))</span>
+    <span class="n">eliza</span><span class="o">.</span><span class="n">interact</span><span class="p">(</span><span class="s">&#39;ELIZA&gt; &#39;</span><span class="p">,</span> <span class="n">rules_list</span><span class="p">,</span> <span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="o">.</span><span class="n">upper</span><span class="p">,</span> <span class="n">default_responses</span><span class="p">))</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>

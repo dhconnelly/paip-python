@@ -1,0 +1,1603 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>logic.py</title>
+  <link rel="stylesheet" href="../pycco.css">
+</head>
+<body>
+<div id="background"></div>
+<div id='container'>
+  
+  <div class='section'>
+    <div class='docs'><h1>logic.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      <p><strong>Logic programming</strong> is a model of computation that applies mathematical logic
+to problem solving.</p>
+<h3>Introduction</h3>
+<p>Logic programming is declarative, not procedural.  In the procedural programming
+paradigm, the programmer specifies data and the algorithms that should be
+executed on those data to reach a solution.  In the logic programming paradigm,
+the programmer specifies relationships that hold between the data in the form of
+facts and rules.  The programmer then specifies a goal, and the computer works
+out the implementation details of achieving that goal.</p>
+<h3>Specifying relationships</h3>
+<p>A relation specifies a relationship that holds between some objects.  We denote
+relations with the form <code>pred(obj1, obj2, ...)</code>, where the name of the relation
+is called the <em>predicate</em>.</p>
+<p>To store relations in our system for use in proving goals, we use <em>clauses</em>.  A
+clause consists of a <em>head</em> relation and some <em>body</em> relations.  For example, in
+the clause</p>
+<pre><code>compatible(John, June) :- common_interests(John, June), lazy(June)
+</code></pre>
+<p>we are specifying that John and June are compatible if they have common
+interests and June is lazy.  The head of this clause is <code>compatible(John, June)</code>
+and the body consists of the two relations <code>common_interests(John, June)</code> and
+<code>lazy(June)</code>. We call clauses of this form <em>rules</em>, since they specify when a
+relation is true.  To specify a relation that is unconditionally true, we use a
+clause with no body, called a <em>fact</em>: <code>girl(June)</code>.</p>
+<p>We can use <em>logic variables</em> to describe more abstract relations.  Consider the
+following clauses:</p>
+<pre><code>female(June)
+likes(June, running)
+likes(John, running)
+similar_hobbies(?x, ?y) :- likes(?x, ?z), likes(?y, ?z)
+compatible(John, ?x) :- female(?x), similar_hobbies(John, ?x)
+</code></pre>
+<p>The last two rules use logic variables.  The second-to-last rule specifies when
+two people have similar hobbies (that is, there is something they both like),
+and the last rule specifies the people with whom John is compatible.</p>
+<h3>Goals</h3>
+<p>Once we have some clauses, we can specify a goal, and the system will attempt to
+satisfy that goal.  In logic programming parlance, we call this <em>proving</em> a
+goal.  The goal is stated in the form of a relation.</p>
+<p>Sometimes our goal requires a yes or no answer.  The system will use the
+existing clauses to determine whether the given goal can be satisfied.  For
+example, using the five clauses defined above, we might specify the goal
+<code>compatible(John, June)</code>.  If we try to prove this goal, the result will simply
+be "Yes."  If we try to prove the goal <code>male(June)</code>, the result will be "No.",
+as the system is unable to prove that June is male from the specified clauses.</p>
+<p>We can specify much more interesting goals.  For instance, we might specify the
+goal <code>likes(?x, running)</code>.  Here, we are interested in determining who is
+interested in running.  If we attempt to prove this goal, the system will
+determine if it can be satisfied, and if so, what values of <code>?x</code> satisfy the
+goal.  Here, the results will be John and June, since we declared that both of
+them like running.  These results that, when substituted for the variables,
+satisfy the goal are called the <em>bindings</em> of those variables.</p>
+<p>For more examples, see the following databases of clauses:</p>
+<ul>
+<li><a href="examples/prolog/family.prolog">Family tree</a></li>
+<li><a href="examples/prolog/graph.prolog">Graph traversal</a></li>
+<li><a href="examples/prolog/pair.prolog">Linked lists</a></li>
+</ul>
+<p>These databases can be loaded into the provided <a href="../prolog.html">Prolog
+interpreter</a> for experimentation.</p>
+<h3>Implementation</h3>
+<p>Programming in this model requires some adjustment coming from a procedural
+programming background; logic programming appears very mysterious at first.  The
+implementation, however, is simple, and relies on three basic concepts:</p>
+<ol>
+<li>A uniform database of facts and rules;</li>
+<li>Unification of logic variables;</li>
+<li>Automatic backtracking.</li>
+</ol>
+<p>We will see how these three concepts are implemented below.</p>
+<h3>Use</h3>
+<p>This module provides a library that enables the use of logic programming in
+arbitrary Python programs.  For some examples of this, see the following:</p>
+<ul>
+<li>A simple interactive <a href="../prolog.html">Prolog interpreter</a></li>
+<li><a href="examples/logic/find_elements.html">Finding members of lists</a></li>
+<li><a href="examples/logic/likes.html">Who likes whom</a></li>
+</ul>
+<h3>About</h3>
+<p>Written by <a href="http://dhconnelly.com">Daniel Connelly</a>.
+This implementation is inspired by chapter 11 of "Paradigms of Artificial
+Intelligence Programming" by Peter Norvig.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      <hr />
+<h1>Table of contents</h1>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      <ol>
+<li><a href="#types">Data type definitions</a></li>
+<li><a href="#database">Uniform database</a></li>
+<li><a href="#unification">Unification</a></li>
+<li><a href="#proving">Goal proving</a></li>
+</ol>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      <hr />
+<p><a id="types"></a></p>
+<h1>Data type definitions</h1>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      <p>First, we define the types of data represented in our system.  These include:</p>
+<ul>
+<li><em>atoms</em>, which represent literal data such as numbers and strings;</li>
+<li><em>variables</em>, which represent undetermined atoms and relations;</li>
+<li><em>relations</em>, which define relationships between atoms, variables, and
+  other relations;</li>
+<li><em>clauses</em>, which represent facts and rules stored in the database.</li>
+</ul>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      <p>We want each instance of these types to support a few common operations that
+will be used throughout the system.</p>
+<ul>
+<li><code>get_vars</code>: list all of the variables contained in this instance. For
+  example, if we call <code>get_vars</code> on the relation <code>member(?x, pair(y, ?z))</code>,
+  we should get back the list <code>[?x, ?z]</code>.</li>
+<li><code>rename_vars</code>: replace variables in this instance using a dictionary that
+  maps old variables to replacement variables.</li>
+</ul>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-6'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-6'>#</a>
+      </div>
+      <hr />
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-7'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-7'>#</a>
+      </div>
+      <p>Represents any literal (symbol, number, string, etc).</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">class</span> <span class="nc">Atom</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-8'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-8'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-9'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-9'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">atom</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">atom</span> <span class="o">=</span> <span class="n">atom</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-10'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-10'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">atom</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-11'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-11'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Atom</span><span class="p">)</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">atom</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">atom</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-12'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-12'>#</a>
+      </div>
+      <p>These don't need to do anything for Atoms, since they don't contain Vars.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">rename_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">replacements</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-13'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-13'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">get_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="p">[]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-14'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-14'>#</a>
+      </div>
+      <p>Represents a logic variable.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">class</span> <span class="nc">Var</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-15'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-15'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span> <span class="c"># for generating unused variables</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-16'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-16'>#</a>
+      </div>
+      <p>Get a new, unused Var.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_unused_var</span><span class="p">():</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-17'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-17'>#</a>
+      </div>
+      <p>While proving goals we will sometimes want to create unused, temporary
+variables, so we do so by keeping a count of how many have been
+created and use it to name new ones.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">v</span> <span class="o">=</span> <span class="n">Var</span><span class="p">(</span><span class="s">&#39;var</span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">Var</span><span class="o">.</span><span class="n">counter</span><span class="p">)</span>
+        <span class="n">Var</span><span class="o">.</span><span class="n">counter</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">v</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-18'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-18'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">var</span> <span class="o">=</span> <span class="n">var</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-19'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-19'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;?</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">var</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-20'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-20'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Var</span><span class="p">)</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">var</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">var</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-21'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-21'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">var</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-22'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-22'>#</a>
+      </div>
+      <p>As mentioned above in the section on "Goals", variables will be bound
+to other values.  These bindings will be tracked through dictionaries.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-23'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-23'>#</a>
+      </div>
+      <p>Find the term that self is bound to in bindings.</p>
+<p>Tries to find a non-Var binding to return by searching transitively
+through the bindings dictionary.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">lookup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bindings</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-24'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-24'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        
+        <span class="n">binding</span> <span class="o">=</span> <span class="n">bindings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-25'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-25'>#</a>
+      </div>
+      <p>While looking up the binding for self, we must detect:</p>
+<ol>
+<li>That we are looking up the binding of a Var (otherwise meaningless)</li>
+<li>That we stop before reaching None, in the case that there is no
+   terminal Atom in a transitive binding</li>
+<li>That we don't go in a circle (eg, x-&gt;y and y-&gt;x)</li>
+</ol>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">encountered</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">,</span> <span class="n">binding</span><span class="p">]</span>
+        <span class="k">while</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">binding</span><span class="p">,</span> <span class="n">Var</span><span class="p">)</span>
+               <span class="ow">and</span> <span class="n">binding</span> <span class="ow">in</span> <span class="n">bindings</span>
+               <span class="ow">and</span> <span class="n">bindings</span><span class="p">[</span><span class="n">binding</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">encountered</span><span class="p">):</span>
+            <span class="n">binding</span> <span class="o">=</span> <span class="n">bindings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">binding</span><span class="p">)</span>
+            <span class="n">encountered</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">binding</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-26'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-26'>#</a>
+      </div>
+      <p>If the next binding leads to a relation, expand it.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">binding</span><span class="p">,</span> <span class="n">Relation</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">binding</span><span class="o">.</span><span class="n">bind_vars</span><span class="p">(</span><span class="n">bindings</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">binding</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-27'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-27'>#</a>
+      </div>
+      <p>Rename self with its value in replacements if it appears as a key.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">rename_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">replacements</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-28'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-28'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">return</span> <span class="n">replacements</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-29'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-29'>#</a>
+      </div>
+      <p>Return a list containing this var.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">get_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-30'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-30'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-31'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-31'>#</a>
+      </div>
+      <p>A relationship (specified by a predicate) that holds between terms.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">class</span> <span class="nc">Relation</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-32'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-32'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-33'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-33'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pred</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pred</span> <span class="o">=</span> <span class="n">pred</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">args</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-34'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-34'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">(</span><span class="si">%s</span><span class="s">)&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pred</span><span class="p">,</span> <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-35'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-35'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Relation</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">pred</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">pred</span>
+                <span class="ow">and</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="nb">list</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">args</span><span class="p">))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-36'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-36'>#</a>
+      </div>
+      <p>Replace each Var in this relation with its bound term.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">bind_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bindings</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-37'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-37'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">bound</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">:</span>
+            <span class="n">bound</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arg</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="n">bindings</span><span class="p">)</span> <span class="k">if</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">bindings</span> <span class="k">else</span> <span class="n">arg</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Relation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pred</span><span class="p">,</span> <span class="n">bound</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-38'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-38'>#</a>
+      </div>
+      <p>Recursively rename each Var in this relation.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">rename_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">replacements</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-39'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-39'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">renamed</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">:</span>
+            <span class="n">renamed</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arg</span><span class="o">.</span><span class="n">rename_vars</span><span class="p">(</span><span class="n">replacements</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">Relation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pred</span><span class="p">,</span> <span class="n">renamed</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-40'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-40'>#</a>
+      </div>
+      <p>Return all Vars in this relation.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">get_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-41'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-41'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="nb">vars</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">:</span>
+            <span class="nb">vars</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">arg</span><span class="o">.</span><span class="n">get_vars</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">vars</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">vars</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-42'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-42'>#</a>
+      </div>
+      <p>A clause with a head relation and some body relations.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">class</span> <span class="nc">Clause</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-43'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-43'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-44'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-44'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">head</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">=</span> <span class="n">head</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">body</span> <span class="o">=</span> <span class="n">body</span> <span class="ow">or</span> <span class="p">[]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-45'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-45'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">body</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s"> :- </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">,</span> <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">body</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-46'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-46'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Clause</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">head</span>
+                <span class="ow">and</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">body</span><span class="p">)</span> <span class="o">==</span> <span class="nb">list</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">body</span><span class="p">))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-47'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-47'>#</a>
+      </div>
+      <p>Replace all Vars in this clause with their bound values.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">bind_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bindings</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-48'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-48'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">head</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="o">.</span><span class="n">bind_vars</span><span class="p">(</span><span class="n">bindings</span><span class="p">)</span>
+        <span class="n">body</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">bind_vars</span><span class="p">(</span><span class="n">bindings</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">body</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">Clause</span><span class="p">(</span><span class="n">head</span><span class="p">,</span> <span class="n">body</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-49'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-49'>#</a>
+      </div>
+      <p>Recursively rename each Var in this Clause.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">rename_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">replacements</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-50'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-50'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">renamed_head</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="o">.</span><span class="n">rename_vars</span><span class="p">(</span><span class="n">replacements</span><span class="p">)</span>
+        <span class="n">renamed_body</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">body</span><span class="p">:</span>
+            <span class="n">renamed_body</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">term</span><span class="o">.</span><span class="n">rename_vars</span><span class="p">(</span><span class="n">replacements</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">Clause</span><span class="p">(</span><span class="n">renamed_head</span><span class="p">,</span> <span class="n">renamed_body</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-51'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-51'>#</a>
+      </div>
+      <p>Replace each var in self with an unused one.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">recursive_rename</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-52'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-52'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">renames</span> <span class="o">=</span> <span class="p">{</span><span class="n">v</span><span class="p">:</span> <span class="n">Var</span><span class="o">.</span><span class="n">get_unused_var</span><span class="p">()</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_vars</span><span class="p">()}</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Renamed vars: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">renames</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rename_vars</span><span class="p">(</span><span class="n">renames</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-53'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-53'>#</a>
+      </div>
+      <p>Return a list of all Vars in this Clause.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">get_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-54'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-54'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="nb">vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="o">.</span><span class="n">get_vars</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">rel</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">body</span><span class="p">:</span>
+            <span class="nb">vars</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">rel</span><span class="o">.</span><span class="n">get_vars</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">vars</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">vars</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-55'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-55'>#</a>
+      </div>
+      <hr />
+<p><a id="database"></a></p>
+<h1>Uniform database</h1>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-56'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-56'>#</a>
+      </div>
+      <p>The first important idea in our implementation of a logic programming
+system is that of a uniform database.  We store all facts and rules in a
+single data structure, organized so that we can quickly retrieve all the
+clauses that might help prove a goal.  Since our goals are relations,
+while proving a goal we will want to retrieve clauses whose head relations
+match the goal relation.  Thus we will index the database on the predicates
+of the contained clauses' heads.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-57'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-57'>#</a>
+      </div>
+      <p>The implementation of the database is a single Python dictionary.  Keys are
+the predicates of relations, and values are lists of clauses with identical
+head predicates.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-58'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-58'>#</a>
+      </div>
+      <hr />
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-59'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-59'>#</a>
+      </div>
+      <p>Store the clause in the database, indexed on the head's predicate.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">store</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">clause</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-60'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-60'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">db</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">clause</span><span class="o">.</span><span class="n">head</span><span class="o">.</span><span class="n">pred</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">clause</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-61'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-61'>#</a>
+      </div>
+      <p>Retrieve all clauses with matching head's predicate.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">retrieve</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">pred</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-62'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-62'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">return</span> <span class="n">db</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="p">[])</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-63'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-63'>#</a>
+      </div>
+      <p>It will be useful to store Python functions in the database so that we can
+induce side-effects by proving "relations".</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-64'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-64'>#</a>
+      </div>
+      <p>Store a Python function in the database with the given name.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">define_procedure</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">proc</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-65'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-65'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">db</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">proc</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-66'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-66'>#</a>
+      </div>
+      <hr />
+<p><a id="unification"></a></p>
+<h1>Unification of logic variables</h1>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-67'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-67'>#</a>
+      </div>
+      <p>The second important concept in our system is <em>unification</em>.  Unification is a
+process that determines when two objects are equivalent, either by determining
+that they are exactly equal or by finding <em>bindings</em> for the undetermined
+variables in the objects such that the resulting objects, with their variables
+replaced by the bindings, can be considered equaivalent.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-68'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-68'>#</a>
+      </div>
+      <p>A few small examples:</p>
+<ul>
+<li>
+<p>Unification of <code>likes(Sarah, Joe)</code> and <code>likes(?y, Joe)</code> will succeed if
+  either</p>
+<ul>
+<li>?y is unbound, in which case it can be bound to Sarah, or</li>
+<li>?y is already bound (perhaps transitively) to Sarah.</li>
+</ul>
+</li>
+<li>
+<p>Unification of <code>?y</code> and <code>?z</code> will succeed if</p>
+<ul>
+<li>?y is unbound, in which case it can be bound to ?z; or</li>
+<li>?z is unbound, in which case it can be bound to ?y; or</li>
+<li>?y and ?z are both already bound to each other, or to the same value
+  (perhaps transitively).</li>
+</ul>
+</li>
+<li>
+<p>Unfication of <code>likes(Sarah, Joe)</code> and <code>?x</code> will succeed only if ?x is
+  already bound to <code>likes(Sarah, Joe)</code> or is unbound.</p>
+</li>
+<li>
+<p>Unification of <code>likes(Sarah, Joe)</code> and <code>Bob</code> will always fail--these are not
+  equal, and no bindings of variables will result in equivalence.</p>
+</li>
+<li>
+<p>Unification of <code>likes(Sarah, Joe)</code> and <code>hates(Sarah, Joe)</code> will always fail;
+  these relations have different predicates, and so they can never be
+  considered equivalent.</p>
+</li>
+</ul>
+<p>Unification is very similar to pattern-matching; in fact, the algorithms for
+pattern matching and unification in Peter Norvig's <em>PAIP</em> are nearly
+identical, a testament to the utility of Lisp's uniform syntax.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-69'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-69'>#</a>
+      </div>
+      <hr />
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-70'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-70'>#</a>
+      </div>
+      <p>Unify x and y, if possible.  Returns updated bindings or None.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">unify</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">bindings</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-71'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-71'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Unify </span><span class="si">%s</span><span class="s"> and </span><span class="si">%s</span><span class="s"> (bindings=</span><span class="si">%s</span><span class="s">)&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">bindings</span><span class="p">))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-72'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-72'>#</a>
+      </div>
+      <p>False bindings means we failed in a previous step.  Re-fail.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="n">bindings</span> <span class="o">==</span> <span class="bp">False</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-73'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-73'>#</a>
+      </div>
+      <p>Make a copy of bindings so we can backtrack if necessary.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">bindings</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">bindings</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-74'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-74'>#</a>
+      </div>
+      <p>When x and y are equal (the same Var or Atom), there's nothing to do.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="n">y</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">bindings</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-75'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-75'>#</a>
+      </div>
+      <h3>Unification of Vars with anything else</h3>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">Var</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-76'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-76'>#</a>
+      </div>
+      <p>If x (or y) is already bound to something, dereference and try again.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">if</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">bindings</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">unify</span><span class="p">(</span><span class="n">bindings</span><span class="p">[</span><span class="n">x</span><span class="p">],</span> <span class="n">y</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">bindings</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">unify</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">bindings</span><span class="p">[</span><span class="n">y</span><span class="p">],</span> <span class="n">bindings</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-77'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-77'>#</a>
+      </div>
+      <p>Otherwise, bind x to y.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">bindings</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span>
+        <span class="k">return</span> <span class="n">bindings</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">Var</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">unify</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-78'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-78'>#</a>
+      </div>
+      <h3>Unification of Relations with Relations</h3>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">Relation</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">Relation</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-79'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-79'>#</a>
+      </div>
+      <p>Two relations must have the same predicate and arity to unify.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">pred</span> <span class="o">!=</span> <span class="n">y</span><span class="o">.</span><span class="n">pred</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">args</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-80'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-80'>#</a>
+      </div>
+      <p>Unify corresponding terms in the relations.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">xi</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">args</span><span class="p">):</span>
+            <span class="n">yi</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">bindings</span> <span class="o">=</span> <span class="n">unify</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">yi</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">bindings</span> <span class="o">==</span> <span class="bp">False</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">return</span> <span class="n">bindings</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-81'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-81'>#</a>
+      </div>
+      <h3>Unification of Clauses with Clauses</h3>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">Clause</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">Clause</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-82'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-82'>#</a>
+      </div>
+      <p>Clause bodies must have the same length to unify.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">body</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">body</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-83'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-83'>#</a>
+      </div>
+      <p>Unify head term and body terms.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">bindings</span> <span class="o">=</span> <span class="n">unify</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">head</span><span class="p">,</span> <span class="n">y</span><span class="o">.</span><span class="n">head</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">bindings</span> <span class="o">==</span> <span class="bp">False</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">xi</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">body</span><span class="p">):</span>
+            <span class="n">yi</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">bindings</span> <span class="o">=</span> <span class="n">unify</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">yi</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">bindings</span> <span class="o">==</span> <span class="bp">False</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="n">bindings</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-84'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-84'>#</a>
+      </div>
+      <h3>Nothing else can unify.</h3>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">return</span> <span class="bp">False</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-85'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-85'>#</a>
+      </div>
+      <hr />
+<p><a id="proving"></a></p>
+<h1>Proving goals</h1>
+<h2>with automatic backtracking</h2>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-86'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-86'>#</a>
+      </div>
+      <p>As mentioned previously, "proving" a goal will determine whether we can
+satisfy a goal relation using the clauses in our database.  If so, we want to
+see the variable bindings that satisfy the goal (if the goal involves any
+variables).</p>
+<p>Given a goal relation, our general algorithm for proving a goal is as follows:</p>
+<ol>
+<li>
+<p>Retrieve all clauses from the database whose head relations have the same
+     predicate as the goal relation.  Each such clause might help us to prove
+     the goal relation--we just need to ensure that the head relation matches
+     the goal relation.</p>
+<p>For example, if we want to prove <code>likes(You, Me)</code>, we will retrieve all
+ clauses from the database whose head's predicate is <code>likes</code>:</p>
+<pre><code> likes(Bob, Sue)
+ likes(You, ?x) :- likes(?x, StirFry), likes(?x, Swimming)
+ likes(Sue, ?x) :- hates(?x, Everything)
+ likes(?x, Me) :- likes(?x, Programmers)
+</code></pre>
+</li>
+<li>
+<p>For each retrieved clause, try to unify the head with the goal.  If they
+     unify, then we can prove the goal by proving the body of the retrieved
+     clause.</p>
+<p>In the retrieved clauses from #1, only the clauses</p>
+<pre><code> likes(You, ?x) :- likes(?x, StirFry), likes(?x, Swimming)
+ likes(?x, Me) :- likes(?x, Programmers)
+</code></pre>
+<p>have a head relation that unifies successfully with <code>likes(You, Me)</code>,
+ with bindings of <code>?x</code> -&gt; <code>Me</code> for the first clause and <code>?x</code> -&gt; <code>You</code> for
+ the second clause.</p>
+</li>
+<li>
+<p>For each clause whose head unifies with the goal, recurse to prove each
+     body relation of the clause.  If proving fails for any body relation, we
+     move on to the next retrieved candidate clause.</p>
+<p>So, continuing our example, if we can prove that <code>likes(Me, StirFry)</code> and 
+ <code>likes(Me, Swimming)</code>, then we will have proved <code>likes(You, Me)</code>.  If we
+ fail to prove either of these, we will move on to the next retrieved
+ clause, and try to prove <code>likes(?x, Programmers)</code>.</p>
+</li>
+</ol>
+<p>We will keep track of the goals we're proving with a stack, implemented as a
+Python list.  In this way we can keep track of all the goals we must prove
+even when we recurse while proving.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-87'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-87'>#</a>
+      </div>
+      <hr />
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-88'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-88'>#</a>
+      </div>
+      <p>Prove goal and all remaining goals using the given bindings and database.</p>
+<p>If successful, returns the extended bindings that satisfy all the goals.
+Otherwise, returns False.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">prove</span><span class="p">(</span><span class="n">goal</span><span class="p">,</span> <span class="n">bindings</span><span class="p">,</span> <span class="n">db</span><span class="p">,</span> <span class="n">remaining</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-89'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-89'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-90'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-90'>#</a>
+      </div>
+      <p>False bindings means we failed somewhere earlier, so re-fail.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="n">bindings</span> <span class="o">==</span> <span class="bp">False</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+    
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Prove </span><span class="si">%s</span><span class="s"> (bindings=</span><span class="si">%s</span><span class="s">)&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">goal</span><span class="p">,</span> <span class="n">bindings</span><span class="p">))</span>
+    <span class="n">remaining</span> <span class="o">=</span> <span class="n">remaining</span> <span class="ow">or</span> <span class="p">[]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-91'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-91'>#</a>
+      </div>
+      <p>Find the clauses in the database that might help us prove goal.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">query</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">goal</span><span class="o">.</span><span class="n">pred</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">query</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-92'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-92'>#</a>
+      </div>
+      <p>If the retrieved data from the database isn't a list of clauses,
+it must be a Python function--call it and return the results.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">return</span> <span class="n">query</span><span class="p">(</span><span class="n">goal</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">bindings</span><span class="p">,</span> <span class="n">db</span><span class="p">,</span> <span class="n">remaining</span><span class="p">)</span>
+
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Candidate clauses: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">query</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-93'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-93'>#</a>
+      </div>
+      <p>Try to use the retrieved clauses to prove the goal.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">for</span> <span class="n">clause</span> <span class="ow">in</span> <span class="n">query</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Trying candidate clause </span><span class="si">%s</span><span class="s"> for goal </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">clause</span><span class="p">,</span> <span class="n">goal</span><span class="p">))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-94'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-94'>#</a>
+      </div>
+      <p>First, rename the variables in clause so they don't collide with
+those in goal.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">renamed</span> <span class="o">=</span> <span class="n">clause</span><span class="o">.</span><span class="n">recursive_rename</span><span class="p">()</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-95'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-95'>#</a>
+      </div>
+      <p>Next, we try to unify goal with the head of the candidate clause.
+If unification is possible, then the candidate clause might either be
+a rule that can prove goal or a fact that states goal is already true.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">unified</span> <span class="o">=</span> <span class="n">unify</span><span class="p">(</span><span class="n">goal</span><span class="p">,</span> <span class="n">renamed</span><span class="o">.</span><span class="n">head</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">unified</span> <span class="o">==</span> <span class="bp">False</span><span class="p">:</span>
+            <span class="k">continue</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-96'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-96'>#</a>
+      </div>
+      <p>Make sure the candidate clause doesn't lead to an infinite loop
+by checking to see if its head is in its body.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">renamed</span> <span class="o">=</span> <span class="n">renamed</span><span class="o">.</span><span class="n">bind_vars</span><span class="p">(</span><span class="n">unified</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">renamed</span><span class="o">.</span><span class="n">head</span> <span class="ow">in</span> <span class="n">renamed</span><span class="o">.</span><span class="n">body</span><span class="p">:</span>
+            <span class="k">continue</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-97'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-97'>#</a>
+      </div>
+      <p>We need to prove the subgoals of the candidate clause before
+using it to prove goal.  Then prove the remaining goals as well.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">extended</span> <span class="o">=</span> <span class="n">prove_all</span><span class="p">(</span><span class="n">renamed</span><span class="o">.</span><span class="n">body</span> <span class="o">+</span> <span class="n">remaining</span><span class="p">,</span> <span class="n">unified</span><span class="p">,</span> <span class="n">db</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-98'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-98'>#</a>
+      </div>
+      <p>If we can't prove all the subgoals, or the bindings that result from
+proving the subgoals make it so that the remaining goals can't be
+proved, move on.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">if</span> <span class="n">extended</span> <span class="o">==</span> <span class="bp">False</span><span class="p">:</span>
+            <span class="k">continue</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-99'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-99'>#</a>
+      </div>
+      <p>Otherwise return the bindings that satisfied the goals.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">return</span> <span class="n">extended</span>
+
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Failed to prove </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">goal</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">False</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-100'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-100'>#</a>
+      </div>
+      <p>Prove all the goals with the given bindings and rule database.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">prove_all</span><span class="p">(</span><span class="n">goals</span><span class="p">,</span> <span class="n">bindings</span><span class="p">,</span> <span class="n">db</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-101'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-101'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="n">bindings</span> <span class="o">==</span> <span class="bp">False</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">goals</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">bindings</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Proving goals: </span><span class="si">%s</span><span class="s"> (bindings=</span><span class="si">%s</span><span class="s">)&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">goals</span><span class="p">,</span> <span class="n">bindings</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">prove</span><span class="p">(</span><span class="n">goals</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">bindings</span><span class="p">,</span> <span class="n">db</span><span class="p">,</span> <span class="n">goals</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-102'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-102'>#</a>
+      </div>
+      <hr />
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-103'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-103'>#</a>
+      </div>
+      <p>There may be more than one set of bindings that satisfy a goal, and the user
+may not be interested in the first solution we find.  The number of solutions
+is potentially unbounded, so we need some way to find solutions incrementally.</p>
+<p>The third important idea in our system is <em>automatic backtracking</em>, and is the
+solution to the this problem. As outlined in step 3 above, if we fail to prove
+a goal using a particular retrieved clause, we will move on and try the next
+one.  The default behavior when a solution is found is to return the bindings
+to the user; we need a mechanism to force the system to fail before it returns
+if the user doesn't like the bindings that were found.</p>
+<p>We accomplish this task with a built-in function called <code>display_bindings</code>.
+This function is stored in the database so that it looks like a clause, and
+before we ask the system to prove a goal we add the goal "display_bindings"
+to the list of goals to prove.  When the system tries to prove it, the
+retrieved value from the database will be the function <code>display_bindings</code>
+instead of a list of clauses.  Our <code>prove</code> function will detect that this
+is not a list of clauses, call <code>display_bindings</code> with the current state of
+the system, and return the return value of that function call.  We will let
+<code>display_bindings</code> decide how to handle finding more solutions.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-104'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-104'>#</a>
+      </div>
+      <hr />
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-105'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-105'>#</a>
+      </div>
+      <p>Prove each goal in goals using the rules and facts in db.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">prolog_prove</span><span class="p">(</span><span class="n">goals</span><span class="p">,</span> <span class="n">db</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-106'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-106'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="n">goals</span><span class="p">:</span>
+        <span class="nb">vars</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">goal</span> <span class="ow">in</span> <span class="n">goals</span><span class="p">:</span>
+            <span class="nb">vars</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">goal</span><span class="o">.</span><span class="n">get_vars</span><span class="p">())</span>
+        <span class="n">db</span><span class="p">[</span><span class="s">&#39;display_bindings&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">display_bindings</span>
+        <span class="n">prove_all</span><span class="p">(</span><span class="n">goals</span> <span class="o">+</span> <span class="p">[</span><span class="n">Relation</span><span class="p">(</span><span class="s">&#39;display_bindings&#39;</span><span class="p">,</span> <span class="nb">vars</span><span class="p">)],</span> <span class="p">{},</span> <span class="n">db</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&#39;No.&#39;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-107'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-107'>#</a>
+      </div>
+      <p>Displays bindings to the user and determines if more solutions are needed.</p>
+<p>If the user wants to see another solution, returns False, causing the
+proving process to fail and try another path.  Otherwise, continues proving
+the remaining goals.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">display_bindings</span><span class="p">(</span><span class="nb">vars</span><span class="p">,</span> <span class="n">bindings</span><span class="p">,</span> <span class="n">db</span><span class="p">,</span> <span class="n">remaining</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-108'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-108'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">vars</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&#39;Yes.&#39;</span>
+    <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">vars</span><span class="p">:</span>
+        <span class="k">print</span> <span class="n">var</span><span class="p">,</span> <span class="s">&#39;:&#39;</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="n">bindings</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">raw_input</span><span class="p">(</span><span class="s">&#39;Continue? &#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;yes&#39;</span><span class="p">,</span> <span class="s">&#39;y&#39;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">False</span>
+    <span class="k">return</span> <span class="n">prove_all</span><span class="p">(</span><span class="n">remaining</span><span class="p">,</span> <span class="n">bindings</span><span class="p">,</span> <span class="n">db</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-109'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-109'>#</a>
+      </div>
+      <hr />
+<h1>Conclusion</h1>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-110'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-110'>#</a>
+      </div>
+      <p>That's all there is to it.  See the examples mentioned earlier for some
+interesting applications of logic programming.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="n">__author__</span> <span class="o">=</span> <span class="s">&#39;Daniel Connelly (dhconnelly@gmail.com)&#39;</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>

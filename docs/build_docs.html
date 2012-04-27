@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>build_docs.py</title>
+  <link rel="stylesheet" href="pycco.css">
+</head>
+<body>
+<div id="background"></div>
+<div id='container'>
+  
+  <div class='section'>
+    <div class='docs'><h1>build_docs.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">pycco</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+
+
+<span class="n">modules</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s">&#39;paip/&#39;</span><span class="p">,</span>
+    <span class="s">&#39;paip/examples/gps&#39;</span><span class="p">,</span>
+    <span class="s">&#39;paip/examples/eliza&#39;</span><span class="p">,</span>
+    <span class="s">&#39;paip/examples/search&#39;</span><span class="p">,</span>
+    <span class="s">&#39;paip/examples/logic&#39;</span><span class="p">,</span>
+    <span class="s">&#39;paip/examples/emycin&#39;</span><span class="p">,</span>
+    <span class="s">&#39;paip/examples/othello&#39;</span><span class="p">,</span>
+    <span class="s">&#39;./&#39;</span>
+    <span class="p">]</span>
+<span class="n">outdir</span> <span class="o">=</span> <span class="s">&#39;docs&#39;</span>
+<span class="n">prolog_examples</span> <span class="o">=</span> <span class="s">&#39;paip/examples/prolog&#39;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">module_sources</span><span class="p">(</span><span class="n">module</span><span class="p">):</span>
+    <span class="n">sources</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">module</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">filename</span> <span class="o">!=</span> <span class="s">&#39;__init__.py&#39;</span> <span class="ow">and</span> <span class="n">filename</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;.py&#39;</span><span class="p">):</span>
+            <span class="n">sources</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">filename</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">sources</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">sources</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">modules</span><span class="p">:</span>
+        <span class="n">sources</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">module_sources</span><span class="p">(</span><span class="n">module</span><span class="p">))</span>
+    <span class="n">pycco</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">sources</span><span class="p">,</span> <span class="n">outdir</span><span class="o">=</span><span class="n">outdir</span><span class="p">)</span>
+    <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span> <span class="n">prolog_examples</span><span class="p">),</span> <span class="bp">True</span><span class="p">)</span>
+    <span class="n">shutil</span><span class="o">.</span><span class="n">copytree</span><span class="p">(</span><span class="n">prolog_examples</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span> <span class="n">prolog_examples</span><span class="p">))</span>
+        
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>

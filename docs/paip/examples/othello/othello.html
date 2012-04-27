@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>othello.py</title>
+  <link rel="stylesheet" href="../../../pycco.css">
+</head>
+<body>
+<div id="background"></div>
+<div id='container'>
+  
+  <div class='section'>
+    <div class='docs'><h1>othello.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">from</span> <span class="nn">paip</span> <span class="kn">import</span> <span class="n">othello</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="n">move</span><span class="p">,</span> <span class="n">player</span><span class="p">,</span> <span class="n">board</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">othello</span><span class="o">.</span><span class="n">is_valid</span><span class="p">(</span><span class="n">move</span><span class="p">)</span> <span class="ow">and</span> <span class="n">othello</span><span class="o">.</span><span class="n">is_legal</span><span class="p">(</span><span class="n">move</span><span class="p">,</span> <span class="n">player</span><span class="p">,</span> <span class="n">board</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">human</span><span class="p">(</span><span class="n">player</span><span class="p">,</span> <span class="n">board</span><span class="p">):</span>
+    <span class="k">print</span> <span class="n">othello</span><span class="o">.</span><span class="n">print_board</span><span class="p">(</span><span class="n">board</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&#39;Your move?&#39;</span>
+    <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+        <span class="n">move</span> <span class="o">=</span> <span class="nb">raw_input</span><span class="p">(</span><span class="s">&#39;&gt; &#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">move</span> <span class="ow">and</span> <span class="n">check</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">move</span><span class="p">),</span> <span class="n">player</span><span class="p">,</span> <span class="n">board</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">move</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">move</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;Illegal move--try again.&#39;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">get_choice</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
+    <span class="k">print</span> <span class="n">prompt</span>
+    <span class="k">print</span> <span class="s">&#39;Options:&#39;</span><span class="p">,</span> <span class="n">options</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+    <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+        <span class="n">choice</span> <span class="o">=</span> <span class="nb">raw_input</span><span class="p">(</span><span class="s">&#39;&gt; &#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">choice</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">options</span><span class="p">[</span><span class="n">choice</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">choice</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;Invalid choice.&#39;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">get_players</span><span class="p">():</span>
+    <span class="k">print</span> <span class="s">&#39;Welcome to OTHELLO!&#39;</span>
+    <span class="n">options</span> <span class="o">=</span> <span class="p">{</span> <span class="s">&#39;human&#39;</span><span class="p">:</span> <span class="n">human</span><span class="p">,</span>
+                <span class="s">&#39;random&#39;</span><span class="p">:</span> <span class="n">othello</span><span class="o">.</span><span class="n">random_strategy</span><span class="p">,</span>
+                <span class="s">&#39;max-diff&#39;</span><span class="p">:</span> <span class="n">othello</span><span class="o">.</span><span class="n">maximizer</span><span class="p">(</span><span class="n">othello</span><span class="o">.</span><span class="n">score</span><span class="p">),</span>
+                <span class="s">&#39;max-weighted-diff&#39;</span><span class="p">:</span> <span class="n">othello</span><span class="o">.</span><span class="n">maximizer</span><span class="p">(</span><span class="n">othello</span><span class="o">.</span><span class="n">weighted_score</span><span class="p">),</span>
+                <span class="s">&#39;minimax-diff&#39;</span><span class="p">:</span> <span class="n">othello</span><span class="o">.</span><span class="n">minimax_searcher</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">othello</span><span class="o">.</span><span class="n">score</span><span class="p">),</span>
+                <span class="s">&#39;minimax-weighted-diff&#39;</span><span class="p">:</span>
+                    <span class="n">othello</span><span class="o">.</span><span class="n">minimax_searcher</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">othello</span><span class="o">.</span><span class="n">weighted_score</span><span class="p">),</span>
+                <span class="s">&#39;ab-diff&#39;</span><span class="p">:</span> <span class="n">othello</span><span class="o">.</span><span class="n">alphabeta_searcher</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">othello</span><span class="o">.</span><span class="n">score</span><span class="p">),</span>
+                <span class="s">&#39;ab-weighted-diff&#39;</span><span class="p">:</span>
+                    <span class="n">othello</span><span class="o">.</span><span class="n">alphabeta_searcher</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">othello</span><span class="o">.</span><span class="n">weighted_score</span><span class="p">)</span> <span class="p">}</span>
+    <span class="n">black</span> <span class="o">=</span> <span class="n">get_choice</span><span class="p">(</span><span class="s">&#39;BLACK: choose a strategy&#39;</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+    <span class="n">white</span> <span class="o">=</span> <span class="n">get_choice</span><span class="p">(</span><span class="s">&#39;WHITE: choose a strategy&#39;</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">black</span><span class="p">,</span> <span class="n">white</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">black</span><span class="p">,</span> <span class="n">white</span> <span class="o">=</span> <span class="n">get_players</span><span class="p">()</span>
+        <span class="n">board</span><span class="p">,</span> <span class="n">score</span> <span class="o">=</span> <span class="n">othello</span><span class="o">.</span><span class="n">play</span><span class="p">(</span><span class="n">black</span><span class="p">,</span> <span class="n">white</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">othello</span><span class="o">.</span><span class="n">IllegalMoveError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">print</span> <span class="n">e</span>
+        <span class="k">return</span>
+    <span class="k">except</span> <span class="ne">EOFError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&#39;Goodbye.&#39;</span>
+        <span class="k">return</span>
+    <span class="k">print</span> <span class="s">&#39;Final score:&#39;</span><span class="p">,</span> <span class="n">score</span>
+    <span class="k">print</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s"> wins!&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="s">&#39;Black&#39;</span> <span class="k">if</span> <span class="n">score</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="s">&#39;White&#39;</span><span class="p">)</span>
+    <span class="k">print</span> <span class="n">othello</span><span class="o">.</span><span class="n">print_board</span><span class="p">(</span><span class="n">board</span><span class="p">)</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>

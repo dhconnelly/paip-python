@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>gps.py</title>
+  <link rel="stylesheet" href="../../../pycco.css">
+</head>
+<body>
+<div id="background"></div>
+<div id='container'>
+  
+  <div class='section'>
+    <div class='docs'><h1>gps.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">from</span> <span class="nn">paip.search</span> <span class="kn">import</span> <span class="n">beam_search</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      <h1>GPS implemented as search</h1>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">successors</span><span class="p">(</span><span class="n">states</span><span class="p">,</span> <span class="n">operators</span><span class="p">):</span>
+    <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">applicable_ops</span><span class="p">(</span><span class="n">states</span><span class="p">,</span> <span class="n">operators</span><span class="p">):</span>
+        <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">states</span> <span class="k">if</span> <span class="n">s</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">op</span><span class="p">[</span><span class="s">&#39;delete&#39;</span><span class="p">]]</span> <span class="o">+</span> <span class="n">op</span><span class="p">[</span><span class="s">&#39;add&#39;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">ret</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">applicable_ops</span><span class="p">(</span><span class="n">states</span><span class="p">,</span> <span class="n">ops</span><span class="p">):</span>
+    <span class="n">states</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">states</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">op</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">ops</span> <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">op</span><span class="p">[</span><span class="s">&#39;preconds&#39;</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="n">states</span><span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">gps</span><span class="p">(</span><span class="n">initial_states</span><span class="p">,</span> <span class="n">goal_states</span><span class="p">,</span> <span class="n">operators</span><span class="p">,</span> <span class="n">beam_width</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+    <span class="n">prefix</span> <span class="o">=</span> <span class="s">&#39;Executing &#39;</span>
+    <span class="k">for</span> <span class="n">operator</span> <span class="ow">in</span> <span class="n">operators</span><span class="p">:</span>
+        <span class="n">operator</span><span class="p">[</span><span class="s">&#39;add&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">prefix</span> <span class="o">+</span> <span class="n">operator</span><span class="p">[</span><span class="s">&#39;action&#39;</span><span class="p">])</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">get_successors</span><span class="p">(</span><span class="n">states</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">successors</span><span class="p">(</span><span class="n">states</span><span class="p">,</span> <span class="n">operators</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-6'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-6'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">goal_reached</span><span class="p">(</span><span class="n">states</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">goal</span> <span class="ow">in</span> <span class="n">goal_states</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">goal</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">states</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="bp">True</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-7'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-7'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">cost</span><span class="p">(</span><span class="n">states</span><span class="p">):</span>
+        <span class="nb">sum</span> <span class="o">=</span> <span class="nb">len</span><span class="p">([</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">states</span> <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">prefix</span><span class="p">)])</span>
+        <span class="nb">sum</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">([</span><span class="n">g</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">goal_states</span> <span class="k">if</span> <span class="n">g</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">states</span><span class="p">])</span>
+        <span class="k">return</span> <span class="nb">sum</span>
+            
+    <span class="n">final</span> <span class="o">=</span> <span class="n">beam_search</span><span class="p">(</span><span class="n">initial_states</span><span class="p">,</span> <span class="n">goal_reached</span><span class="p">,</span>
+                        <span class="n">get_successors</span><span class="p">,</span> <span class="n">cost</span><span class="p">,</span> <span class="n">beam_width</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">state</span> <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">final</span> <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">prefix</span><span class="p">)]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-8'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-8'>#</a>
+      </div>
+      <h1>Example problem definition</h1>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">problem</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&quot;start&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;space on a&quot;</span><span class="p">,</span> <span class="s">&quot;a on b&quot;</span><span class="p">,</span> <span class="s">&quot;b on c&quot;</span><span class="p">,</span> <span class="s">&quot;c on table&quot;</span><span class="p">,</span> <span class="s">&quot;space on table&quot;</span><span class="p">],</span>
+    <span class="s">&quot;finish&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;space on c&quot;</span><span class="p">,</span> <span class="s">&quot;c on b&quot;</span><span class="p">,</span> <span class="s">&quot;b on a&quot;</span><span class="p">,</span> <span class="s">&quot;a on table&quot;</span><span class="p">,</span> <span class="s">&quot;space on table&quot;</span><span class="p">],</span>
+    <span class="s">&quot;ops&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s">&quot;action&quot;</span><span class="p">:</span> <span class="s">&quot;move a from b to c&quot;</span><span class="p">,</span> 
+            <span class="s">&quot;preconds&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;space on a&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on c&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;a on b&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;add&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;a on c&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on b&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;delete&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;a on b&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on c&quot;</span>
+            <span class="p">]</span>
+        <span class="p">},</span> 
+        <span class="p">{</span>
+            <span class="s">&quot;action&quot;</span><span class="p">:</span> <span class="s">&quot;move a from table to b&quot;</span><span class="p">,</span> 
+            <span class="s">&quot;preconds&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;space on a&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on b&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;a on table&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;add&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;a on b&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;delete&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;a on table&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on b&quot;</span>
+            <span class="p">]</span>
+        <span class="p">},</span> 
+        <span class="p">{</span>
+            <span class="s">&quot;action&quot;</span><span class="p">:</span> <span class="s">&quot;move a from b to table&quot;</span><span class="p">,</span> 
+            <span class="s">&quot;preconds&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;space on a&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on table&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;a on b&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;add&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;a on table&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on b&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;delete&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;a on b&quot;</span>
+            <span class="p">]</span>
+        <span class="p">},</span> 
+        <span class="p">{</span>
+            <span class="s">&quot;action&quot;</span><span class="p">:</span> <span class="s">&quot;move a from c to b&quot;</span><span class="p">,</span> 
+            <span class="s">&quot;preconds&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;space on a&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on b&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;a on c&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;add&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;a on b&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on c&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;delete&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;a on c&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on b&quot;</span>
+            <span class="p">]</span>
+        <span class="p">},</span> 
+        <span class="p">{</span>
+            <span class="s">&quot;action&quot;</span><span class="p">:</span> <span class="s">&quot;move a from table to c&quot;</span><span class="p">,</span> 
+            <span class="s">&quot;preconds&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;space on a&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on c&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;a on table&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;add&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;a on c&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;delete&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;a on table&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on c&quot;</span>
+            <span class="p">]</span>
+        <span class="p">},</span> 
+        <span class="p">{</span>
+            <span class="s">&quot;action&quot;</span><span class="p">:</span> <span class="s">&quot;move a from c to table&quot;</span><span class="p">,</span> 
+            <span class="s">&quot;preconds&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;space on a&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on table&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;a on c&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;add&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;a on table&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on c&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;delete&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;a on c&quot;</span>
+            <span class="p">]</span>
+        <span class="p">},</span> 
+        <span class="p">{</span>
+            <span class="s">&quot;action&quot;</span><span class="p">:</span> <span class="s">&quot;move b from a to c&quot;</span><span class="p">,</span> 
+            <span class="s">&quot;preconds&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;space on b&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on c&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;b on a&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;add&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;b on c&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on a&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;delete&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;b on a&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on c&quot;</span>
+            <span class="p">]</span>
+        <span class="p">},</span> 
+        <span class="p">{</span>
+            <span class="s">&quot;action&quot;</span><span class="p">:</span> <span class="s">&quot;move b from table to a&quot;</span><span class="p">,</span> 
+            <span class="s">&quot;preconds&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;space on b&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on a&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;b on table&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;add&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;b on a&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;delete&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;b on table&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on a&quot;</span>
+            <span class="p">]</span>
+        <span class="p">},</span> 
+        <span class="p">{</span>
+            <span class="s">&quot;action&quot;</span><span class="p">:</span> <span class="s">&quot;move b from a to table&quot;</span><span class="p">,</span> 
+            <span class="s">&quot;preconds&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;space on b&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on table&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;b on a&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;add&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;b on table&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on a&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;delete&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;b on a&quot;</span>
+            <span class="p">]</span>
+        <span class="p">},</span> 
+        <span class="p">{</span>
+            <span class="s">&quot;action&quot;</span><span class="p">:</span> <span class="s">&quot;move b from c to a&quot;</span><span class="p">,</span> 
+            <span class="s">&quot;preconds&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;space on b&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on a&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;b on c&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;add&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;b on a&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on c&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;delete&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;b on c&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on a&quot;</span>
+            <span class="p">]</span>
+        <span class="p">},</span> 
+        <span class="p">{</span>
+            <span class="s">&quot;action&quot;</span><span class="p">:</span> <span class="s">&quot;move b from table to c&quot;</span><span class="p">,</span> 
+            <span class="s">&quot;preconds&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;space on b&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on c&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;b on table&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;add&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;b on c&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;delete&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;b on table&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on c&quot;</span>
+            <span class="p">]</span>
+        <span class="p">},</span> 
+        <span class="p">{</span>
+            <span class="s">&quot;action&quot;</span><span class="p">:</span> <span class="s">&quot;move b from c to table&quot;</span><span class="p">,</span> 
+            <span class="s">&quot;preconds&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;space on b&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on table&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;b on c&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;add&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;b on table&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on c&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;delete&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;b on c&quot;</span>
+            <span class="p">]</span>
+        <span class="p">},</span> 
+        <span class="p">{</span>
+            <span class="s">&quot;action&quot;</span><span class="p">:</span> <span class="s">&quot;move c from a to b&quot;</span><span class="p">,</span> 
+            <span class="s">&quot;preconds&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;space on c&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on b&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;c on a&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;add&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;c on b&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on a&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;delete&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;c on a&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on b&quot;</span>
+            <span class="p">]</span>
+        <span class="p">},</span> 
+        <span class="p">{</span>
+            <span class="s">&quot;action&quot;</span><span class="p">:</span> <span class="s">&quot;move c from table to a&quot;</span><span class="p">,</span> 
+            <span class="s">&quot;preconds&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;space on c&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on a&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;c on table&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;add&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;c on a&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;delete&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;c on table&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on a&quot;</span>
+            <span class="p">]</span>
+        <span class="p">},</span> 
+        <span class="p">{</span>
+            <span class="s">&quot;action&quot;</span><span class="p">:</span> <span class="s">&quot;move c from a to table&quot;</span><span class="p">,</span> 
+            <span class="s">&quot;preconds&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;space on c&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on table&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;c on a&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;add&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;c on table&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on a&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;delete&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;c on a&quot;</span>
+            <span class="p">]</span>
+        <span class="p">},</span> 
+        <span class="p">{</span>
+            <span class="s">&quot;action&quot;</span><span class="p">:</span> <span class="s">&quot;move c from b to a&quot;</span><span class="p">,</span> 
+            <span class="s">&quot;preconds&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;space on c&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on a&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;c on b&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;add&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;c on a&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on b&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;delete&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;c on b&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on a&quot;</span>
+            <span class="p">]</span>
+        <span class="p">},</span> 
+        <span class="p">{</span>
+            <span class="s">&quot;action&quot;</span><span class="p">:</span> <span class="s">&quot;move c from table to b&quot;</span><span class="p">,</span> 
+            <span class="s">&quot;preconds&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;space on c&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on b&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;c on table&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;add&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;c on b&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;delete&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;c on table&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on b&quot;</span>
+            <span class="p">]</span>
+        <span class="p">},</span> 
+        <span class="p">{</span>
+            <span class="s">&quot;action&quot;</span><span class="p">:</span> <span class="s">&quot;move c from b to table&quot;</span><span class="p">,</span> 
+            <span class="s">&quot;preconds&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;space on c&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on table&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;c on b&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;add&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;c on table&quot;</span><span class="p">,</span> 
+                <span class="s">&quot;space on b&quot;</span>
+            <span class="p">],</span> 
+            <span class="s">&quot;delete&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s">&quot;c on b&quot;</span>
+            <span class="p">]</span>
+        <span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+
+
+<span class="kn">from</span> <span class="nn">paip</span> <span class="kn">import</span> <span class="n">search</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-9'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-9'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">problem</span><span class="p">[</span><span class="s">&#39;start&#39;</span><span class="p">]</span>
+    <span class="n">finish</span> <span class="o">=</span> <span class="n">problem</span><span class="p">[</span><span class="s">&#39;finish&#39;</span><span class="p">]</span>
+    <span class="n">ops</span> <span class="o">=</span> <span class="n">problem</span><span class="p">[</span><span class="s">&#39;ops&#39;</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">action</span> <span class="ow">in</span> <span class="n">gps</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">ops</span><span class="p">):</span>
+        <span class="k">print</span> <span class="n">action</span>
+
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>support.py</title>
+  <link rel="stylesheet" href="../../../pycco.css">
+</head>
+<body>
+<div id="background"></div>
+<div id='container'>
+  
+  <div class='section'>
+    <div class='docs'><h1>support.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">paip</span> <span class="kn">import</span> <span class="n">eliza</span>
+
+<span class="n">rules</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&quot;?*x hello ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Hello, my name is SUPPORT.  How can I help you today?&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x manager ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Our manager is not available right now.  How can I help you?&quot;</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x problem with ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Have you tried turning it off and back on?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;When did you first observe ?y to be a problem?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;How long has ?y been a problem?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;That is not covered by the warranty.&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x trouble with ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s">&quot;I&#39;m sorry, ?y is handled by another department.</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">+</span>
+         <span class="s">&quot;Please wait while I transfer your call.&quot;</span><span class="p">),</span>
+        <span class="s">&quot;What seems to be the problem?&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x how to ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;Please consult the manual for more details.&quot;</span><span class="p">,</span>
+        <span class="s">&quot;I&#39;m sorry, I do not have that information.&quot;</span><span class="p">,</span>
+        <span class="s">&quot;Can you be more specific?&quot;</span><span class="p">,</span>
+        <span class="s">&quot;?y will void your warranty.&quot;</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x why ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;I&#39;m sorry, I can&#39;t discuss that.&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="s">&quot;?*x ago ?*y&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;I&#39;m sorry, your warranty ended a week earlier.&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+    <span class="p">}</span>
+
+<span class="n">default_responses</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s">&quot;I do not understand.&quot;</span><span class="p">,</span>
+    <span class="s">&quot;Please elaborate.&quot;</span><span class="p">,</span>
+    <span class="s">&quot;Please hold.&quot;</span>
+    <span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">main</span><span class="p">():</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      <p>We need the rules in a list containing elements of the following form:
+<code>(input pattern, [output pattern 1, output pattern 2, ...]</code></p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">rules_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">pattern</span><span class="p">,</span> <span class="n">transforms</span> <span class="ow">in</span> <span class="n">rules</span><span class="o">.</span><span class="n">items</span><span class="p">():</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      <p>Remove the punctuation from the pattern to simplify matching.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">pattern</span> <span class="o">=</span> <span class="n">eliza</span><span class="o">.</span><span class="n">remove_punct</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">pattern</span><span class="o">.</span><span class="n">upper</span><span class="p">()))</span> <span class="c"># kill unicode</span>
+        <span class="n">transforms</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">transforms</span><span class="p">]</span>
+        <span class="n">rules_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">pattern</span><span class="p">,</span> <span class="n">transforms</span><span class="p">))</span>
+    <span class="n">eliza</span><span class="o">.</span><span class="n">interact</span><span class="p">(</span><span class="s">&#39;SUPPORT&gt; &#39;</span><span class="p">,</span> <span class="n">rules_list</span><span class="p">,</span> <span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="o">.</span><span class="n">upper</span><span class="p">,</span> <span class="n">default_responses</span><span class="p">))</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>

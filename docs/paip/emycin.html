@@ -1,0 +1,1810 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>emycin.py</title>
+  <link rel="stylesheet" href="../pycco.css">
+</head>
+<body>
+<div id="background"></div>
+<div id='container'>
+  
+  <div class='section'>
+    <div class='docs'><h1>emycin.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      <p><strong>Emycin</strong> is an <em>expert system shell</em>, a framework for building programs that
+record the knowledge of <em>domain experts</em> and use that knowledge to help
+non-expert users solve problems.  It provides an interface that helps experts
+define data types and rules, a backwards-chaining reasoning algorithm (similar
+to Prolog, but with key differences), a mechanism for dealing with uncertainty,
+and facilities for <em>introspection</em> that permit users to learn what the system
+knows and what it is doing.</p>
+<p>For an example of Emycin in action, see <a href="examples/emycin/mycin.html">Mycin</a>, a
+program for automated medical diagnosis that performed as well as trained
+doctors when it was first introduced.</p>
+<p>Written by <a href="http://dhconnelly.com">Daniel Connelly</a>.  This implementation is
+inspired by chapter 16 of "Paradigms of Artificial Intelligence Programming" by
+Peter Norvig.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      <hr />
+<h1>Table of contents</h1>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      <ol>
+<li><a href="#certainty">Certainty factors</a></li>
+<li><a href="#contexts">Contexts</a></li>
+<li><a href="#parameters">Parameters</a></li>
+<li><a href="#conditions">Conditions</a></li>
+<li><a href="#values">Values</a></li>
+<li><a href="#rules">Rules</a></li>
+<li><a href="#shell">The Shell</a></li>
+</ol>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      <hr />
+<p><a id="certainty"></a></p>
+<h1>Certainty factors</h1>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      <p><em>Certainty factors</em> are numerical values in the range [-1, 1] that Emycin uses
+to represent boolean values with associated confidence.  Negative certainty factors
+represent False values, with increasing confidence as the number approaches -1.0.
+Similarly, positive CFs represent True, with increasing confidence approaching 1.0.
+A CF of 0.0 represents Unknown.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      <p>We can combine certainty factors in a manner similar to boolean logic using AND
+and OR operations; however, since CFs are real numbers, we can't use the standard
+truth tables of boolean logic.  These definitions come from Peter Norvig's PAIP.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-6'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-6'>#</a>
+      </div>
+      <p>The OR of two certainty factors.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">cf_or</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-7'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-7'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="n">a</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">b</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span> <span class="o">-</span> <span class="n">a</span> <span class="o">*</span> <span class="n">b</span>
+    <span class="k">elif</span> <span class="n">a</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">b</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span> <span class="o">+</span> <span class="n">a</span> <span class="o">*</span> <span class="n">b</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="nb">min</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="nb">abs</span><span class="p">(</span><span class="n">b</span><span class="p">)))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-8'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-8'>#</a>
+      </div>
+      <p>The AND of two certainty factors.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">cf_and</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-9'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-9'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-10'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-10'>#</a>
+      </div>
+      <p>Is x a valid certainty factor; ie, is (false &lt;= x &lt;= true)?</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">is_cf</span><span class="p">(</span><span class="n">x</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-11'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-11'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">return</span> <span class="n">CF</span><span class="o">.</span><span class="n">false</span> <span class="o">&lt;=</span> <span class="n">x</span> <span class="o">&lt;=</span> <span class="n">CF</span><span class="o">.</span><span class="n">true</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-12'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-12'>#</a>
+      </div>
+      <p>Do we consider x true?</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">cf_true</span><span class="p">(</span><span class="n">x</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-13'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-13'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">return</span> <span class="n">is_cf</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="ow">and</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="n">CF</span><span class="o">.</span><span class="n">cutoff</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-14'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-14'>#</a>
+      </div>
+      <p>Do we consider x false?</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">cf_false</span><span class="p">(</span><span class="n">x</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-15'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-15'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">return</span> <span class="n">is_cf</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="ow">and</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">CF</span><span class="o">.</span><span class="n">cutoff</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-16'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-16'>#</a>
+      </div>
+      <p>Collect important certainty factors in a single namespace.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">class</span> <span class="nc">CF</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-17'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-17'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">true</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">false</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span>
+    <span class="n">unknown</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">cutoff</span> <span class="o">=</span> <span class="mf">0.2</span> <span class="c"># We will consider values above cutoff to be True.</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-18'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-18'>#</a>
+      </div>
+      <hr />
+<p><a id="contexts"></a></p>
+<h1>Contexts</h1>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-19'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-19'>#</a>
+      </div>
+      <p>Since Emycin aims to provide a flexible framework adaptable to varied problem
+domains, its representation of "types" needs to be extensible.  An expert
+should be able to define the types of things about which the system reasons.
+Emycin calls these types <em>contexts</em>, and specific things in the system are
+represented with <em>instances</em> of contexts.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-20'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-20'>#</a>
+      </div>
+      <p>Each context has two associated lists of parameters: initial_data and goals.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-21'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-21'>#</a>
+      </div>
+      <p>Each parameter in the initial_data list will be determined before reasoning
+is carried out--this permits the system to follow a user-defined flow of
+execution instead of a purely backwards-chaining algorithm.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-22'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-22'>#</a>
+      </div>
+      <p>The reasoner will attempt to find values for each parameter in the goals list
+during execution and return those values to the user.  See
+<a href="#execute">Shell.execute</a> for more details.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-23'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-23'>#</a>
+      </div>
+      <p>A Context is a type of thing that can be reasoned about.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">class</span> <span class="nc">Context</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-24'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-24'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-25'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-25'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">initial_data</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">goals</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="mi">0</span> <span class="c"># track Instances with numerical IDs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial_data</span> <span class="o">=</span> <span class="n">initial_data</span> <span class="ow">or</span> <span class="p">[]</span> <span class="c"># params to find out before reasoning</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">goals</span> <span class="o">=</span> <span class="n">goals</span> <span class="ow">or</span> <span class="p">[]</span> <span class="c"># params to find out during reasoning</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-26'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-26'>#</a>
+      </div>
+      <p>Instances are represented in the form (ctx_name, inst_number).</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">instantiate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-27'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-27'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">inst</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">inst</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-28'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-28'>#</a>
+      </div>
+      <hr />
+<p><a id="parameters"></a></p>
+<h1>Parameters</h1>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-29'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-29'>#</a>
+      </div>
+      <p>Contexts need attributes so that individual instances can be differentiated
+and tested by the reasoner.  Emycin represents attributes of contexts
+<em>Parameters</em>, and instances have a <em>value</em> for each of the parameters of its
+context.  These are defined by the expert for each context in the problem
+domain.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-30'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-30'>#</a>
+      </div>
+      <p>A Parameter represents an attribute of a context.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">class</span> <span class="nc">Parameter</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-31'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-31'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-32'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-32'>#</a>
+      </div>
+      <p>Define a new parameter named <code>name</code>.</p>
+<p>Optional parameters:</p>
+<ul>
+<li>ctx: The Context to which this Parameter is associated.</li>
+<li>enum: If specified, indicates that values of this parameter must be
+  members of the given list of values.</li>
+<li>cls: If specified, indicates that values of this parameter must be
+  instances of the given type.</li>
+<li>ask_first: If True, to determine a value of this parameter, first ask
+  the user before reasoning.</li>
+</ul>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">ctx</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">enum</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">cls</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ask_first</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-33'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-33'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ctx</span> <span class="o">=</span> <span class="n">ctx</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">enum</span> <span class="o">=</span> <span class="n">enum</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ask_first</span> <span class="o">=</span> <span class="n">ask_first</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cls</span> <span class="o">=</span> <span class="n">cls</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-34'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-34'>#</a>
+      </div>
+      <p>A human-readable string of acceptable values for this parameter.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">type_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-35'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-35'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cls</span><span class="o">.</span><span class="n">__name__</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cls</span> <span class="k">else</span> <span class="s">&#39;(</span><span class="si">%s</span><span class="s">)&#39;</span> <span class="o">%</span> <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">enum</span><span class="p">))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-36'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-36'>#</a>
+      </div>
+      <p>Read a value of this parameter with the correct type from a
+user-specified string.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">from_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-37'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-37'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cls</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cls</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">enum</span> <span class="ow">and</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">enum</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">val</span>
+        
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;val must be one of </span><span class="si">%s</span><span class="s"> for the parameter </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span>
+                         <span class="p">(</span><span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">enum</span><span class="p">)),</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-38'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-38'>#</a>
+      </div>
+      <hr />
+<p><a id="conditions"></a></p>
+<h1>Conditions</h1>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-39'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-39'>#</a>
+      </div>
+      <p>Propositions in Emycin are called <em>Conditions</em>.  They are represented in the
+form (param, inst, op, val), read as "the value of inst's param parameter
+satisfies the relation op(v, val)", where param is the name of a Parameter
+object, inst is an Instance created by a Context object, op is a function that
+compares two parameter values to determine if the condition is true, and val
+is the parameter value.  A condition's truth is represented by a certainty
+factor.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-40'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-40'>#</a>
+      </div>
+      <p>To determine the certainty factor of the condition (param, inst, op, val),
+we use a list of values currently associated with the param parameter of
+inst, optionally applying the reasoner to determine more values.</p>
+<p>If find_out is specified, it should be a function with the signature
+find_out(values, param, inst) and should find more values for (param, inst) and
+add them to the values list.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">eval_condition</span><span class="p">(</span><span class="n">condition</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">find_out</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-41'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-41'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Evaluating condition [</span><span class="si">%s</span><span class="s">] (find_out </span><span class="si">%s</span><span class="s">)&#39;</span> <span class="o">%</span>
+                  <span class="p">(</span><span class="n">print_condition</span><span class="p">(</span><span class="n">condition</span><span class="p">),</span> <span class="s">&#39;ENABLED&#39;</span> <span class="k">if</span> <span class="n">find_out</span> <span class="k">else</span> <span class="s">&#39;DISABLED&#39;</span><span class="p">))</span>
+    
+    <span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">,</span> <span class="n">op</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">condition</span>
+    <span class="k">if</span> <span class="n">find_out</span><span class="p">:</span>
+        <span class="n">find_out</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">)</span> <span class="c"># get more values for this param</span>
+    <span class="n">total</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">cf</span> <span class="k">for</span> <span class="n">known_val</span><span class="p">,</span> <span class="n">cf</span> <span class="ow">in</span> <span class="n">values</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">op</span><span class="p">(</span><span class="n">known_val</span><span class="p">,</span> <span class="n">val</span><span class="p">))</span>
+    
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Condition [</span><span class="si">%s</span><span class="s">] has a certainty factor of </span><span class="si">%f</span><span class="s">&#39;</span> <span class="o">%</span>
+                  <span class="p">(</span><span class="n">print_condition</span><span class="p">(</span><span class="n">condition</span><span class="p">),</span> <span class="n">total</span><span class="p">))</span>
+    
+    <span class="k">return</span> <span class="n">total</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-42'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-42'>#</a>
+      </div>
+      <p>Return a human-readable representation of a condition.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">print_condition</span><span class="p">(</span><span class="n">condition</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-43'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-43'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">,</span> <span class="n">op</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">condition</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">inst</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inst</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">inst</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">opname</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">__name__</span>
+    <span class="k">return</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">opname</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-44'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-44'>#</a>
+      </div>
+      <hr />
+<p><a id="values"></a></p>
+<h1>Values</h1>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-45'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-45'>#</a>
+      </div>
+      <p>To store parameter values for specific instances, we use a dictionary that
+maps each (param, inst) pair to a list of (value, certainty factor) pairs.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-46'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-46'>#</a>
+      </div>
+      <p>Retrieve the dict of val-&gt;CF mappings for (param, inst).</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">get_vals</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-47'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-47'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">return</span> <span class="n">values</span><span class="o">.</span><span class="n">setdefault</span><span class="p">((</span><span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">),</span> <span class="p">{})</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-48'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-48'>#</a>
+      </div>
+      <p>Retrieve the certainty that the value of the parameter param in inst is val.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">get_cf</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-49'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-49'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">vals</span> <span class="o">=</span> <span class="n">get_vals</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">vals</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">CF</span><span class="o">.</span><span class="n">unknown</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-50'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-50'>#</a>
+      </div>
+      <p>Update the existing certainty that the value of the param parameter of inst
+is val with the specified certainty factor.  If val is not currently a value
+associated with param in inst, add it.  The OR operation is used to combine
+the existing and new certainty factors.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">update_cf</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">cf</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-51'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-51'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">existing</span> <span class="o">=</span> <span class="n">get_cf</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+    <span class="n">updated</span> <span class="o">=</span> <span class="n">cf_or</span><span class="p">(</span><span class="n">existing</span><span class="p">,</span> <span class="n">cf</span><span class="p">)</span>
+    <span class="n">get_vals</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">)[</span><span class="n">val</span><span class="p">]</span> <span class="o">=</span> <span class="n">updated</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-52'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-52'>#</a>
+      </div>
+      <hr />
+<p><a id="rules"></a></p>
+<h1>Rules</h1>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-53'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-53'>#</a>
+      </div>
+      <p><em>Rules</em> represent expert knowledge in Emycin.  They are used to combine known
+facts in the system with user input to deduce new facts.  Each rule has some
+premises, some conclusions, and an associate certainty factor of the rule
+itself.  They look like</p>
+<pre><code>IF (premises) THEN (rule certainty) (conclusions).
+</code></pre>
+<p>A rule can be applied if and only if its premises hold; this is tested by
+evaluating all of the premises to determine their certainty.  If the AND of
+all the certainties of the premises is considered True, then the conclusion
+conditions can result in new known values.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-54'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-54'>#</a>
+      </div>
+      <p>Rules are used for deriving new facts.  Each rule has premise and conclusion
+conditions and an associated certainty of the derived conclusions.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">class</span> <span class="nc">Rule</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-55'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-55'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-56'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-56'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">premises</span><span class="p">,</span> <span class="n">conclusions</span><span class="p">,</span> <span class="n">cf</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num</span> <span class="o">=</span> <span class="n">num</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cf</span> <span class="o">=</span> <span class="n">cf</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-57'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-57'>#</a>
+      </div>
+      <p>The premise conditions for a rule are stored with context names in the
+place of instances for generality; ie, (param, ctx_name, op, val).</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="bp">self</span><span class="o">.</span><span class="n">raw_premises</span> <span class="o">=</span> <span class="n">premises</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">raw_conclusions</span> <span class="o">=</span> <span class="n">conclusions</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-58'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-58'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">prems</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="n">print_condition</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">raw_premises</span><span class="p">)</span>
+        <span class="n">concls</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="n">print_condition</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">raw_conclusions</span><span class="p">)</span>
+        <span class="n">templ</span> <span class="o">=</span> <span class="s">&#39;RULE </span><span class="si">%d</span><span class="se">\n</span><span class="s">IF</span><span class="se">\n\t</span><span class="si">%s</span><span class="se">\n</span><span class="s">THEN </span><span class="si">%f</span><span class="se">\n\t</span><span class="si">%s</span><span class="s">&#39;</span>
+        <span class="k">return</span> <span class="n">templ</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num</span><span class="p">,</span> <span class="s">&#39;</span><span class="se">\n\t</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">prems</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">cf</span><span class="p">,</span> <span class="s">&#39;</span><span class="se">\n\t</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">concls</span><span class="p">))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-59'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-59'>#</a>
+      </div>
+      <p>Duplicate this rule.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">clone</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-60'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-60'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">return</span> <span class="n">Rule</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raw_premises</span><span class="p">),</span>
+                    <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raw_conclusions</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">cf</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-61'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-61'>#</a>
+      </div>
+      <p>Given a condition (param, ctx, op, val), return (param, inst, op, val),
+where inst is the current instance of the context ctx.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">_bind_cond</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cond</span><span class="p">,</span> <span class="n">instances</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-62'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-62'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">param</span><span class="p">,</span> <span class="n">ctx</span><span class="p">,</span> <span class="n">op</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">cond</span>
+        <span class="k">return</span> <span class="n">param</span><span class="p">,</span> <span class="n">instances</span><span class="p">[</span><span class="n">ctx</span><span class="p">],</span> <span class="n">op</span><span class="p">,</span> <span class="n">val</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-63'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-63'>#</a>
+      </div>
+      <p>Return the premise conditions of this rule.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">premises</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instances</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-64'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-64'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_bind_cond</span><span class="p">(</span><span class="n">premise</span><span class="p">,</span> <span class="n">instances</span><span class="p">)</span> <span class="k">for</span> <span class="n">premise</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">raw_premises</span><span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-65'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-65'>#</a>
+      </div>
+      <p>Return the conclusion conditions of this rule.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">conclusions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instances</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-66'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-66'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_bind_cond</span><span class="p">(</span><span class="n">concl</span><span class="p">,</span> <span class="n">instances</span><span class="p">)</span> <span class="k">for</span> <span class="n">concl</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">raw_conclusions</span><span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-67'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-67'>#</a>
+      </div>
+      <h2>Applying rules</h2>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-68'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-68'>#</a>
+      </div>
+      <p>Rule application has two stages: determining whether the rule is
+applicable by attempting to satisfy its premises, and using the rule to
+deduce new values.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-69'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-69'>#</a>
+      </div>
+      <p><a id="applicable"></a></p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">applicable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">instances</span><span class="p">,</span> <span class="n">find_out</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-70'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-70'>#</a>
+      </div>
+      <p><strong>applicable</strong> determines the applicability of this rule (represented by
+a certainty factor) by evaluating the truth of each of its premise
+conditions against known values of parameters.</p>
+<p>This function is key to the backwards-chaining reasoning algorithm:
+after a candidate rule is identified by the reasoner (see
+<a href="#find_out">Shell.find_out</a>), it tries to satisfy all the premises of
+the rule.  This is similar to Prolog, where a rule can only be applied
+if all its body goals can be achieved.</p>
+<p>Arguments:</p>
+<ul>
+<li>values: a dict that maps a (param, inst) pair to a list of known
+  values [(val1, cf1), (val2, cf2), ...] associated with that pair.
+  param is the name of a Parameter object and inst is the name of a
+  Context.</li>
+<li>instances: a dict that maps a Context name to its current instance.</li>
+<li>find_out: see eval_condition</li>
+</ul>
+<p>Try to reject the rule early if possible by checking each premise
+without reasoning.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">for</span> <span class="n">premise</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">premises</span><span class="p">(</span><span class="n">instances</span><span class="p">):</span>
+            <span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">,</span> <span class="n">op</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">premise</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="n">get_vals</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">)</span>
+            <span class="n">cf</span> <span class="o">=</span> <span class="n">eval_condition</span><span class="p">(</span><span class="n">premise</span><span class="p">,</span> <span class="n">vals</span><span class="p">)</span> <span class="c"># don&#39;t pass find_out, just use rules</span>
+            <span class="k">if</span> <span class="n">cf_false</span><span class="p">(</span><span class="n">cf</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">CF</span><span class="o">.</span><span class="n">false</span>
+                        
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Determining applicability of rule (</span><span class="se">\n</span><span class="si">%s</span><span class="se">\n</span><span class="s">)&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-71'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-71'>#</a>
+      </div>
+      <p>Evaluate each premise (calling find_out to apply reasoning) to
+determine if the rule can be applied.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">total_cf</span> <span class="o">=</span> <span class="n">CF</span><span class="o">.</span><span class="n">true</span>
+        <span class="k">for</span> <span class="n">premise</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">premises</span><span class="p">(</span><span class="n">instances</span><span class="p">):</span>
+            <span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">,</span> <span class="n">op</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">premise</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="n">get_vals</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">)</span>
+            <span class="n">cf</span> <span class="o">=</span> <span class="n">eval_condition</span><span class="p">(</span><span class="n">premise</span><span class="p">,</span> <span class="n">vals</span><span class="p">,</span> <span class="n">find_out</span><span class="p">)</span>
+            <span class="n">total_cf</span> <span class="o">=</span> <span class="n">cf_and</span><span class="p">(</span><span class="n">total_cf</span><span class="p">,</span> <span class="n">cf</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">cf_true</span><span class="p">(</span><span class="n">total_cf</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">CF</span><span class="o">.</span><span class="n">false</span>
+        <span class="k">return</span> <span class="n">total_cf</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-72'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-72'>#</a>
+      </div>
+      <p><a id="apply"></a></p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">instances</span><span class="p">,</span> <span class="n">find_out</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">track</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-73'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-73'>#</a>
+      </div>
+      <p><strong>apply</strong> tries to use this rule by first determining if it is
+applicable (see <a href="#applicable">Rule.applicable</a>), and if so, combining
+the conclusions with known values to deduce new values.  Returns True if
+this rule applied successfully and False otherwise.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        
+        <span class="k">if</span> <span class="n">track</span><span class="p">:</span>
+            <span class="n">track</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Attempting to apply rule (</span><span class="se">\n</span><span class="si">%s</span><span class="se">\n</span><span class="s">)&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-74'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-74'>#</a>
+      </div>
+      <p>Test the applicability of the rule (the AND of all its premises).</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">cf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cf</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">applicable</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">instances</span><span class="p">,</span> <span class="n">find_out</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cf_true</span><span class="p">(</span><span class="n">cf</span><span class="p">):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Rule (</span><span class="se">\n</span><span class="si">%s</span><span class="se">\n</span><span class="s">) is not applicable (</span><span class="si">%f</span><span class="s"> certainty)&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cf</span><span class="p">))</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Applying rule (</span><span class="se">\n</span><span class="si">%s</span><span class="se">\n</span><span class="s">) with certainty </span><span class="si">%f</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cf</span><span class="p">))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-75'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-75'>#</a>
+      </div>
+      <p>Use each conclusion to derive new values and update certainty factors.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">for</span> <span class="n">conclusion</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">conclusions</span><span class="p">(</span><span class="n">instances</span><span class="p">):</span>
+            <span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">,</span> <span class="n">op</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">conclusion</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Concluding [</span><span class="si">%s</span><span class="s">] with certainty </span><span class="si">%f</span><span class="s">&#39;</span> <span class="o">%</span>
+                         <span class="p">(</span><span class="n">print_condition</span><span class="p">(</span><span class="n">conclusion</span><span class="p">),</span> <span class="n">cf</span><span class="p">))</span>
+            <span class="n">update_cf</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">cf</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="bp">True</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-76'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-76'>#</a>
+      </div>
+      <h2>Using the rules</h2>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-77'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-77'>#</a>
+      </div>
+      <p>Apply rules to derive new facts; returns True if any rule succeeded.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">use_rules</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">instances</span><span class="p">,</span> <span class="n">rules</span><span class="p">,</span> <span class="n">find_out</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">track_rules</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-78'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-78'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-79'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-79'>#</a>
+      </div>
+      <p>Note that we can't simply iterate over the rules and try applying them
+until one succeeds in finding new values--we have to apply them all,
+because any of them could decrease the certainty of a condition, and stopping
+early could lead to fault conclusions.  This differs from Prolog, where
+only new truths are deduced.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    
+    <span class="k">return</span> <span class="nb">any</span><span class="p">([</span><span class="n">rule</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">instances</span><span class="p">,</span> <span class="n">find_out</span><span class="p">,</span> <span class="n">track_rules</span><span class="p">)</span> <span class="k">for</span> <span class="n">rule</span> <span class="ow">in</span> <span class="n">rules</span><span class="p">])</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-80'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-80'>#</a>
+      </div>
+      <hr />
+<p><a id="shell"></a></p>
+<h1>Shell</h1>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-81'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-81'>#</a>
+      </div>
+      <p>The Shell keeps the state of the system, tracking all of the defined contexts,
+parameters, and rules, current instances of contexts and the known values of
+their parameters, and data for user introspection.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-82'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-82'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="n">line</span><span class="p">):</span> <span class="k">print</span> <span class="n">line</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-83'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-83'>#</a>
+      </div>
+      <p>An expert system shell.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">class</span> <span class="nc">Shell</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-84'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-84'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-85'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-85'>#</a>
+      </div>
+      <p>Create a new shell.  The functions read and write are used to get
+input from the user and display information, respectively.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="nb">raw_input</span><span class="p">,</span> <span class="n">write</span><span class="o">=</span><span class="n">write</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-86'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-86'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="bp">self</span><span class="o">.</span><span class="n">read</span> <span class="o">=</span> <span class="n">read</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write</span> <span class="o">=</span> <span class="n">write</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rules</span> <span class="o">=</span> <span class="p">{}</span> <span class="c"># index rules under each param in the conclusions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">contexts</span> <span class="o">=</span> <span class="p">{}</span> <span class="c"># indexed by name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="p">{}</span> <span class="c"># indexed by name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">known</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span> <span class="c"># (param, inst) pairs that have already been determined</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">asked</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span> <span class="c"># (param, inst) pairs that have already been asked</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">known_values</span> <span class="o">=</span> <span class="p">{}</span> <span class="c"># dict mapping (param, inst) to a list of (val, cf) pairs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_inst</span> <span class="o">=</span> <span class="bp">None</span> <span class="c"># the instance under consideration</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instances</span> <span class="o">=</span> <span class="p">{}</span> <span class="c"># dict mapping ctx_name -&gt; most recent instance of ctx</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_rule</span> <span class="o">=</span> <span class="bp">None</span> <span class="c"># track the current rule for introspection</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-87'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-87'>#</a>
+      </div>
+      <p>Clear per-problem state.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-88'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-88'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="bp">self</span><span class="o">.</span><span class="n">known</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">asked</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">known_values</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_inst</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_rule</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instances</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-89'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-89'>#</a>
+      </div>
+      <p>Define a rule.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">define_rule</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rule</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-90'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-90'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">for</span> <span class="n">param</span><span class="p">,</span> <span class="n">ctx</span><span class="p">,</span> <span class="n">op</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">rule</span><span class="o">.</span><span class="n">raw_conclusions</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rules</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rule</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-91'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-91'>#</a>
+      </div>
+      <p>Define a context.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">define_context</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-92'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-92'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="bp">self</span><span class="o">.</span><span class="n">contexts</span><span class="p">[</span><span class="n">ctx</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">ctx</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-93'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-93'>#</a>
+      </div>
+      <p>Define a parameter.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">define_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-94'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-94'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">param</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">param</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-95'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-95'>#</a>
+      </div>
+      <p>Get all of the rules that can deduce values of the param parameter.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">get_rules</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-96'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-96'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rules</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="p">[])</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-97'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-97'>#</a>
+      </div>
+      <p>Create a new instance of the context with the given name.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">instantiate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx_name</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-98'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-98'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">inst</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">contexts</span><span class="p">[</span><span class="n">ctx_name</span><span class="p">]</span><span class="o">.</span><span class="n">instantiate</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_inst</span> <span class="o">=</span> <span class="n">inst</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instances</span><span class="p">[</span><span class="n">ctx_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">inst</span>
+        <span class="k">return</span> <span class="n">inst</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-99'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-99'>#</a>
+      </div>
+      <p>Get the Parameter object with the given name.  Creates a new Parameter
+if one hasn't been defined previously.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">get_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-100'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-100'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">name</span><span class="p">))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-101'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-101'>#</a>
+      </div>
+      <h2>User input and introspection</h2>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-102'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-102'>#</a>
+      </div>
+      <p>Emycin interacts with users to gather information and print results.
+While using the shell, the user will be asked questions to support reasoning,
+and they have the option of asking the system what it is doing and why.  We
+offer some support for user interaction:</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    
+    <span class="n">HELP</span> <span class="o">=</span> <span class="s">&quot;&quot;&quot;Type one of the following:</span>
+<span class="s">?       - to see possible answers for this parameter</span>
+<span class="s">rule    - to show the current rule</span>
+<span class="s">why     - to see why this question is asked</span>
+<span class="s">help    - to show this message</span>
+<span class="s">unknown - if the answer to this question is not known</span>
+<span class="s">&lt;val&gt;   - a single definite answer to the question</span>
+<span class="s">&lt;val1&gt; &lt;cf1&gt; [, &lt;val2&gt; &lt;cf2&gt;, ...]</span>
+<span class="s">        - if there are multiple answers with associated certainty factors.&quot;&quot;&quot;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-103'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-103'>#</a>
+      </div>
+      <p>Get values from the user for the param parameter of inst.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">ask_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-104'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-104'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        
+        <span class="k">if</span> <span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">asked</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Getting user input for </span><span class="si">%s</span><span class="s"> of </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">))</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">asked</span><span class="o">.</span><span class="n">add</span><span class="p">((</span><span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">))</span>
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="n">resp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s">&#39;What is the </span><span class="si">%s</span><span class="s"> of </span><span class="si">%s</span><span class="s">-</span><span class="si">%d</span><span class="s">? &#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">inst</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">resp</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">resp</span> <span class="o">==</span> <span class="s">&#39;unknown&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">elif</span> <span class="n">resp</span> <span class="o">==</span> <span class="s">&#39;help&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">Shell</span><span class="o">.</span><span class="n">HELP</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-105'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-105'>#</a>
+      </div>
+      <p>The <code>why</code>, <code>rule</code>, and <code>?</code> commands allow the user to ask
+Emycin why it is asking a question, which rule it is currently
+applying, and what type of answer is expected from a question.
+Together, these commands offer an introspection capability.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            
+            <span class="k">elif</span> <span class="n">resp</span> <span class="o">==</span> <span class="s">&#39;why&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">print_why</span><span class="p">(</span><span class="n">param</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">resp</span> <span class="o">==</span> <span class="s">&#39;rule&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_rule</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">resp</span> <span class="o">==</span> <span class="s">&#39;?&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> must be of type </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span>
+                           <span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_param</span><span class="p">(</span><span class="n">param</span><span class="p">)</span><span class="o">.</span><span class="n">type_string</span><span class="p">()))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-106'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-106'>#</a>
+      </div>
+      <p>Read the value and store it.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="k">else</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">val</span><span class="p">,</span> <span class="n">cf</span> <span class="ow">in</span> <span class="n">parse_reply</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_param</span><span class="p">(</span><span class="n">param</span><span class="p">),</span> <span class="n">resp</span><span class="p">):</span>
+                        <span class="n">update_cf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">known_values</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">cf</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="bp">True</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;Invalid response. Type ? to see legal ones.&#39;</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-107'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-107'>#</a>
+      </div>
+      <p>Explain to the user why a question is being asked; that is, show the
+rule that the reasoner is currently trying to apply.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">print_why</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-108'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-108'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;Why is the value of </span><span class="si">%s</span><span class="s"> being asked for?&#39;</span> <span class="o">%</span> <span class="n">param</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_rule</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;initial&#39;</span><span class="p">,</span> <span class="s">&#39;goal&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> is one of the </span><span class="si">%s</span><span class="s"> parameters.&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_rule</span><span class="p">))</span>
+            <span class="k">return</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-109'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-109'>#</a>
+      </div>
+      <p>Determine which premises are already satisfied and which are under
+evaluation.  This explains why a question is being asked: to satisfy
+one of the unsatisfied premises.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">known</span><span class="p">,</span> <span class="n">unknown</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">premise</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_rule</span><span class="o">.</span><span class="n">premises</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">instances</span><span class="p">):</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="n">get_vals</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">known_values</span><span class="p">,</span> <span class="n">premise</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">premise</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">cf_true</span><span class="p">(</span><span class="n">eval_condition</span><span class="p">(</span><span class="n">premise</span><span class="p">,</span> <span class="n">vals</span><span class="p">)):</span>
+                <span class="n">known</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">premise</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">unknown</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">premise</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">known</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;It is known that:&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">condition</span> <span class="ow">in</span> <span class="n">known</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">print_condition</span><span class="p">(</span><span class="n">condition</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;Therefore,&#39;</span><span class="p">)</span>
+        
+        <span class="n">rule</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_rule</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+        <span class="n">rule</span><span class="o">.</span><span class="n">raw_premises</span> <span class="o">=</span> <span class="n">unknown</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">rule</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-110'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-110'>#</a>
+      </div>
+      <p>Track the rule under consideration for user introspection.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">_set_current_rule</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rule</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-111'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-111'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="bp">self</span><span class="o">.</span><span class="n">current_rule</span> <span class="o">=</span> <span class="n">rule</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-112'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-112'>#</a>
+      </div>
+      <h2>Backwards-chaining</h2>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-113'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-113'>#</a>
+      </div>
+      <p>Our reasoner applies backwards-chaining to deduce new values for goal
+parameters.  Given an instance and a parameter, it tries to find a value
+for that parameter by finding all rules that can deduce that parameter
+and trying to apply them.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-114'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-114'>#</a>
+      </div>
+      <p><a id="find_out"></a></p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">find_out</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-115'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-115'>#</a>
+      </div>
+      <p>Use rules and user input to determine possible values for (param, inst).
+Returns True if a value was found, and False otherwise.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">inst</span> <span class="o">=</span> <span class="n">inst</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_inst</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">known</span><span class="p">:</span> <span class="c"># return early if we already know this value</span>
+            <span class="k">return</span> <span class="bp">True</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-116'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-116'>#</a>
+      </div>
+      <p>To apply rules to find a value for the param parameter of inst, we
+retrieve the rules that can deduce param values.  This is backwards
+chaining: to reach a goal, we find rules that can satisfy that goal,
+and try to apply them (see <a href="#apply">Rule.apply</a>).  This function,
+find_out, is used recursively by rule application to satisfy rule
+premises.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-117'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-117'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">def</span> <span class="nf">rules</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">use_rules</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">known_values</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">instances</span><span class="p">,</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">get_rules</span><span class="p">(</span><span class="n">param</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_out</span><span class="p">,</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">_set_current_rule</span><span class="p">)</span>
+
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Finding out </span><span class="si">%s</span><span class="s"> of </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-118'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-118'>#</a>
+      </div>
+      <p>Some parameters are ask_first parameters, which means we should ask
+the user for their values before applying rules.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_param</span><span class="p">(</span><span class="n">param</span><span class="p">)</span><span class="o">.</span><span class="n">ask_first</span><span class="p">:</span>
+            <span class="n">success</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ask_values</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">)</span> <span class="ow">or</span> <span class="n">rules</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">success</span> <span class="o">=</span> <span class="n">rules</span><span class="p">()</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">ask_values</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">success</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">known</span><span class="o">.</span><span class="n">add</span><span class="p">((</span><span class="n">param</span><span class="p">,</span> <span class="n">inst</span><span class="p">))</span> <span class="c"># Remember that we already know this value</span>
+        <span class="k">return</span> <span class="n">success</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-119'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-119'>#</a>
+      </div>
+      <h2>Execution</h2>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-120'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-120'>#</a>
+      </div>
+      <p>After contexts, parameters, and rules have been defined, reasoning begins
+by specifying a list of contexts with initial_data and goal lists to the
+<code>execute</code> function.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-121'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-121'>#</a>
+      </div>
+      <p><a id="execute"></a></p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context_names</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-122'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-122'>#</a>
+      </div>
+      <p>Gather the goal data for each named context and report the findings.
+The system attempts to gather the initial data specified for the context
+before attempting to gather the goal data.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Beginning data-gathering for </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">context_names</span><span class="p">))</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;Beginning execution. For help answering questions, type &quot;help&quot;.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">context_names</span><span class="p">:</span>
+            <span class="n">ctx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">contexts</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">instantiate</span><span class="p">(</span><span class="n">name</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-123'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-123'>#</a>
+      </div>
+      <p>Gather initial data.  This stage is one of the features that
+differentiates Emycin from Prolog: the user can specify that some
+data should be collected before reasoning about the goals takes
+place.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="bp">self</span><span class="o">.</span><span class="n">_set_current_rule</span><span class="p">(</span><span class="s">&#39;initial&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">ctx</span><span class="o">.</span><span class="n">initial_data</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">find_out</span><span class="p">(</span><span class="n">param</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-124'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-124'>#</a>
+      </div>
+      <p>Try to collect all of the goal data.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="bp">self</span><span class="o">.</span><span class="n">_set_current_rule</span><span class="p">(</span><span class="s">&#39;goal&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">ctx</span><span class="o">.</span><span class="n">goals</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">find_out</span><span class="p">(</span><span class="n">param</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-125'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-125'>#</a>
+      </div>
+      <p>Record findings.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="k">if</span> <span class="n">ctx</span><span class="o">.</span><span class="n">goals</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">ctx</span><span class="o">.</span><span class="n">goals</span><span class="p">:</span>
+                    <span class="n">result</span><span class="p">[</span><span class="n">param</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_vals</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">known_values</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_inst</span><span class="p">)</span>
+                <span class="n">results</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_inst</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
+            
+        <span class="k">return</span> <span class="n">results</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-126'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-126'>#</a>
+      </div>
+      <p>Returns a list of (value, cf) pairs for the Parameter param from a text
+reply.  Expected a single value (with an implicit CF of true) or a list of
+value/cf pairs val1 cf1, val2 cf2, ....</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">parse_reply</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">reply</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-127'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-127'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="n">reply</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">vals</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">reply</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">):</span>
+            <span class="n">val</span><span class="p">,</span> <span class="n">cf</span> <span class="o">=</span> <span class="n">pair</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">)</span>
+            <span class="n">vals</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">param</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">val</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">cf</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="n">vals</span>
+    <span class="k">return</span> <span class="p">[(</span><span class="n">param</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">reply</span><span class="p">),</span> <span class="n">CF</span><span class="o">.</span><span class="n">true</span><span class="p">)]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-128'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-128'>#</a>
+      </div>
+      <hr />
+<h1>Conclusion</h1>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-129'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-129'>#</a>
+      </div>
+      <p>Emycin provides a framework for building expert systems that use backwards
+chaining rule-based reasoning, certainty factors to represent uncertainty
+instead of absolute truth, and introspection facilities.  However, it is just
+a shell, and should be integrated into a larger system to present a more
+polished interface to experts and users.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-130'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-130'>#</a>
+      </div>
+      <p>For an example of such a system (although rudimentary), see
+<a href="examples/emycin/mycin.html">Mycin</a>.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">import</span> <span class="nn">logging</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>

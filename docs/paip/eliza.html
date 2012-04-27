@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>eliza.py</title>
+  <link rel="stylesheet" href="../pycco.css">
+</head>
+<body>
+<div id="background"></div>
+<div id='container'>
+  
+  <div class='section'>
+    <div class='docs'><h1>eliza.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      <p><strong>Eliza</strong> is a pattern-matching automated psychiatrist.  Given a set of rules
+in the form of input/output patterns, Eliza will attempt to recognize user input
+phrases and generate relevant psychobabble responses.</p>
+<p>Each rule is specified by an input pattern and a list of output patterns.  A
+pattern is a sentence consisting of space-separated words and variables.  Input
+pattern variables come in two forms: single variables and segment variables;
+single variables (which take the form <code>?x</code>) match a single word, while segment
+variables (which take the form <code>?*x</code>) can match a phrase.  Output pattern
+variables are only single variables.  The variable names contained in an input
+pattern should be the same as those in the corresponding output pattern, and
+each segment variable <code>?*x</code> in an input pattern corresponds to the single
+variable <code>?x</code> in the output pattern.</p>
+<p>The conversation proceeds by reading a sentence from the user, searching through
+the rules to find an input pattern that matches, replacing variables in the
+output pattern, and printing the results to the user.</p>
+<p>For examples of using this scheme, see the following programs:</p>
+<ul>
+<li><a href="examples/eliza/eliza.html">Eliza</a></li>
+<li><a href="examples/eliza/support.html">Automated technical support system</a></li>
+</ul>
+<p>This implementation is inspired by Chapter 5 of "Paradigms of Artificial
+Intelligence Programming" by Peter Norvig.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">string</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      <h1>Talking to the computer</h1>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      <p>Have a conversation with a user.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">interact</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">rules</span><span class="p">,</span> <span class="n">default_responses</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      <p>Read a line, process it, and print the results until no input remains.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      <p>Remove the punctuation from the input and convert to upper-case
+to simplify matching.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="nb">input</span> <span class="o">=</span> <span class="n">remove_punct</span><span class="p">(</span><span class="nb">raw_input</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">input</span><span class="p">:</span>
+                <span class="k">continue</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="k">print</span> <span class="n">respond</span><span class="p">(</span><span class="n">rules</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">default_responses</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-6'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-6'>#</a>
+      </div>
+      <p>Respond to an input sentence according to the given rules.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">respond</span><span class="p">(</span><span class="n">rules</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">default_responses</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-7'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-7'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="nb">input</span> <span class="o">=</span> <span class="nb">input</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="c"># match_pattern expects a list of tokens</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-8'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-8'>#</a>
+      </div>
+      <p>Look through rules and find input patterns that matches the input.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">matching_rules</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">pattern</span><span class="p">,</span> <span class="n">transforms</span> <span class="ow">in</span> <span class="n">rules</span><span class="p">:</span>
+        <span class="n">pattern</span> <span class="o">=</span> <span class="n">pattern</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        <span class="n">replacements</span> <span class="o">=</span> <span class="n">match_pattern</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="nb">input</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">replacements</span><span class="p">:</span>
+            <span class="n">matching_rules</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">transforms</span><span class="p">,</span> <span class="n">replacements</span><span class="p">))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-9'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-9'>#</a>
+      </div>
+      <p>When rules are found, choose one and one of its responses at random.
+If no rule applies, we use the default rule.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="n">matching_rules</span><span class="p">:</span>
+        <span class="n">responses</span><span class="p">,</span> <span class="n">replacements</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">matching_rules</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">responses</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">replacements</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">default_responses</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-10'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-10'>#</a>
+      </div>
+      <p>Replace the variables in the output pattern with the values matched from
+the input string.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">for</span> <span class="n">variable</span><span class="p">,</span> <span class="n">replacement</span> <span class="ow">in</span> <span class="n">replacements</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">replacement</span> <span class="o">=</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">switch_viewpoint</span><span class="p">(</span><span class="n">replacement</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">replacement</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;?&#39;</span> <span class="o">+</span> <span class="n">variable</span><span class="p">,</span> <span class="n">replacement</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">response</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-11'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-11'>#</a>
+      </div>
+      <h1>Pattern matching</h1>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-12'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-12'>#</a>
+      </div>
+      <p>Determine if the input string matches the given pattern.</p>
+<p>Expects pattern and input to be lists of tokens, where each token is a word
+or a variable.</p>
+<p>Returns a dictionary containing the bindings of variables in the input
+pattern to values in the input string, or False when the input doesn't match
+the pattern.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">match_pattern</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">bindings</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-13'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-13'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-14'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-14'>#</a>
+      </div>
+      <p>Check to see if matching failed before we got here.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="n">bindings</span> <span class="ow">is</span> <span class="bp">False</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-15'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-15'>#</a>
+      </div>
+      <p>When the pattern and the input are identical, we have a match, and
+no more bindings need to be found.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="n">pattern</span> <span class="o">==</span> <span class="nb">input</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">bindings</span>
+
+    <span class="n">bindings</span> <span class="o">=</span> <span class="n">bindings</span> <span class="ow">or</span> <span class="p">{}</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-16'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-16'>#</a>
+      </div>
+      <p>Match input and pattern according to their types.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="n">is_segment</span><span class="p">(</span><span class="n">pattern</span><span class="p">):</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="n">pattern</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c"># segment variable is the first token</span>
+        <span class="n">var</span> <span class="o">=</span> <span class="n">token</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span> <span class="c"># segment variable is of the form ?*x</span>
+        <span class="k">return</span> <span class="n">match_segment</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">pattern</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="nb">input</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">is_variable</span><span class="p">(</span><span class="n">pattern</span><span class="p">):</span>
+        <span class="n">var</span> <span class="o">=</span> <span class="n">pattern</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="c"># single variables are of the form ?foo</span>
+        <span class="k">return</span> <span class="n">match_variable</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="p">[</span><span class="nb">input</span><span class="p">],</span> <span class="n">bindings</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">contains_tokens</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span> <span class="ow">and</span> <span class="n">contains_tokens</span><span class="p">(</span><span class="nb">input</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-17'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-17'>#</a>
+      </div>
+      <p>Recurse:
+try to match the first tokens of both pattern and input.  The bindings
+that result are used to match the remainder of both lists.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">return</span> <span class="n">match_pattern</span><span class="p">(</span><span class="n">pattern</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span>
+                             <span class="nb">input</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span>
+                             <span class="n">match_pattern</span><span class="p">(</span><span class="n">pattern</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">input</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">bindings</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-18'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-18'>#</a>
+      </div>
+      <p>Match the segment variable against the input.</p>
+<p>pattern and input should be lists of tokens.</p>
+<p>Looks for a substring of input that begins at start and is immediately
+followed by the first word in pattern.  If such a substring exists,
+matching continues recursively and the resulting bindings are returned;
+otherwise returns False.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">match_segment</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">pattern</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">bindings</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-19'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-19'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-20'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-20'>#</a>
+      </div>
+      <p>If there are no words in pattern following var, we can just match var
+to the remainder of the input.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="ow">not</span> <span class="n">pattern</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">match_variable</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-21'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-21'>#</a>
+      </div>
+      <p>Get the segment boundary word and look for the first occurrence in
+the input starting from index start.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">word</span> <span class="o">=</span> <span class="n">pattern</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="n">start</span> <span class="o">+</span> <span class="nb">input</span><span class="p">[</span><span class="n">start</span><span class="p">:]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-22'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-22'>#</a>
+      </div>
+      <p>When the boundary word doesn't appear in the input, no match.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">return</span> <span class="bp">False</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-23'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-23'>#</a>
+      </div>
+      <p>Match the located substring to the segment variable and recursively
+pattern match using the resulting bindings.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">var_match</span> <span class="o">=</span> <span class="n">match_variable</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="nb">input</span><span class="p">[:</span><span class="n">pos</span><span class="p">],</span> <span class="nb">dict</span><span class="p">(</span><span class="n">bindings</span><span class="p">))</span>
+    <span class="n">match</span> <span class="o">=</span> <span class="n">match_pattern</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="nb">input</span><span class="p">[</span><span class="n">pos</span><span class="p">:],</span> <span class="n">var_match</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-24'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-24'>#</a>
+      </div>
+      <p>If pattern matching fails with this substring, try a longer one.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="ow">not</span> <span class="n">match</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">match_segment</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">pattern</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">bindings</span><span class="p">,</span> <span class="n">start</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">match</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-25'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-25'>#</a>
+      </div>
+      <p>Bind the input to the variable and update the bindings.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">match_variable</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">replacement</span><span class="p">,</span> <span class="n">bindings</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-26'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-26'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">binding</span> <span class="o">=</span> <span class="n">bindings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">binding</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-27'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-27'>#</a>
+      </div>
+      <p>The variable isn't yet bound.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">bindings</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">var</span><span class="p">:</span> <span class="n">replacement</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">bindings</span>
+    <span class="k">if</span> <span class="n">replacement</span> <span class="o">==</span> <span class="n">bindings</span><span class="p">[</span><span class="n">var</span><span class="p">]:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-28'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-28'>#</a>
+      </div>
+      <p>The variable is already bound to that input.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">return</span> <span class="n">bindings</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-29'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-29'>#</a>
+      </div>
+      <p>The variable is already bound, but not to that input--fail.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">return</span> <span class="bp">False</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-30'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-30'>#</a>
+      </div>
+      <h1>Pattern matching utilities</h1>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-31'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-31'>#</a>
+      </div>
+      <p>Test if pattern is a list of subpatterns.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">contains_tokens</span><span class="p">(</span><span class="n">pattern</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-32'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-32'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">list</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-33'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-33'>#</a>
+      </div>
+      <p>Test if pattern is a single variable.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">is_variable</span><span class="p">(</span><span class="n">pattern</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-34'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-34'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">return</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">str</span>
+            <span class="ow">and</span> <span class="n">pattern</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;?&#39;</span>
+            <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span>
+            <span class="ow">and</span> <span class="n">pattern</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s">&#39;*&#39;</span>
+            <span class="ow">and</span> <span class="n">pattern</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">string</span><span class="o">.</span><span class="n">letters</span>
+            <span class="ow">and</span> <span class="s">&#39; &#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">pattern</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-35'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-35'>#</a>
+      </div>
+      <p>Test if pattern begins with a segment variable.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">is_segment</span><span class="p">(</span><span class="n">pattern</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-36'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-36'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">return</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">list</span>
+            <span class="ow">and</span> <span class="n">pattern</span>
+            <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">pattern</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">2</span>
+            <span class="ow">and</span> <span class="n">pattern</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;?&#39;</span>
+            <span class="ow">and</span> <span class="n">pattern</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;*&#39;</span>
+            <span class="ow">and</span> <span class="n">pattern</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="ow">in</span> <span class="n">string</span><span class="o">.</span><span class="n">letters</span>
+            <span class="ow">and</span> <span class="s">&#39; &#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">pattern</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-37'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-37'>#</a>
+      </div>
+      <h1>Translating user input</h1>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-38'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-38'>#</a>
+      </div>
+      <p>Replace word with rep if (word, rep) occurs in replacements.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">replace</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">replacements</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-39'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-39'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">for</span> <span class="n">old</span><span class="p">,</span> <span class="n">new</span> <span class="ow">in</span> <span class="n">replacements</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">word</span> <span class="o">==</span> <span class="n">old</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">new</span>
+    <span class="k">return</span> <span class="n">word</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-40'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-40'>#</a>
+      </div>
+      <p>Swap some common pronouns for interacting with a robot.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">switch_viewpoint</span><span class="p">(</span><span class="n">words</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-41'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-41'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">replacements</span> <span class="o">=</span> <span class="p">[(</span><span class="s">&#39;I&#39;</span><span class="p">,</span> <span class="s">&#39;YOU&#39;</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s">&#39;YOU&#39;</span><span class="p">,</span> <span class="s">&#39;I&#39;</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s">&#39;ME&#39;</span><span class="p">,</span> <span class="s">&#39;YOU&#39;</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s">&#39;MY&#39;</span><span class="p">,</span> <span class="s">&#39;YOUR&#39;</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s">&#39;AM&#39;</span><span class="p">,</span> <span class="s">&#39;ARE&#39;</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s">&#39;ARE&#39;</span><span class="p">,</span> <span class="s">&#39;AM&#39;</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">replace</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">replacements</span><span class="p">)</span> <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span><span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-42'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-42'>#</a>
+      </div>
+      <p>Remove common punctuation marks.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">remove_punct</span><span class="p">(</span><span class="n">string</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-43'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-43'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="n">string</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;?&#39;</span><span class="p">):</span>
+        <span class="n">string</span> <span class="o">=</span> <span class="n">string</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">string</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;;&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;!&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">))</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>mycin.py</title>
+  <link rel="stylesheet" href="../../../pycco.css">
+</head>
+<body>
+<div id="background"></div>
+<div id='container'>
+  
+  <div class='section'>
+    <div class='docs'><h1>mycin.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      <p>Mycin: a medical expert system.</p>
+<p>This is a small example of an expert system that uses the
+<a href="../../emycin.html">Emycin</a> shell.  It defines a few contexts, parameters, and
+rules, and presents a rudimentary user interface to collect data about an
+infection in order to determine the identity of the infecting organism.</p>
+<p>In a more polished system, we could:</p>
+<ul>
+<li>define and use a domain-specific language for the expert;</li>
+<li>present a more polished interface, perhaps a GUI, for user interaction;</li>
+<li>offer a data serialization mechanism to save state between sessions.</li>
+</ul>
+<p>This implementation comes from chapter 16 of Peter Norvig's "Paradigms of
+Artificial Intelligence Programming.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      <h2>Utility functions</h2>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      <p>Function for testing value equality.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">eq</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">return</span> <span class="n">x</span> <span class="o">==</span> <span class="n">y</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      <p>Function for reading True or False from a string.  Raises an error if the
+string is not True or False.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">boolean</span><span class="p">(</span><span class="n">string</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="n">string</span> <span class="o">==</span> <span class="s">&#39;True&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">True</span>
+    <span class="k">if</span> <span class="n">string</span> <span class="o">==</span> <span class="s">&#39;False&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;bool must be True or False&#39;</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-6'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-6'>#</a>
+      </div>
+      <h2>Setting up initial data</h2>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-7'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-7'>#</a>
+      </div>
+      <p>Here we define the contexts, parameters, and rules for our system.  This is
+the job of the expert, and in a more polished system, we would define and use
+a domain-specific language to make this easier.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-8'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-8'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">define_contexts</span><span class="p">(</span><span class="n">sh</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-9'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-9'>#</a>
+      </div>
+      <p>Patient and Culture have some initial goals--parameters that should be
+collected before reasoning begins.  This might be useful in some domains;
+for example, this might be legally required in a medical system.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">sh</span><span class="o">.</span><span class="n">define_context</span><span class="p">(</span><span class="n">Context</span><span class="p">(</span><span class="s">&#39;patient&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">,</span> <span class="s">&#39;sex&#39;</span><span class="p">,</span> <span class="s">&#39;age&#39;</span><span class="p">]))</span>
+    <span class="n">sh</span><span class="o">.</span><span class="n">define_context</span><span class="p">(</span><span class="n">Context</span><span class="p">(</span><span class="s">&#39;culture&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;site&#39;</span><span class="p">,</span> <span class="s">&#39;days-old&#39;</span><span class="p">]))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-10'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-10'>#</a>
+      </div>
+      <p>Finding the identity of the organism is our goal.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">sh</span><span class="o">.</span><span class="n">define_context</span><span class="p">(</span><span class="n">Context</span><span class="p">(</span><span class="s">&#39;organism&#39;</span><span class="p">,</span> <span class="n">goals</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;identity&#39;</span><span class="p">]))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-11'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-11'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">define_params</span><span class="p">(</span><span class="n">sh</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-12'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-12'>#</a>
+      </div>
+      <p>Patient params</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">sh</span><span class="o">.</span><span class="n">define_param</span><span class="p">(</span><span class="n">Parameter</span><span class="p">(</span><span class="s">&#39;name&#39;</span><span class="p">,</span> <span class="s">&#39;patient&#39;</span><span class="p">,</span> <span class="n">cls</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">ask_first</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span>
+    <span class="n">sh</span><span class="o">.</span><span class="n">define_param</span><span class="p">(</span><span class="n">Parameter</span><span class="p">(</span><span class="s">&#39;sex&#39;</span><span class="p">,</span> <span class="s">&#39;patient&#39;</span><span class="p">,</span> <span class="n">enum</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;M&#39;</span><span class="p">,</span> <span class="s">&#39;F&#39;</span><span class="p">],</span> <span class="n">ask_first</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span>
+    <span class="n">sh</span><span class="o">.</span><span class="n">define_param</span><span class="p">(</span><span class="n">Parameter</span><span class="p">(</span><span class="s">&#39;age&#39;</span><span class="p">,</span> <span class="s">&#39;patient&#39;</span><span class="p">,</span> <span class="n">cls</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">ask_first</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span>
+    <span class="n">sh</span><span class="o">.</span><span class="n">define_param</span><span class="p">(</span><span class="n">Parameter</span><span class="p">(</span><span class="s">&#39;burn&#39;</span><span class="p">,</span> <span class="s">&#39;patient&#39;</span><span class="p">,</span>
+                              <span class="n">enum</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;no&#39;</span><span class="p">,</span> <span class="s">&#39;mild&#39;</span><span class="p">,</span> <span class="s">&#39;serious&#39;</span><span class="p">],</span> <span class="n">ask_first</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span>
+    <span class="n">sh</span><span class="o">.</span><span class="n">define_param</span><span class="p">(</span><span class="n">Parameter</span><span class="p">(</span><span class="s">&#39;compromised-host&#39;</span><span class="p">,</span> <span class="s">&#39;patient&#39;</span><span class="p">,</span> <span class="n">cls</span><span class="o">=</span><span class="n">boolean</span><span class="p">))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-13'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-13'>#</a>
+      </div>
+      <p>Culture params</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">sh</span><span class="o">.</span><span class="n">define_param</span><span class="p">(</span><span class="n">Parameter</span><span class="p">(</span><span class="s">&#39;site&#39;</span><span class="p">,</span> <span class="s">&#39;culture&#39;</span><span class="p">,</span> <span class="n">enum</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;blood&#39;</span><span class="p">],</span> <span class="n">ask_first</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span>
+    <span class="n">sh</span><span class="o">.</span><span class="n">define_param</span><span class="p">(</span><span class="n">Parameter</span><span class="p">(</span><span class="s">&#39;days-old&#39;</span><span class="p">,</span> <span class="s">&#39;culture&#39;</span><span class="p">,</span> <span class="n">cls</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">ask_first</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-14'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-14'>#</a>
+      </div>
+      <p>Organism params</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">organisms</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;pseudomonas&#39;</span><span class="p">,</span> <span class="s">&#39;klebsiella&#39;</span><span class="p">,</span> <span class="s">&#39;enterobacteriaceae&#39;</span><span class="p">,</span>
+                 <span class="s">&#39;staphylococcus&#39;</span><span class="p">,</span> <span class="s">&#39;bacteroides&#39;</span><span class="p">,</span> <span class="s">&#39;streptococcus&#39;</span><span class="p">]</span>
+    <span class="n">sh</span><span class="o">.</span><span class="n">define_param</span><span class="p">(</span><span class="n">Parameter</span><span class="p">(</span><span class="s">&#39;identity&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span> <span class="n">enum</span><span class="o">=</span><span class="n">organisms</span><span class="p">,</span> <span class="n">ask_first</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span>
+    <span class="n">sh</span><span class="o">.</span><span class="n">define_param</span><span class="p">(</span><span class="n">Parameter</span><span class="p">(</span><span class="s">&#39;gram&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span>
+                              <span class="n">enum</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;acid-fast&#39;</span><span class="p">,</span> <span class="s">&#39;pos&#39;</span><span class="p">,</span> <span class="s">&#39;neg&#39;</span><span class="p">],</span> <span class="n">ask_first</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span>
+    <span class="n">sh</span><span class="o">.</span><span class="n">define_param</span><span class="p">(</span><span class="n">Parameter</span><span class="p">(</span><span class="s">&#39;morphology&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span> <span class="n">enum</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;rod&#39;</span><span class="p">,</span> <span class="s">&#39;coccus&#39;</span><span class="p">]))</span>
+    <span class="n">sh</span><span class="o">.</span><span class="n">define_param</span><span class="p">(</span><span class="n">Parameter</span><span class="p">(</span><span class="s">&#39;aerobicity&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span> <span class="n">enum</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;aerobic&#39;</span><span class="p">,</span> <span class="s">&#39;anaerobic&#39;</span><span class="p">]))</span>
+    <span class="n">sh</span><span class="o">.</span><span class="n">define_param</span><span class="p">(</span><span class="n">Parameter</span><span class="p">(</span><span class="s">&#39;growth-conformation&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span>
+                              <span class="n">enum</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;chains&#39;</span><span class="p">,</span> <span class="s">&#39;pairs&#39;</span><span class="p">,</span> <span class="s">&#39;clumps&#39;</span><span class="p">]))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-15'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-15'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">define_rules</span><span class="p">(</span><span class="n">sh</span><span class="p">):</span>
+    <span class="n">sh</span><span class="o">.</span><span class="n">define_rule</span><span class="p">(</span><span class="n">Rule</span><span class="p">(</span><span class="mi">52</span><span class="p">,</span>
+                        <span class="p">[(</span><span class="s">&#39;site&#39;</span><span class="p">,</span> <span class="s">&#39;culture&#39;</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="s">&#39;blood&#39;</span><span class="p">),</span>
+                         <span class="p">(</span><span class="s">&#39;gram&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="s">&#39;neg&#39;</span><span class="p">),</span>
+                         <span class="p">(</span><span class="s">&#39;morphology&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="s">&#39;rod&#39;</span><span class="p">),</span>
+                         <span class="p">(</span><span class="s">&#39;burn&#39;</span><span class="p">,</span> <span class="s">&#39;patient&#39;</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="s">&#39;serious&#39;</span><span class="p">)],</span>
+                        <span class="p">[(</span><span class="s">&#39;identity&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="s">&#39;pseudomonas&#39;</span><span class="p">)],</span>
+                        <span class="mf">0.4</span><span class="p">))</span>
+    <span class="n">sh</span><span class="o">.</span><span class="n">define_rule</span><span class="p">(</span><span class="n">Rule</span><span class="p">(</span><span class="mi">71</span><span class="p">,</span>
+                        <span class="p">[(</span><span class="s">&#39;gram&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="s">&#39;pos&#39;</span><span class="p">),</span>
+                         <span class="p">(</span><span class="s">&#39;morphology&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="s">&#39;coccus&#39;</span><span class="p">),</span>
+                         <span class="p">(</span><span class="s">&#39;growth-conformation&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="s">&#39;clumps&#39;</span><span class="p">)],</span>
+                        <span class="p">[(</span><span class="s">&#39;identity&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="s">&#39;staphylococcus&#39;</span><span class="p">)],</span>
+                        <span class="mf">0.7</span><span class="p">))</span>
+    <span class="n">sh</span><span class="o">.</span><span class="n">define_rule</span><span class="p">(</span><span class="n">Rule</span><span class="p">(</span><span class="mi">73</span><span class="p">,</span>
+                        <span class="p">[(</span><span class="s">&#39;site&#39;</span><span class="p">,</span> <span class="s">&#39;culture&#39;</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="s">&#39;blood&#39;</span><span class="p">),</span>
+                         <span class="p">(</span><span class="s">&#39;gram&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="s">&#39;neg&#39;</span><span class="p">),</span>
+                         <span class="p">(</span><span class="s">&#39;morphology&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="s">&#39;rod&#39;</span><span class="p">),</span>
+                         <span class="p">(</span><span class="s">&#39;aerobicity&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="s">&#39;anaerobic&#39;</span><span class="p">)],</span>
+                        <span class="p">[(</span><span class="s">&#39;identity&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="s">&#39;bacteroides&#39;</span><span class="p">)],</span>
+                        <span class="mf">0.9</span><span class="p">))</span>
+    <span class="n">sh</span><span class="o">.</span><span class="n">define_rule</span><span class="p">(</span><span class="n">Rule</span><span class="p">(</span><span class="mi">75</span><span class="p">,</span>
+                        <span class="p">[(</span><span class="s">&#39;gram&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="s">&#39;neg&#39;</span><span class="p">),</span>
+                         <span class="p">(</span><span class="s">&#39;morphology&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="s">&#39;rod&#39;</span><span class="p">),</span>
+                         <span class="p">(</span><span class="s">&#39;compromised-host&#39;</span><span class="p">,</span> <span class="s">&#39;patient&#39;</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="bp">True</span><span class="p">)],</span>
+                        <span class="p">[(</span><span class="s">&#39;identity&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="s">&#39;pseudomonas&#39;</span><span class="p">)],</span>
+                        <span class="mf">0.6</span><span class="p">))</span>
+    <span class="n">sh</span><span class="o">.</span><span class="n">define_rule</span><span class="p">(</span><span class="n">Rule</span><span class="p">(</span><span class="mi">107</span><span class="p">,</span>
+                        <span class="p">[(</span><span class="s">&#39;gram&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="s">&#39;neg&#39;</span><span class="p">),</span>
+                         <span class="p">(</span><span class="s">&#39;morphology&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="s">&#39;rod&#39;</span><span class="p">),</span>
+                         <span class="p">(</span><span class="s">&#39;aerobicity&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="s">&#39;aerobic&#39;</span><span class="p">)],</span>
+                        <span class="p">[(</span><span class="s">&#39;identity&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="s">&#39;enterobacteriaceae&#39;</span><span class="p">)],</span>
+                        <span class="mf">0.8</span><span class="p">))</span>
+    <span class="n">sh</span><span class="o">.</span><span class="n">define_rule</span><span class="p">(</span><span class="n">Rule</span><span class="p">(</span><span class="mi">165</span><span class="p">,</span>
+                        <span class="p">[(</span><span class="s">&#39;gram&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="s">&#39;pos&#39;</span><span class="p">),</span>
+                         <span class="p">(</span><span class="s">&#39;morphology&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="s">&#39;coccus&#39;</span><span class="p">),</span>
+                         <span class="p">(</span><span class="s">&#39;growth-conformation&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="s">&#39;chains&#39;</span><span class="p">)],</span>
+                        <span class="p">[(</span><span class="s">&#39;identity&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="s">&#39;streptococcus&#39;</span><span class="p">)],</span>
+                        <span class="mf">0.7</span><span class="p">))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-16'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-16'>#</a>
+      </div>
+      <h2>Running the system</h2>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">paip.emycin</span> <span class="kn">import</span> <span class="n">Parameter</span><span class="p">,</span> <span class="n">Context</span><span class="p">,</span> <span class="n">Rule</span><span class="p">,</span> <span class="n">Shell</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-17'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-17'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">report_findings</span><span class="p">(</span><span class="n">findings</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">inst</span><span class="p">,</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">findings</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">print</span> <span class="s">&#39;Findings for </span><span class="si">%s</span><span class="s">-</span><span class="si">%d</span><span class="s">:&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">inst</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">inst</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">param</span><span class="p">,</span> <span class="n">vals</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">possibilities</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">: </span><span class="si">%f</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">val</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">vals</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
+            <span class="k">print</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">possibilities</span><span class="p">))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-18'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-18'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">sh</span> <span class="o">=</span> <span class="n">Shell</span><span class="p">()</span>
+    <span class="n">define_contexts</span><span class="p">(</span><span class="n">sh</span><span class="p">)</span>
+    <span class="n">define_params</span><span class="p">(</span><span class="n">sh</span><span class="p">)</span>
+    <span class="n">define_rules</span><span class="p">(</span><span class="n">sh</span><span class="p">)</span>
+    <span class="n">report_findings</span><span class="p">(</span><span class="n">sh</span><span class="o">.</span><span class="n">execute</span><span class="p">([</span><span class="s">&#39;patient&#39;</span><span class="p">,</span> <span class="s">&#39;culture&#39;</span><span class="p">,</span> <span class="s">&#39;organism&#39;</span><span class="p">]))</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>

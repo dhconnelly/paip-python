@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>likes.py</title>
+  <link rel="stylesheet" href="../../../pycco.css">
+</head>
+<body>
+<div id="background"></div>
+<div id='container'>
+  
+  <div class='section'>
+    <div class='docs'><h1>likes.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">paip</span> <span class="kn">import</span> <span class="n">logic</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">main</span><span class="p">():</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div><div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      <p>logging.basicConfig(level=logging.DEBUG)</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">db</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="n">kim</span> <span class="o">=</span> <span class="n">logic</span><span class="o">.</span><span class="n">Atom</span><span class="p">(</span><span class="s">&#39;Kim&#39;</span><span class="p">)</span>
+    <span class="n">robin</span> <span class="o">=</span> <span class="n">logic</span><span class="o">.</span><span class="n">Atom</span><span class="p">(</span><span class="s">&#39;Robin&#39;</span><span class="p">)</span>
+    <span class="n">sandy</span> <span class="o">=</span> <span class="n">logic</span><span class="o">.</span><span class="n">Atom</span><span class="p">(</span><span class="s">&#39;Sandy&#39;</span><span class="p">)</span>
+    <span class="n">lee</span> <span class="o">=</span> <span class="n">logic</span><span class="o">.</span><span class="n">Atom</span><span class="p">(</span><span class="s">&#39;Lee&#39;</span><span class="p">)</span>
+    <span class="n">cats</span> <span class="o">=</span> <span class="n">logic</span><span class="o">.</span><span class="n">Atom</span><span class="p">(</span><span class="s">&#39;cats&#39;</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">logic</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="s">&#39;x&#39;</span><span class="p">)</span>
+
+    <span class="n">sandy_likes</span> <span class="o">=</span> <span class="n">logic</span><span class="o">.</span><span class="n">Relation</span><span class="p">(</span><span class="s">&#39;likes&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">sandy</span><span class="p">,</span> <span class="n">x</span><span class="p">))</span>
+    <span class="n">likes_cats</span> <span class="o">=</span> <span class="n">logic</span><span class="o">.</span><span class="n">Relation</span><span class="p">(</span><span class="s">&#39;likes&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">cats</span><span class="p">))</span>
+    <span class="n">sandy_likes_rule</span> <span class="o">=</span> <span class="n">logic</span><span class="o">.</span><span class="n">Clause</span><span class="p">(</span><span class="n">sandy_likes</span><span class="p">,</span> <span class="p">[</span><span class="n">likes_cats</span><span class="p">])</span>
+
+    <span class="n">kim_likes</span> <span class="o">=</span> <span class="n">logic</span><span class="o">.</span><span class="n">Relation</span><span class="p">(</span><span class="s">&#39;likes&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">kim</span><span class="p">,</span> <span class="n">x</span><span class="p">))</span>
+    <span class="n">likes_lee</span> <span class="o">=</span> <span class="n">logic</span><span class="o">.</span><span class="n">Relation</span><span class="p">(</span><span class="s">&#39;likes&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">lee</span><span class="p">))</span>
+    <span class="n">likes_kim</span> <span class="o">=</span> <span class="n">logic</span><span class="o">.</span><span class="n">Relation</span><span class="p">(</span><span class="s">&#39;likes&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">kim</span><span class="p">))</span>
+    <span class="n">kim_likes_rule</span> <span class="o">=</span> <span class="n">logic</span><span class="o">.</span><span class="n">Clause</span><span class="p">(</span><span class="n">kim_likes</span><span class="p">,</span> <span class="p">[</span><span class="n">likes_lee</span><span class="p">,</span> <span class="n">likes_kim</span><span class="p">])</span>
+
+    <span class="n">likes_self</span> <span class="o">=</span> <span class="n">logic</span><span class="o">.</span><span class="n">Clause</span><span class="p">(</span><span class="n">logic</span><span class="o">.</span><span class="n">Relation</span><span class="p">(</span><span class="s">&#39;likes&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">)))</span>
+    <span class="n">klr</span> <span class="o">=</span> <span class="n">logic</span><span class="o">.</span><span class="n">Clause</span><span class="p">(</span><span class="n">logic</span><span class="o">.</span><span class="n">Relation</span><span class="p">(</span><span class="s">&#39;likes&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">kim</span><span class="p">,</span> <span class="n">robin</span><span class="p">)))</span>
+    <span class="n">sll</span> <span class="o">=</span> <span class="n">logic</span><span class="o">.</span><span class="n">Clause</span><span class="p">(</span><span class="n">logic</span><span class="o">.</span><span class="n">Relation</span><span class="p">(</span><span class="s">&#39;likes&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">sandy</span><span class="p">,</span> <span class="n">lee</span><span class="p">)))</span>
+    <span class="n">slk</span> <span class="o">=</span> <span class="n">logic</span><span class="o">.</span><span class="n">Clause</span><span class="p">(</span><span class="n">logic</span><span class="o">.</span><span class="n">Relation</span><span class="p">(</span><span class="s">&#39;likes&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">sandy</span><span class="p">,</span> <span class="n">kim</span><span class="p">)))</span>
+    <span class="n">rlc</span> <span class="o">=</span> <span class="n">logic</span><span class="o">.</span><span class="n">Clause</span><span class="p">(</span><span class="n">logic</span><span class="o">.</span><span class="n">Relation</span><span class="p">(</span><span class="s">&#39;likes&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">robin</span><span class="p">,</span> <span class="n">cats</span><span class="p">)))</span>
+
+    <span class="n">logic</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">sandy_likes_rule</span><span class="p">)</span>
+    <span class="n">logic</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">kim_likes_rule</span><span class="p">)</span>
+    <span class="n">logic</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">likes_self</span><span class="p">)</span>
+    <span class="n">logic</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">klr</span><span class="p">)</span>
+    <span class="n">logic</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">sll</span><span class="p">)</span>
+    <span class="n">logic</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">slk</span><span class="p">)</span>
+    <span class="n">logic</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">rlc</span><span class="p">)</span>
+
+    <span class="k">print</span> <span class="s">&#39;Database:&#39;</span>
+    <span class="k">print</span> <span class="n">db</span>
+    <span class="k">print</span>
+    
+    <span class="n">query</span> <span class="o">=</span> <span class="n">logic</span><span class="o">.</span><span class="n">Relation</span><span class="p">(</span><span class="s">&#39;likes&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">sandy</span><span class="p">,</span> <span class="n">logic</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="s">&#39;who&#39;</span><span class="p">)))</span>
+    <span class="k">print</span> <span class="s">&#39;Query:&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+    <span class="k">print</span>
+
+    <span class="n">logic</span><span class="o">.</span><span class="n">prolog_prove</span><span class="p">([</span><span class="n">query</span><span class="p">],</span> <span class="n">db</span><span class="p">)</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>
