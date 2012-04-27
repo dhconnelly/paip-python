@@ -7,37 +7,46 @@ fantastic textbook "Paradigms of Artificial Intelligence Programming."
 
 ## Overview
 
-This is meant to be a learning resource for beginning AI programmers.  It is no
-longer common for students to have a background in Lisp programming, as many
-universities have replaced Lisp with other languages in introductory programming
-and introductory artificial intelligence courses.  It is my hope that making the
-programs from PAIP available in a commonly-taught language will provide a useful
-hands-on resource for beginning AI students.
+This is meant to be a learning resource for beginning AI programmers.  Although
+PAIP is a fantastic book, it is no longer common for students to have a
+background in Lisp programming, as many universities have replaced Lisp with
+other languages in introductory programming and introductory artificial
+intelligence courses.  It is my hope that making the programs from PAIP
+available in a commonly-taught language will provide a useful hands-on resource
+for beginning AI students.
 
-I am writing these programs while reading through PAIP, so consider this a work
-in progress.  Additionally, I am not at this time focusing on the end-of-chapter
-exercises, which typically propose extensions to the programs to avoid various
-limitations.  I hope that these Python programs are clean translations and don't
-try to force Lisp idioms onto Python.
+The following programs are available, each with annotated source:
 
-You can follow the progress of the project on [Trello][].
+- [General Problem Solver][GPS], means-ends analysis problem solving
+- [Eliza][], a pattern-matching psychiatrist
+- [Search][], a collection of search algorithms
+- [Logic][], a library for logic programming
+- [Prolog][], a basic Prolog interpreter
+- [Emycin][], an expert system shell
+- [Othello][], some game-playing strategies for the Othello board game
+
+Unit tests and some example applications are provided for each of these; see the
+`paip/tests` and `paip/examples` directories or the links from the annotated
+sources.
+
+[GPS]: http://dhconnelly.com/paip-python/paip/gps.html
+[Eliza]: http://dhconnelly.com/paip-python/paip/eliza.html
+[Search]: http://dhconnelly.com/paip-python/paip/search.html
+[Logic]: http://dhconnelly.com/paip-python/paip/logic.html
+[Prolog]: http://dhconnelly.com/paip-python/prolog.html
+[Emycin]: http://dhconnelly.com/paip-python/paip/emycin.html
+[Othello]: http://dhconnelly.com/paip-python/paip/othello.html
 
 
 ## Running
 
 - You need [Python 2.7][]
 - [Download][] the paip-python code.
-- Type `python run_examples.py` and follow the prompts to run the examples.
-- To use the Prolog interpreter, run `./prolog.py`.  Run it with the `-h` option
-  for more details on its use and capabilities.
-
-
-## Documentation
-
-Literate programming-style documentation is available by running `python
-build_docs.py` or on the web at http://dhconnelly.com/paip-python.  Each major
-program is documented, containing an overview of its design and implementation
-as well as links to example programs that use the algorithms it provides.
+- To run the examples: `python run_examples.py` and follow the prompts.
+- To run the Prolog interpreter: `./prolog.py`.  Pass the `-h` flag for more
+  details on its use and capabilities.
+- To run the unit tests: `python run_tests.py`.
+- To build the documentation: `python build_docs.py`.
 
 
 ## About
