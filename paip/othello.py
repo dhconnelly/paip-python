@@ -313,34 +313,43 @@ def weighted_score(player, board):
 # <a id="minimax"></a>
 ### Minimax search
 
-def minimax(player, board, ply, evaluate):
+# The maximizer strategies are very short-sighted, and a player who can consider
+# the implications of a move several turns in advance could have a significant
+# advantage.  The **minimax** algorithm does just that.
+
+def minimax(player, board, depth, evaluate):
     """
-    Find the best legal move for player, searching to depth ply.  Returns a
-    tuple (move, min_score), where min_score is the guaranteed minimum score
-    achievable for player if the move is made.
+    Find the best legal move for player, searching to the specified depth.
+    Returns a tuple (move, min_score), where min_score is the guaranteed minimum
+    score achievable for player if the move is made.
     """
 
-    # No move to make--just determine the value of this board to the player.
-    if ply == 0:
+    # We define the value of a board to be the opposite of its value to our
+    # opponent, computed by recursively applying `minimax` for our opponent.
+    def value(board):
+        return -minimax(opponent(player), board, depth-1, evaluate)[0]
+    
+    # When depth is zero, don't examine possible moves--just determine the value
+    # of this board to the player.
+    if depth == 0:
         return evaluate(player, board), None
     
-    # Find all the legal moves so we can pick one.
+    # We want to evaluate all the legal moves by considering their implications
+    # `depth` turns in advance.  First, find all the legal moves.
     moves = legal_moves(player, board)
-    
-    # The value of a board is the opposite of its value to our opponent.
-    def value(board):
-        return -minimax(opponent(player), board, ply-1, evaluate)[0]
     
     # If player has no legal moves, then either:
     if not moves:
-        # The game is over, so the best achievable score is victory or defeat.
+        # the game is over, so the best achievable score is victory or defeat;
         if not any_legal_move(opponent(player), board):
             return final_value(player, board), None
-        # We have to pass to the opponent, so just find the value of this board.
+        # or we have to pass this turn, so just find the value of this board.
         return value(board), None
     
-    # Choose the best move by maximizing the value of the resulting boards.
+    # When there are multiple legal moves available, choose the best one by
+    # maximizing the value of the resulting boards.
     return max((value(make_move(m, player, list(board))), m) for m in moves)
+
 
 MAX_VALUE = sum(map(abs, SQUARE_WEIGHTS))
 MIN_VALUE = -MAX_VALUE
@@ -353,24 +362,24 @@ def final_value(player, board):
         return MAX_VALUE
     return diff
 
-def minimax_searcher(ply, evaluate):
+def minimax_searcher(depth, evaluate):
     def strategy(player, board):
-        return minimax(player, board, ply, evaluate)[1]
+        return minimax(player, board, depth, evaluate)[1]
     return strategy
 
 # <a id="alphabeta"></a>
 ### Alpha-Beta search
 
-def alphabeta(player, board, alpha, beta, ply, evaluate):
+def alphabeta(player, board, alpha, beta, depth, evaluate):
     """
-    Find the best legal move for player, searching to depth ply.  Like minimax,
-    but uses the bounds alpha and beta to prune branches.
+    Find the best legal move for player, searching to the specified depth.  Like
+    minimax, but uses the bounds alpha and beta to prune branches.
     """
-    if ply == 0:
+    if depth == 0:
         return evaluate(player, board), None
 
     def value(board):
-        return -alphabeta(opponent(player), board, -beta, -alpha, ply-1, evaluate)[0]
+        return -alphabeta(opponent(player), board, -beta, -alpha, depth-1, evaluate)[0]
     
     moves = legal_moves(player, board)
     if not moves:
