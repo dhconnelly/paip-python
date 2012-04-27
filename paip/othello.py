@@ -24,7 +24,9 @@ Black's pieces between (5, 1) and (5, 6):
     8 . . . . . . . .    8 . . . . . . . .
 
 For more more information about the game (which is also known as Reversi)
-including detailed rules, see the entry on [Wikipedia](http://en.wikipedia.org/wiki/Reversi).
+including detailed rules, see the entry on [Wikipedia][wiki].  Additionally,
+this implementation doesn't take into account some tournament-style Othello
+details, such as game time limits and a different indexing scheme.
 
 We will implement representations for the board and pieces and the mechanics of
 playing a game.  We will then explore several game-playing strategies.  There is
@@ -33,6 +35,9 @@ playing against the computer or comparing two strategies.
 
 Written by [Daniel Connelly](http://dhconnelly.com).  This implementation follows
 chapter 18 of Peter Norvig's "Paradigms of Artificial Intelligence".
+
+[wiki]: http://en.wikipedia.org/wiki/Reversi
+
 """
 
 # -----------------------------------------------------------------------------
@@ -45,6 +50,7 @@ chapter 18 of Peter Norvig's "Paradigms of Artificial Intelligence".
 #     - [Local maximization](#localmax)<br>
 #     - [Minimax search](#minimax)<br>
 #     - [Alpha-beta search](#alphabeta)<br>
+# 4. [Conclusion](#conclusion)
 
 
 # -----------------------------------------------------------------------------
@@ -350,11 +356,12 @@ def minimax(player, board, depth, evaluate):
     # maximizing the value of the resulting boards.
     return max((value(make_move(m, player, list(board))), m) for m in moves)
 
-
+# Values for endgame boards are big constants.
 MAX_VALUE = sum(map(abs, SQUARE_WEIGHTS))
 MIN_VALUE = -MAX_VALUE
 
 def final_value(player, board):
+    """The game is over--find the value of this board to player."""
     diff = score(player, board)
     if diff < 0:
         return MIN_VALUE
@@ -363,12 +370,37 @@ def final_value(player, board):
     return diff
 
 def minimax_searcher(depth, evaluate):
+    """
+    Construct a strategy that uses `minimax` with the specified leaf board
+    evaluation function.
+    """
     def strategy(player, board):
         return minimax(player, board, depth, evaluate)[1]
     return strategy
 
 # <a id="alphabeta"></a>
 ### Alpha-Beta search
+
+# Minimax is very effective, but it does too much work: it evaluates many search
+# trees that should be ignored.
+
+# Consider what happens when minimax is evaluating two moves, M1 and M2, on one
+# level of a search tree.  Suppose minimax determines that M1 can result in a
+# score of S.  While evaluating M2, if minimax finds a move in its subtree that
+# could result in a better score than S, the algorithm should immediately quit
+# evaluating M2: the opponent will force us to play M1 to avoid the higher score
+# resulting from M1, so we shouldn't waste time determining just how much better
+# M2 is than M1.
+
+# We need to keep track of two values:
+# 
+# - alpha: the maximum score achievable by any of the moves we have encountered.
+# - beta: the score that the opponent can keep us under by playing other moves.
+#
+# When the algorithm begins, alpha is the smallest value and beta is the largest
+# value.  During evaluation, if we find a move that causes `alpha >= beta`, then
+# we can quit searching this subtree since the opponent can prevent us from
+# playing it.
 
 def alphabeta(player, board, alpha, beta, depth, evaluate):
     """
@@ -378,14 +410,21 @@ def alphabeta(player, board, alpha, beta, depth, evaluate):
     if depth == 0:
         return evaluate(player, board), None
 
-    def value(board):
+    def value(board, alpha, beta):
+        # Like in `minimax`, the value of a board is the opposite of its value
+        # to the opponent.  We pass in `-beta` and `-alpha` as the alpha and
+        # beta values, respectively, for the opponent, since `alpha` represents
+        # the best score we know we can achieve and is therefore the worst score
+        # achievable by the opponent.  Similarly, `beta` is the worst score that
+        # our opponent can hold us to, so it is the best score that they can
+        # achieve.
         return -alphabeta(opponent(player), board, -beta, -alpha, depth-1, evaluate)[0]
     
     moves = legal_moves(player, board)
     if not moves:
         if not any_legal_move(opponent(player), board):
             return final_value(player, board), None
-        return value(board), None
+        return value(board, alpha, beta), None
     
     best_move = moves[0]
     for move in moves:
@@ -393,7 +432,7 @@ def alphabeta(player, board, alpha, beta, depth, evaluate):
             # If one of the legal moves leads to a better score than beta, then
             # the opponent will avoid this branch, so we can quit looking.
             break
-        val = value(make_move(move, player, list(board)))
+        val = value(make_move(move, player, list(board)), alpha, beta)
         if val > alpha:
             # If one of the moves leads to a better score than the current best
             # achievable score, then replace it with this one.
@@ -405,3 +444,19 @@ def alphabeta_searcher(depth, evaluate):
     def strategy(player, board):
         return alphabeta(player, board, MIN_VALUE, MAX_VALUE, depth, evaluate)[1]
     return strategy
+
+
+# -----------------------------------------------------------------------------
+# <a id="conclusion"></a>
+## Conclusion
+
+# The strategies we've discussed are very general and are applicable to a broad
+# range of strategy games, such as Chess, Checkers, and Go.  More advanced
+# strategies for Othello exist that apply various gameplay heuristics; some of
+# these are discussed in "Paradigms of Artificial Intelligence Programming" by
+# Peter Norvig.
+#
+# See Wikipedia for more details on [minimax][mm] and [alpha-beta][ab] search.
+#
+# [mm]: http://en.wikipedia.org/wiki/Minimax
+# [ab]: http://en.wikipedia.org/wiki/Alpha-beta_pruning
