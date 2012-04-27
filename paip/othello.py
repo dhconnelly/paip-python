@@ -31,9 +31,8 @@ playing a game.  We will then explore several game-playing strategies.  There is
 a simple command-line program [provided](examples/othello/othello.html) for
 playing against the computer or comparing two strategies.
 
-Written by [Daniel Connelly](http://dhconnelly.com).  This implementation is
-inspired by chapter 18 of "Paradigms of Artificial Intelligence" by Peter
-Norvig.
+Written by [Daniel Connelly](http://dhconnelly.com).  This implementation follows
+chapter 18 of Peter Norvig's "Paradigms of Artificial Intelligence".
 """
 
 # -----------------------------------------------------------------------------
@@ -54,7 +53,8 @@ Norvig.
 
 # We represent the board as a 100-element list, which includes each square on
 # the board as well as the outside edge.  Each consecutive sublist of ten
-# elements represents a single row, and each list element stores a piece.
+# elements represents a single row, and each list element stores a piece.  An
+# initial board contains four pieces in the center:
 
 #     ? ? ? ? ? ? ? ? ? ?
 #     ? . . . . . . . . ?
@@ -66,6 +66,12 @@ Norvig.
 #     ? . . . . . . . . ?
 #     ? . . . . . . . . ?
 #     ? ? ? ? ? ? ? ? ? ?
+
+# This representation has two useful properties:
+#
+# 1. Square (m,n) can be accessed as `board[mn]`.  This avoids the need to write
+#    functions that convert between square locations and list indexes.
+# 2. Operations involving bounds checking are slightly simpler.
 
 # The outside edge is marked ?, empty squares are ., black is @, and white is o.
 # The black and white pieces represent the two players.
@@ -106,7 +112,14 @@ def print_board(board):
 # <a id="playing"></a>
 ## Playing the game
 
+# We need functions to get moves from players, check to make sure that the moves
+# are legal, apply the moves to the board, and detect when the game is over.
+
 ### Checking moves
+
+# A move must be both valid and legal: it must refer to a real square, and it
+# must form a bracket with another piece of the same color with pieces of the
+# opposite color in between.
 
 def is_valid(move):
     """Is move a square on the board?"""
@@ -135,6 +148,9 @@ def is_legal(move, player, board):
     return board[move] == EMPTY and any(map(hasbracket, DIRECTIONS))
 
 ### Making moves
+
+# When the player makes a move, we need to update the board and flip all the
+# bracketed pieces.
 
 def make_move(move, player, board):
     """Update the board to reflect the move by the specified player."""
@@ -174,6 +190,23 @@ def any_legal_move(player, board):
 
 ### Putting it all together
 
+# Each round consists of:
+#
+# - Get a move from the current player.
+# - Apply it to the board.
+# - Switch players.  If the game is over, get the final score.
+
+def play(black_strategy, white_strategy):
+    """Play a game of Othello and return the final board and score."""
+    board = initial_board()
+    player = BLACK
+    strategy = lambda who: black_strategy if who == BLACK else white_strategy
+    while player is not None:
+        move = get_move(strategy(player), player, board)
+        make_move(move, player, board)
+        player = next_player(board, player)
+    return board, score(BLACK, board)
+
 def next_player(board, prev_player):
     """Which player should move next?  Returns None if no legal moves exist."""
     opp = opponent(prev_player)
@@ -201,17 +234,6 @@ def score(player, board):
         elif piece == opp: theirs += 1
     return mine - theirs
 
-def play(black_strategy, white_strategy):
-    """Play a game of Othello and return the final board and score."""
-    board = initial_board()
-    player = BLACK
-    strategy = lambda who: black_strategy if who == BLACK else white_strategy
-    while player is not None:
-        move = get_move(strategy(player), player, board)
-        make_move(move, player, board)
-        player = next_player(board, player)
-    return board, score(BLACK, board)
-
 
 # -----------------------------------------------------------------------------
 # <a id="strategies"></a>
@@ -219,6 +241,8 @@ def play(black_strategy, white_strategy):
 
 # <a id="random"></a>
 ### Random
+
+# The easiest strategy to implement simply picks a move at random.
 
 import random
 
@@ -228,6 +252,11 @@ def random_strategy(player, board):
 
 # <a id="localmax"></a>
 ### Local maximization
+
+# A more sophisticated strategy could look at every available move and evaluate
+# them in some way.  This consists of getting a list of legal moves, applying
+# each one to a copy of the board, and choosing the move that results in the
+# "best" board.
 
 def maximizer(evaluate):
     """
@@ -239,6 +268,16 @@ def maximizer(evaluate):
             return evaluate(player, make_move(move, player, list(board)))
         return max(legal_moves(player, board), key=score_move)
     return strategy
+
+# One possible evaluation function is `score`.  A strategy constructed with
+# `maximizer(score)` will always make the move that results in the largest
+# immediate gain in pieces.
+
+# A more advanced evaluation function might consider the relative worth of each
+# square on the board and weight the score by the value of the pieces held by
+# each player.  Since corners and (most) edge squares are very valuable, we
+# could weight those more heavily, and add negative weights to the squares that,
+# if acquired, could lead to the opponent capturing the corners or edges.
 
 SQUARE_WEIGHTS = [
     0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
@@ -252,6 +291,10 @@ SQUARE_WEIGHTS = [
     0, 120, -20,  20,   5,   5,  20, -20, 120,   0,
     0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
 ]
+
+# A strategy constructed as `maximizer(weighted_score)`, then, will always
+# return the move that results in the largest immediate *weighted* gain in
+# pieces.
 
 def weighted_score(player, board):
     """
