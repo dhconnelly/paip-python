@@ -1,7 +1,35 @@
 """
+**Othello** is a turn-based two-player strategy board game.  The players take
+turns placing pieces--one player white and the other player black--on an 8x8
+board in such a way that captures some of the opponent's pieces, with the goal
+of finishing the game with more pieces of their color on the board.
 
-See the command-line program provided [here](examples/othello/othello.html)
-to play against the computer or pit two strategies against each other.
+Every move must capture one more more of the opponent's pieces.  To capture,
+player A places a piece adjacent to one of player B's pieces so that there is a
+straight line (horizontal, vertical, or diagonal) of adjacent pieces that begins
+with one of player A's pieces, continues with one more more of player B's
+pieces, and ends with one of player A's pieces.
+
+For example, if Black places a piece on square (5, 1), he will capture all of
+Black's pieces between (5, 1) and (5, 6):
+
+      1 2 3 4 5 6 7 8      1 2 3 4 5 6 7 8
+    1 . . . . . . . .    1 . . . . . . . .
+    2 . . . . . . . .    2 . . . . . . . .
+    3 . . o @ . o . .    3 . . o @ . o . .
+    4 . . o o @ @ . .    4 . . o o @ @ . .
+    5 . o o o o @ . .    5 @ @ @ @ @ @ . .
+    6 . . . @ o . . .    6 . . . @ o . . .
+    7 . . . . . . . .    7 . . . . . . . .
+    8 . . . . . . . .    8 . . . . . . . .
+
+For more more information about the game (which is also known as Reversi)
+including detailed rules, see the entry on [Wikipedia](http://en.wikipedia.org/wiki/Reversi).
+
+We will implement representations for the board and pieces and the mechanics of
+playing a game.  We will then explore several game-playing strategies.  There is
+a simple command-line program [provided](examples/othello/othello.html) for
+playing against the computer or comparing two strategies.
 
 Written by [Daniel Connelly](http://dhconnelly.com).  This implementation is
 inspired by chapter 18 of "Paradigms of Artificial Intelligence" by Peter
