@@ -61,7 +61,7 @@ Contributing
 - make sure all tests pass: `python run_tests.py`
 - send me a pull request
 
-Author
+About Author
 ------
 
 These programs were written by [Daniel Connelly](http://dhconnelly.com) at
